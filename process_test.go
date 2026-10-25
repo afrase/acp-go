@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"testing"
+	"time"
 
 	"github.com/afrase/acp-go"
 	"github.com/afrase/acp-go/internal/leaktest"
@@ -48,14 +49,17 @@ func serveTestAgent() {
 	}
 	c := acp.NewClientConn(os.Stdin, os.Stdout, func(c *acp.ClientConn) acp.Agent { a.client = c; return a })
 	<-c.Done()
+	if d, err := time.ParseDuration(os.Getenv("ACPGO_TEST_EXIT_DELAY")); err == nil {
+		time.Sleep(d) // ending its work, with its stdout closed
+	}
 }
 
-func startTestAgent(t *testing.T, client acp.Client) (*acp.AgentConn, *exec.Cmd) {
+func startTestAgent(t *testing.T, client acp.Client, env ...string) (*acp.AgentConn, *exec.Cmd) {
 	t.Helper()
 	leaktest.Check(t)
 	cmd := exec.Command(os.Args[0]) //nolint:gosec // the test binary
 	// GORACE: -race would wait a second as the agent exits.
-	cmd.Env = append(os.Environ(), "ACPGO_TEST_AGENT=1", "GORACE=atexit_sleep_ms=0")
+	cmd.Env = append(append(os.Environ(), "ACPGO_TEST_AGENT=1", "GORACE=atexit_sleep_ms=0"), env...)
 	cmd.Stderr = os.Stderr
 	conn, err := acp.Start(cmd, client)
 	if err != nil {
@@ -86,6 +90,20 @@ func TestStartAnAgent(t *testing.T) {
 	}
 	if cmd.ProcessState == nil || !cmd.ProcessState.Success() {
 		t.Errorf("the agent ended %v", cmd.ProcessState)
+	}
+}
+
+// Shutdown gives an agent its whole context to exit, though it closed its
+// stdout long before.
+func TestShutdownWaitsForTheAgent(t *testing.T) {
+	conn, cmd := startTestAgent(t, &testClient{}, "ACPGO_TEST_EXIT_DELAY=1500ms")
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := conn.Shutdown(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if !cmd.ProcessState.Success() {
+		t.Errorf("the agent ended %v; it had time to exit", cmd.ProcessState)
 	}
 }
 
