@@ -1,0 +1,130 @@
+package acp_test
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"log/slog"
+	"strings"
+	"sync"
+	"testing"
+
+	"github.com/afrase/acp-go"
+)
+
+// syncBuffer is a buffer the connection's goroutines can log to.
+type syncBuffer struct {
+	mu sync.Mutex
+	b  bytes.Buffer
+}
+
+func (s *syncBuffer) Write(p []byte) (int, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.b.Write(p)
+}
+
+func (s *syncBuffer) String() string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.b.String()
+}
+
+// What a connection logs says what happened, never what the messages
+// carried.
+func TestTheLogNeverHasWhatMessagesCarry(t *testing.T) {
+	const secret = "sk-secret-marker"
+	var buf syncBuffer
+	log := slog.New(slog.NewTextHandler(&buf, &slog.HandlerOptions{Level: slog.LevelDebug}))
+	agent := &testAgent{prompt: func(ctx context.Context, a *testAgent, req *acp.PromptRequest) (*acp.PromptResponse, error) {
+		if err := a.say(ctx, req.Prompt[0].Text.Text); err != nil {
+			return nil, err
+		}
+		panic("the handler choked")
+	}}
+	toAgentConn, _ := connect(t, &testClient{}, agent, acp.WithLogger(log))
+	ctx := ctxFor(t)
+	_, err := toAgentConn.Prompt(ctx, &acp.PromptRequest{SessionID: "s1", Prompt: []acp.ContentBlock{{Text: &acp.TextContent{Text: secret}}}})
+	if err == nil {
+		t.Fatal("the panic was answered as a result")
+	}
+	if _, err := toAgentConn.NewSession(ctx, &acp.NewSessionRequest{Cwd: "/" + secret}); err != nil {
+		t.Fatal(err)
+	}
+	got := buf.String()
+	if strings.Contains(got, secret) {
+		t.Errorf("the log has a message's content:\n%s", got)
+	}
+	for _, want := range []string{`msg="acp: call" rpc=session/new`, "rpc=session/prompt", `err="session/prompt: acp: the handler for session/prompt panicked: the handler choked (-32603)"`} {
+		if !strings.Contains(got, want) {
+			t.Errorf("the log has no %s:\n%s", want, got)
+		}
+	}
+}
+
+func TestPanicsAndJunkAreLogged(t *testing.T) {
+	var buf syncBuffer
+	log := slog.New(slog.NewTextHandler(&buf, nil))
+	r := rawClientWith(t, &testAgent{prompt: func(context.Context, *testAgent, *acp.PromptRequest) (*acp.PromptResponse, error) {
+		panic("boom")
+	}}, acp.WithLogger(log))
+	r.send("password=hunter2 is not JSON")
+	r.read()
+	r.send(`{"jsonrpc":"2.0","id":1,"method":"session/prompt","params":{"sessionId":"s","prompt":[]}}`)
+	r.read()
+	got := buf.String()
+	if strings.Contains(got, "hunter2") || !strings.Contains(got, `level=WARN msg="acp: a line that isn't JSON-RPC" bytes=28`) {
+		t.Errorf("a junk line logged as:\n%s", got)
+	}
+	if !strings.Contains(got, `level=ERROR msg="acp: handler panicked" rpc=session/prompt panic=boom stack=`) {
+		t.Errorf("a panic logged as:\n%s", got)
+	}
+}
+
+// The agent's side calls the client's extensions too.
+func TestTheAgentCallsTheClientsExtensions(t *testing.T) {
+	client := &extClient{}
+	agent := &testAgent{prompt: func(ctx context.Context, a *testAgent, _ *acp.PromptRequest) (*acp.PromptResponse, error) {
+		var out map[string]string
+		if err := a.client.Call(ctx, "_editor/open", map[string]string{"path": "/a"}, &out); err != nil || out["opened"] != "/a" {
+			t.Errorf("Call: %v, %v", out, err)
+		}
+		if err := a.client.Notify(ctx, "_editor/saved", nil); err != nil {
+			t.Error(err)
+		}
+		return &acp.PromptResponse{StopReason: acp.StopReasonEndTurn}, nil
+	}}
+	conn, agentSide := connect(t, client, agent)
+	if _, err := conn.Prompt(ctxFor(t), &acp.PromptRequest{SessionID: "s1"}); err != nil {
+		t.Fatal(err)
+	}
+	if agentSide.Err() != nil {
+		t.Errorf("Err while open: %v", agentSide.Err())
+	}
+	client.mu.Lock()
+	defer client.mu.Unlock()
+	if strings.Join(client.notes, ",") != "_editor/saved" {
+		t.Errorf("notifications %v", client.notes)
+	}
+}
+
+type extClient struct {
+	testClient
+	mu    sync.Mutex
+	notes []string
+}
+
+func (c *extClient) ExtMethod(_ context.Context, method string, params json.RawMessage) (any, error) {
+	var p map[string]string
+	if err := json.Unmarshal(params, &p); err != nil {
+		return nil, err
+	}
+	return map[string]string{"opened": p["path"], "method": method}, nil
+}
+
+func (c *extClient) ExtNotification(_ context.Context, method string, _ json.RawMessage) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.notes = append(c.notes, method)
+	return nil
+}

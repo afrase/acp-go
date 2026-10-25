@@ -115,7 +115,7 @@ func TestStartRefusesWhatItCant(t *testing.T) {
 	if _, err := acp.Start(cmd, &testClient{}); err == nil {
 		t.Error("Start took a command with its own stdout")
 	}
-	if _, err := acp.Start(exec.Command("/no/such/agent"), &testClient{}); !errors.Is(err, fs.ErrNotExist) {
+	if _, err := acp.Start(exec.Command("/no/such/agent"), &testClient{}); !errors.Is(err, fs.ErrNotExist) && !errors.Is(err, exec.ErrNotFound) { // Unix, Windows
 		t.Errorf("a missing agent: %v", err)
 	}
 }

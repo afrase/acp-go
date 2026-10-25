@@ -317,7 +317,7 @@ func (c *conn) safeNotify(ctx context.Context, method string, params json.RawMes
 // error.
 func (c *conn) panicked(method string, p any) error {
 	c.log.Error("acp: handler panicked", "rpc", method, "panic", fmt.Sprint(p), "stack", string(debug.Stack()))
-	return fmt.Errorf("acp: the handler for %s panicked: %v", method, p)
+	return fmt.Errorf("the handler for %s panicked: %v", method, p)
 }
 
 // call sends a request and decodes its result into result (unless nil).
