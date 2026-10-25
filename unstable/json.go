@@ -68,15 +68,11 @@ func (p ElicitationProperties) MarshalJSON() ([]byte, error) {
 		if i > 0 {
 			b = append(b, ',')
 		}
-		k, err := json.Marshal(f.Name)
+		v, err := marshal(f.Schema)
 		if err != nil {
 			return nil, err
 		}
-		v, err := json.Marshal(f.Schema)
-		if err != nil {
-			return nil, err
-		}
-		b = append(append(append(b, k...), ':'), v...)
+		b = append(append(appendString(b, f.Name), ':'), v...)
 	}
 	return append(b, '}'), nil
 }

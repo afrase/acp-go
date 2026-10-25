@@ -50,7 +50,7 @@ var errInNotification = errors.New("acp: a call from a notification handler can'
 var errUnknownNotification = errors.New("acp: unknown notification")
 
 func methodNotFound(method string) error {
-	data, _ := json.Marshal(map[string]string{"method": method}) //nolint:errchkjson // a map of strings
+	data, _ := json.Marshal(map[string]string{"method": method})
 	return &Error{Code: ErrorCodeMethodNotFound, Message: "Method not found", Data: data}
 }
 
@@ -68,10 +68,21 @@ func errorFor(ctx context.Context, err error) *Error {
 	return &Error{Code: ErrorCodeInternalError, Message: err.Error()}
 }
 
-// decodeParams decodes a request's params; none or null leaves dst zero.
-func decodeParams(params json.RawMessage, dst any) error {
+// decodeParams decodes a message's params; none or null leaves dst zero.
+// A request's params must have the properties its type requires.
+func decodeParams(params json.RawMessage, dst any, required ...string) error {
 	if len(params) == 0 || bytes.Equal(params, []byte("null")) {
-		return nil
+		params = []byte("{}")
+	}
+	if len(required) > 0 {
+		var keys map[string]json.RawMessage
+		if json.Unmarshal(params, &keys) == nil {
+			for _, k := range required {
+				if _, ok := keys[k]; !ok {
+					return &Error{Code: ErrorCodeInvalidParams, Message: fmt.Sprintf("Invalid params: no %q", k)}
+				}
+			}
+		}
 	}
 	if err := json.Unmarshal(params, dst); err != nil {
 		return &Error{Code: ErrorCodeInvalidParams, Message: "Invalid params: " + err.Error()}

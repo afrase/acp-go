@@ -88,29 +88,28 @@ func main() {
 		flag.PrintDefaults()
 		os.Exit(2)
 	}
-	if err := run(flag.Args(), *prompt, *cwd, *load, *list, &client{verbose: *verbose, yes: *yes}); err != nil {
+	if err := run(context.Background(), flag.Args(), *prompt, *cwd, *load, *list, &client{verbose: *verbose, yes: *yes}); err != nil {
 		fmt.Fprintln(os.Stderr, "prompt:", err)
 		os.Exit(1)
 	}
 }
 
-func run(command []string, prompt, cwd, load string, list bool, c *client) error {
+func run(ctx context.Context, command []string, prompt, cwd, load string, list bool, c *client) error {
 	if cwd == "" {
 		var err error
 		if cwd, err = os.Getwd(); err != nil {
 			return err
 		}
 	}
-	cmd := exec.Command(command[0], command[1:]...) //nolint:gosec // the agent the user names
+	cmd := exec.CommandContext(ctx, command[0], command[1:]...) //nolint:gosec // the agent the user names
 	cmd.Stderr = os.Stderr
 	agent, err := acp.Start(cmd, c)
 	if err != nil {
 		return err
 	}
 	defer func() {
-		_ = agent.Shutdown(context.Background())
+		_ = agent.Shutdown(ctx)
 	}()
-	ctx := context.Background()
 	init, err := agent.Initialize(ctx, &acp.InitializeRequest{
 		ProtocolVersion: acp.LatestProtocolVersion,
 		ClientInfo:      &acp.Implementation{Name: "acp-go-prompt", Version: "0.1.0"},

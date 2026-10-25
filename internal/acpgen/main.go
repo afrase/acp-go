@@ -63,16 +63,16 @@ func main() {
 }
 
 func run(schemaFile, metaFile, pkg, out, copyFrom string) error {
-	raw, err := os.ReadFile(schemaFile) //nolint:gosec // the generator reads the schema it is told to
+	raw, err := os.ReadFile(schemaFile)
 	if err != nil {
 		return err
 	}
-	v, err := os.ReadFile(filepath.Join(filepath.Dir(schemaFile), "VERSION")) //nolint:gosec // beside the schema
+	v, err := os.ReadFile(filepath.Join(filepath.Dir(schemaFile), "VERSION"))
 	if err != nil {
 		return err
 	}
 	version := strings.TrimSpace(string(v))
-	meta, err := os.ReadFile(metaFile) //nolint:gosec // the same
+	meta, err := os.ReadFile(metaFile)
 	if err != nil {
 		return err
 	}
@@ -122,5 +122,5 @@ func write(path string, src []byte) error {
 		_ = os.WriteFile(path, src, 0o600) // unformatted, to look at; the format error is the one to report
 		return fmt.Errorf("%s: %w", path, err)
 	}
-	return os.WriteFile(path, formatted, 0o644) //nolint:gosec // source code, readable by all
+	return os.WriteFile(path, formatted, 0o644)
 }

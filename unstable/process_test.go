@@ -6,9 +6,9 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io/fs"
 	"os"
 	"os/exec"
-	"strings"
 	"testing"
 
 	"github.com/afrase/acp-go/internal/leaktest"
@@ -22,7 +22,7 @@ func TestMain(m *testing.M) {
 		serveTestAgent()
 		os.Exit(0)
 	}
-	os.Exit(m.Run())
+	m.Run()
 }
 
 // serveTestAgent is a testAgent on stdin and stdout whose prompt echoes
@@ -44,7 +44,7 @@ func serveTestAgent() {
 			return cmd.Process.Pid, nil
 		case "_test/exit":
 			_ = a.say(ctx, "bye")
-			os.Exit(3)
+			os.Exit(3) //nolint:revive // the agent dies, as the test asks
 		}
 		return nil, errors.New("no such test method")
 	}
@@ -115,7 +115,7 @@ func TestStartRefusesWhatItCant(t *testing.T) {
 	if _, err := acp.Start(cmd, &testClient{}); err == nil {
 		t.Error("Start took a command with its own stdout")
 	}
-	if _, err := acp.Start(exec.Command("/no/such/agent"), &testClient{}); err == nil || !strings.Contains(err.Error(), "no such file") {
+	if _, err := acp.Start(exec.Command("/no/such/agent"), &testClient{}); !errors.Is(err, fs.ErrNotExist) {
 		t.Errorf("a missing agent: %v", err)
 	}
 }

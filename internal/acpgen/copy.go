@@ -22,7 +22,7 @@ var (
 // generated there from another schema has the same connection, sides and
 // tests. Copies whose source is gone are removed.
 func copyPackage(from, out, pkg string) error {
-	gomod, err := os.ReadFile(filepath.Join(from, "go.mod")) //nolint:gosec // the module's own go.mod
+	gomod, err := os.ReadFile(filepath.Join(from, "go.mod"))
 	if err != nil {
 		return err
 	}
@@ -38,7 +38,7 @@ func copyPackage(from, out, pkg string) error {
 	kept := map[string]bool{}
 	for _, src := range sources {
 		name := filepath.Base(src)
-		b, err := os.ReadFile(src) //nolint:gosec // the module's own files
+		b, err := os.ReadFile(src)
 		if err != nil {
 			return err
 		}
@@ -57,7 +57,7 @@ func copyPackage(from, out, pkg string) error {
 		b = bytes.ReplaceAll(b, []byte(`"`+modPath+`"`), []byte(`acp "`+modPath+"/"+pkg+`"`))
 		b = append([]byte(copiedMark+name+". DO NOT EDIT.\n\n"), b...)
 		dst := filepath.Join(out, name)
-		if prev, err := os.ReadFile(dst); err == nil && !bytes.HasPrefix(prev, []byte(copiedMark)) { //nolint:gosec // the package's own file
+		if prev, err := os.ReadFile(dst); err == nil && !bytes.HasPrefix(prev, []byte(copiedMark)) {
 			return fmt.Errorf("%s is hand-written: it would be overwritten by a copy of %s", dst, src)
 		}
 		if err := write(dst, b); err != nil {
@@ -70,7 +70,7 @@ func copyPackage(from, out, pkg string) error {
 		return err
 	}
 	for _, f := range old {
-		b, err := os.ReadFile(f) //nolint:gosec // the package's own files
+		b, err := os.ReadFile(f)
 		if err != nil {
 			return err
 		}

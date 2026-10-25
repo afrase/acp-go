@@ -173,7 +173,9 @@ func genTagged(b *bytes.Buffer, m *model, d *def) {
 	fmt.Fprintf(b, "\tswitch x.%s {\n", d.tagField)
 	encode := func(payload string) string { return "marshalUnion(plain(x), " + payload + ")" }
 	if len(d.fields) == 0 && !slices.ContainsFunc(d.vars, func(v *variant) bool { return v.def }) {
-		encode = func(payload string) string { return fmt.Sprintf("marshalTagged(%q, x.%s, %s)", d.tag, d.tagField, payload) }
+		encode = func(payload string) string {
+			return fmt.Sprintf("marshalTagged(%q, x.%s, %s)", d.tag, d.tagField, payload)
+		}
 	}
 	for _, v := range d.vars {
 		if v.def {

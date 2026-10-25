@@ -30,7 +30,7 @@ func FuzzStream(f *testing.F) {
 	} {
 		f.Add([]byte(s))
 	}
-	f.Fuzz(func(t *testing.T, data []byte) {
+	f.Fuzz(func(_ *testing.T, data []byte) {
 		agentSide := acp.NewClientConn(bytes.NewReader(data), io.Discard, func(c *acp.ClientConn) acp.Agent {
 			return &testAgent{client: c, prompt: func(ctx context.Context, a *testAgent, _ *acp.PromptRequest) (*acp.PromptResponse, error) {
 				_ = a.say(ctx, "x")

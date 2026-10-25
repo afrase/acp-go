@@ -158,7 +158,7 @@ func (c *conn) dispatch(line []byte) {
 	case f.ID != nil:
 		c.answered(f)
 	default:
-		c.reply(nil, &Error{Code: ErrorCodeInvalidRequest, Message: "Invalid request: neither a method nor an id"})
+		c.reply(&Error{Code: ErrorCodeInvalidRequest, Message: "Invalid request: neither a method nor an id"})
 	}
 }
 
@@ -172,23 +172,21 @@ func (c *conn) junkLine(line []byte) {
 	}
 	switch {
 	case line[0] == '[' && json.Valid(line):
-		c.reply(nil, &Error{Code: ErrorCodeInvalidRequest, Message: "Invalid request: ACP v1 has no batches"})
+		c.reply(&Error{Code: ErrorCodeInvalidRequest, Message: "Invalid request: ACP v1 has no batches"})
 	case json.Valid(line):
-		c.reply(nil, &Error{Code: ErrorCodeInvalidRequest, Message: "Invalid request"})
+		c.reply(&Error{Code: ErrorCodeInvalidRequest, Message: "Invalid request"})
 	default:
-		c.reply(nil, &Error{Code: ErrorCodeParseError, Message: "Parse error"})
+		c.reply(&Error{Code: ErrorCodeParseError, Message: "Parse error"})
 	}
 }
 
 // reply sends an error for a message that can't be answered by a handler
 // (one with a bad shape), on a goroutine of its own: the reading goroutine
 // mustn't wait for the other side to read.
-func (c *conn) reply(id json.RawMessage, e *Error) {
-	c.handlers.Add(1)
-	go func() {
-		defer c.handlers.Done()
-		_, _ = c.write(c.ctx, encodeError(id, e)) // the connection may be ending
-	}()
+func (c *conn) reply(e *Error) {
+	c.handlers.Go(func() {
+		_, _ = c.write(c.ctx, encodeError(nil, e)) // the connection may be ending
+	})
 }
 
 // idKey is a request id as a map key: its string, or its number's
@@ -215,19 +213,19 @@ func idKey(id json.RawMessage) string {
 }
 
 // serve handles one of the other side's requests on a goroutine of its own.
+//
+//nolint:contextcheck // the response is written with the connection's context: it answers a withdrawn request too
 func (c *conn) serve(f frame) {
 	key := idKey(f.ID)
 	if key == "" {
-		c.reply(nil, &Error{Code: ErrorCodeInvalidRequest, Message: "Invalid request: a bad id"})
+		c.reply(&Error{Code: ErrorCodeInvalidRequest, Message: "Invalid request: a bad id"})
 		return
 	}
-	ctx, cancel := context.WithCancel(context.WithValue(c.ctx, requestIDKey{}, RequestID(f.ID)))
+	ctx, cancel := context.WithCancel(context.WithValue(c.ctx, requestIDKey{}, f.ID))
 	c.mu.Lock()
 	c.incoming[key] = cancel
 	c.mu.Unlock()
-	c.handlers.Add(1)
-	go func() {
-		defer c.handlers.Done()
+	c.handlers.Go(func() {
 		defer cancel()
 		start := time.Now()
 		result, err := c.safeRequest(ctx, f.Method, f.Params)
@@ -243,11 +241,11 @@ func (c *conn) serve(f frame) {
 		if err != nil {
 			msg = encodeError(f.ID, errorFor(ctx, err))
 		}
-		c.logDone("acp: request handled", f.Method, start, err)
+		c.logDone(ctx, "acp: request handled", f.Method, start, err)
 		if _, werr := c.write(c.ctx, msg); werr != nil && !errors.Is(werr, ErrClosed) {
 			c.log.Warn("acp: a response wasn't sent", "rpc", f.Method, "err", werr)
 		}
-	}()
+	})
 }
 
 // withdrawn ends the context of a request the other side withdrew
@@ -298,20 +296,28 @@ func (c *conn) answered(f frame) {
 // bad message can't take the process down. The panic is logged with its
 // stack.
 func (c *conn) safeRequest(ctx context.Context, method string, params json.RawMessage) (result any, err error) {
-	defer c.recovered(method, &err)
+	defer func() {
+		if p := recover(); p != nil {
+			err = c.panicked(method, p)
+		}
+	}()
 	return c.h.request(ctx, method, params)
 }
 
 func (c *conn) safeNotify(ctx context.Context, method string, params json.RawMessage) (err error) {
-	defer c.recovered(method, &err)
+	defer func() {
+		if p := recover(); p != nil {
+			err = c.panicked(method, p)
+		}
+	}()
 	return c.h.notify(ctx, method, params)
 }
 
-func (c *conn) recovered(method string, err *error) {
-	if p := recover(); p != nil {
-		*err = fmt.Errorf("acp: the handler for %s panicked: %v", method, p)
-		c.log.Error("acp: handler panicked", "rpc", method, "panic", fmt.Sprint(p), "stack", string(debug.Stack()))
-	}
+// panicked logs a handler's panic, with its stack, and returns it as an
+// error.
+func (c *conn) panicked(method string, p any) error {
+	c.log.Error("acp: handler panicked", "rpc", method, "panic", fmt.Sprint(p), "stack", string(debug.Stack()))
+	return fmt.Errorf("acp: the handler for %s panicked: %v", method, p)
 }
 
 // call sends a request and decodes its result into result (unless nil).
@@ -353,7 +359,7 @@ func (c *conn) send(ctx context.Context, method string, params any) (wait func(c
 	}
 	return func(ctx context.Context, result any) error {
 		err := c.await(ctx, method, id, ch, result)
-		c.logDone("acp: call", method, start, err)
+		c.logDone(ctx, "acp: call", method, start, err)
 		return err
 	}, nil
 }
@@ -390,12 +396,10 @@ func (c *conn) withdraw(id int64) {
 	if c.err != nil {
 		return // the connection ended, which withdrew it; and its handlers may be being waited for
 	}
-	c.handlers.Add(1)
-	go func() {
-		defer c.handlers.Done()
+	c.handlers.Go(func() {
 		msg := encodeNotification("$/cancel_request", []byte(`{"requestId":`+strconv.FormatInt(id, 10)+`}`))
 		_, _ = c.write(c.ctx, msg) // the connection may be ending, which withdraws it anyway
-	}()
+	})
 }
 
 // forget drops a pending call, reporting whether it was still pending.
@@ -506,15 +510,15 @@ func (c *conn) Err() error {
 
 // logDone logs a call or a handled request once it ended, at DEBUG, with
 // how long it took and its error: never what it carried.
-func (c *conn) logDone(what, method string, start time.Time, err error) {
-	if !c.log.Enabled(context.Background(), slog.LevelDebug) {
+func (c *conn) logDone(ctx context.Context, what, method string, start time.Time, err error) {
+	if !c.log.Enabled(ctx, slog.LevelDebug) {
 		return
 	}
 	args := []any{"rpc", method, "took", time.Since(start).Round(time.Millisecond)}
 	if err != nil {
 		args = append(args, "err", err)
 	}
-	c.log.Debug(what, args...)
+	c.log.DebugContext(ctx, what, args...)
 }
 
 type (

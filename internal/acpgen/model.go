@@ -346,7 +346,7 @@ func (m *model) fields(d *def, n *node, top bool) {
 		f := &field{json: k, name: goName(k), doc: doc, required: top && slices.Contains(n.Required, k),
 			lenient: pn.Lenient, skipInvalid: pn.SkipInvalid}
 		key := d.schemaName + "." + k
-		base, _ := m.goType(pn)
+		base := m.goType(pn)
 		switch {
 		case m.ordered[key] != "":
 			f.typ = m.ordered[key]
@@ -364,27 +364,26 @@ func (m *model) fields(d *def, n *node, top bool) {
 	}
 }
 
-// goType is the Go type of a property's schema, and whether it may be null.
-func (m *model) goType(n *node) (typ string, nullable bool) {
+// goType is the Go type of a property's schema (a union with null is its
+// other type: absent and null mean the same in ACP but where a Nullable
+// says otherwise).
+func (m *model) goType(n *node) string {
 	if r := refName(n); r != "" {
-		return goName(r), false
+		return goName(r)
 	}
 	if vs := variants(n); vs != nil {
 		var rest []*node
 		for _, v := range vs {
-			if v.Type.nonNull() == "" && v.Type.nullable() {
-				nullable = true
-				continue
+			if v.Type.nonNull() != "" || !v.Type.nullable() {
+				rest = append(rest, v)
 			}
-			rest = append(rest, v)
 		}
 		if len(rest) == 1 {
-			t, _ := m.goType(rest[0])
-			return t, nullable
+			return m.goType(rest[0])
 		}
-		return "json.RawMessage", nullable
+		return "json.RawMessage"
 	}
-	return m.scalar(n), n.Type.nullable()
+	return m.scalar(n)
 }
 
 // scalar is the Go type of a schema that isn't a reference or a union.
@@ -402,12 +401,10 @@ func (m *model) scalar(n *node) string {
 		if n.Items == nil {
 			return "[]json.RawMessage"
 		}
-		t, _ := m.goType(n.Items)
-		return "[]" + t
+		return "[]" + m.goType(n.Items)
 	case "object":
 		if ap := n.AdditionalProperties; ap != nil {
-			t, _ := m.goType(ap)
-			return "map[string]" + t
+			return "map[string]" + m.goType(ap)
 		}
 		return "map[string]any"
 	}
@@ -501,6 +498,8 @@ func tagOf(vs []*node) string {
 // metaDoc is the doc of every _meta field (the schema repeats a long one).
 const metaDoc = "Meta is extension data: ACP reserves _meta for it, and nothing may be\nassumed about its keys. See [Extensibility].\n\n[Extensibility]: https://agentclientprotocol.com/protocol/extensibility"
 
+func isUpper(c byte) bool { return c >= 'A' && c <= 'Z' }
+
 var initialisms = map[string]string{
 	"Id": "ID", "Url": "URL", "Uri": "URI", "Mcp": "MCP", "Http": "HTTP", "Sse": "SSE",
 	"Json": "JSON", "Acp": "ACP", "Llm": "LLM", "Api": "API",
@@ -513,7 +512,7 @@ func goName(s string) string {
 	for _, w := range strings.FieldsFunc(s, func(r rune) bool { return r == '_' || r == '-' || r == '/' || r == '.' || r == ' ' || r == '$' }) {
 		start := 0
 		for i := 1; i <= len(w); i++ {
-			if i == len(w) || (w[i] >= 'A' && w[i] <= 'Z' && !(w[i-1] >= 'A' && w[i-1] <= 'Z')) {
+			if i == len(w) || (isUpper(w[i]) && !isUpper(w[i-1])) {
 				parts = append(parts, w[start:i])
 				start = i
 			}

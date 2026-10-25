@@ -94,7 +94,7 @@ func encodeError(id json.RawMessage, e *Error) []byte {
 	}
 	ej, err := encodeValue(e)
 	if err != nil { // its data isn't JSON: send it without
-		ej, _ = encodeValue(&Error{Code: e.Code, Message: e.Message}) //nolint:errchkjson // a code and a string
+		ej, _ = encodeValue(&Error{Code: e.Code, Message: e.Message})
 	}
 	b := make([]byte, 0, 40+len(id)+len(ej))
 	b = append(b, `{"jsonrpc":"2.0","id":`...)
