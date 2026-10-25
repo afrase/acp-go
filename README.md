@@ -36,7 +36,7 @@ used the Go SDKs there were, and two of their limits broke real chats: a
 while the app was busy), closed the connection; and a 10 MiB cap on a
 message, which a turn with a few images passes. This library is the client
 Nushi wrote instead, grown to cover all of ACP and both sides. Compared
-plainly with the two most used:
+plainly with coder's (the most used) and caelis-labs' (the most complete):
 
 | | acp-go | [coder/acp-go-sdk](https://github.com/coder/acp-go-sdk) | [caelis-labs/acp-go-sdk](https://github.com/caelis-labs/acp-go-sdk) |
 |---|---|---|---|
@@ -46,7 +46,7 @@ plainly with the two most used:
 | Message size | no cap unless you set one | 10 MiB | 10 MiB by default, configurable |
 | `$/cancel_request` | both ways | both ways | both ways |
 | Running an agent | `Start`: its process group killed on Unix, the process alone on Windows | you start it | its process tree, on Unix and on Windows (job objects) |
-| Checked against | the TypeScript SDK both ways; acp-tck | — | the TypeScript and Rust SDKs, four ways |
+| Checked against | the TypeScript SDK both ways; acp-tck | its own tests | the TypeScript and Rust SDKs, four ways |
 | Dependencies | none | none | `golang.org/x/sys` |
 
 caelis-labs' SDK is the most thorough of the others (its interop matrix,
@@ -194,7 +194,13 @@ unstable parts may change in any minor release (see Versioning).
   except where the schema says otherwise; those fields are `Nullable`.
 - *An agent that exits*: what it wrote before exiting is still read (for a
   second, in case a process it left holds its stdout open), then its
-  process group is killed.
+  process group is killed. One that closes its stdout first has a second
+  to exit, or, under `Shutdown`, until its context ends.
+- *An elicitation's answer* may be an integer or a number; a JSON number
+  without a fraction or exponent decodes as `Integer`.
+- *Required properties*: an incoming request without one is refused, as
+  the TypeScript and Rust SDKs do; one this side sends always has them (a
+  required list left nil goes as `[]`).
 
 ## Interoperability
 
@@ -203,10 +209,16 @@ its example agent with a Go client (a turn with a read, then an edit it asks
 permission for, allowed or refused; a cancelled turn; a withdrawn call), and
 its example client with `examples/echo`. ACP's conformance kit,
 [acp-tck](https://github.com/agentclientprotocol/acp-tck), finds
-`examples/echo` conformant (28 of 28 mandatory checks). By hand, through
-[Nushi](https://github.com/afrase/nushi): Claude (claude-agent-acp), Codex
-(codex-acp), and two agents served by Nushi's own bridges built on this
-library's agent side (Ante and PiG).
+`examples/echo` conformant (28 of 28 mandatory checks; of the advisory
+ones it misses only connecting to the MCP servers it is given, which an
+echo has no use for). By hand: Claude Code (claude-agent-acp 0.94.0) and
+Codex (codex-acp 2.2.2) with `examples/prompt` (a turn, `session/list`,
+`session/load`), and all of it again through
+[Nushi](https://github.com/afrase/nushi), which runs on the `unstable`
+package: those two, and Ante and PiG through Nushi's own bridges, built on
+this library's agent side (turns with tool calls, permission requests, a
+reopen after a restart, `session/fork`, a rewind, a cancelled turn,
+steering).
 
 ## Versioning
 
