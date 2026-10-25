@@ -1,0 +1,2 @@
+# LF everywhere, on Windows too: the generated code is compared byte for byte.
+* text=auto eol=lf
