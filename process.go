@@ -9,9 +9,11 @@ import (
 )
 
 // Start runs an agent's command and speaks ACP to it over its stdin and
-// stdout, handing what the agent sends to client. cmd's Stdin and Stdout
-// must be unset; its Stderr is left as it is (nil discards the agent's
-// logs). On Unix the agent runs in a process group of its own, so Close
+// stdout. It calls newClient with the connection once the agent has
+// started, before reading anything, so the client can keep it to call the
+// agent; what the agent sends goes to the client it returns. cmd's Stdin
+// and Stdout must be unset; its Stderr is left as it is (nil discards the
+// agent's logs). On Unix the agent runs in a process group of its own, so Close
 // kills the processes it started too (an agent run through a launcher,
 // such as npx, is a child of the launcher).
 //
@@ -20,7 +22,7 @@ import (
 // left running may hold its stdout open). Done is closed once its process
 // has been waited for; cmd.ProcessState then says how it ended. If cmd's
 // WaitDelay is zero, Start sets it to a second.
-func Start(cmd *exec.Cmd, client Client, opts ...Option) (*AgentConn, error) {
+func Start(cmd *exec.Cmd, newClient func(*AgentConn) Client, opts ...Option) (*AgentConn, error) {
 	if cmd.Stdin != nil || cmd.Stdout != nil {
 		return nil, errors.New("acp: Start sets the command's stdin and stdout itself")
 	}
@@ -91,7 +93,7 @@ func Start(cmd *exec.Cmd, client Client, opts ...Option) (*AgentConn, error) {
 		close(waited)
 	}()
 	a.c.wait = func() { <-waited }
-	a.c.start(clientHandler(client))
+	a.c.start(clientHandler(newClient(a)))
 	return a, nil
 }
 

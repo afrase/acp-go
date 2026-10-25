@@ -39,7 +39,7 @@ func benchPair(b *testing.B, client acp.Client, agent *testAgent) *acp.AgentConn
 		b.Fatal(err)
 	}
 	agentSide := acp.NewClientConn(agentIn, agentOut, func(c *acp.ClientConn) acp.Agent { agent.client = c; return agent })
-	conn := acp.NewAgentConn(fromAgent, toAgent, client)
+	conn := acp.NewAgentConn(fromAgent, toAgent, func(*acp.AgentConn) acp.Client { return client })
 	b.Cleanup(func() {
 		_ = conn.Close()
 		<-conn.Done()

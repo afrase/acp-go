@@ -10,7 +10,9 @@ connects to an agent, and an agent (or a bridge to one) that serves a client.
 go get github.com/afrase/acp-go
 ```
 
-It needs Go 1.25 or later and imports only the standard library.
+It needs Go 1.25 or later and imports only the standard library. Coming from
+the TypeScript or Rust SDK: `AgentConn` is their `ClientSideConnection`, and
+`ClientConn` their `AgentSideConnection`.
 
 - **All of ACP v1**, generated from the [official schema](https://github.com/agentclientprotocol/agent-client-protocol)
   (release 1.26.0), with the schema's descriptions as the docs. The parts the
@@ -46,7 +48,7 @@ plainly with coder's (the most used) and caelis-labs' (the most complete):
 | Message size | no cap unless you set one | 10 MiB | 10 MiB by default, configurable |
 | `$/cancel_request` | both ways | both ways | both ways |
 | Running an agent | `Start`: its process group killed on Unix, the process alone on Windows | you start it | its process tree, on Unix and on Windows (job objects) |
-| Checked against | the TypeScript SDK both ways; acp-tck | its own tests | the TypeScript and Rust SDKs, four ways |
+| Checked against | the TypeScript SDK both ways; acp-tck | its own tests and examples, including a Gemini CLI client | the TypeScript and Rust SDKs, four ways |
 | Dependencies | none | none | `golang.org/x/sys` |
 
 caelis-labs' SDK is the most thorough of the others (its interop matrix,
@@ -75,7 +77,7 @@ func (c *client) RequestPermission(ctx context.Context, req *acp.RequestPermissi
 }
 
 func run(ctx context.Context) error {
-	agent, err := acp.Start(exec.Command("claude-agent-acp"), &client{})
+	agent, err := acp.Start(exec.Command("claude-agent-acp"), func(*acp.AgentConn) acp.Client { return &client{} })
 	if err != nil {
 		return err
 	}

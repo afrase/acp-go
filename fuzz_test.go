@@ -35,7 +35,7 @@ func FuzzStream(f *testing.F) {
 				return &acp.PromptResponse{StopReason: acp.StopReasonEndTurn}, nil
 			}}
 		})
-		clientSide := acp.NewAgentConn(bytes.NewReader(data), io.Discard, &testClient{})
+		clientSide := acp.NewAgentConn(bytes.NewReader(data), io.Discard, func(*acp.AgentConn) acp.Client { return &testClient{} })
 		<-agentSide.Done()
 		<-clientSide.Done()
 	})
