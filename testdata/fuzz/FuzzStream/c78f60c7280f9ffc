@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("{\"aaaa\xf1\xf1\xf1\xf1\xf1\xf1\xf1\xf1\":\"\",\"method\":\"_\"}")

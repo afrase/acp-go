@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("{\"jsonrpc\":\"2.0\",\"id\":4,\"method\":\"_vendor/thing\",\"params\":[1,a\"\":n{ull}]}\n")

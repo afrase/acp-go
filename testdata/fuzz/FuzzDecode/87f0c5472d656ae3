@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("{\"AgentCApABilities\":{\"sessionCApABilities\":{\"list\":{}}},\"AuthMethods\":[{},{}],\"_metA\":{\"\":{\"\":true}}}")

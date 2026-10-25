@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("{\"jsonrpc\":\"2.0\",rid\":1,\"er\"or\":{\"code\":-32601,\"messwg\x01\":\"Meth fonotod und\"}}\n")

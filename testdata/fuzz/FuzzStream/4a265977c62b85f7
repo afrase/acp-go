@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("B\x83\nA\n{0\xfc\n{0")

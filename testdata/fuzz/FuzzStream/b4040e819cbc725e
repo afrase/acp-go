@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("y\non\n[1.2]\n\"#\"\n{} \n28,,m)")

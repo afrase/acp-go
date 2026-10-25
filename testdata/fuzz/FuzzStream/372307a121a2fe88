@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("C12\n[!{Y*\n[B'#8")

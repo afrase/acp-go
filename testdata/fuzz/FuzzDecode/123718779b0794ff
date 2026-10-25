@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("{\"sessionId\":\"s\",\"mode\":\"form\",\"message\":\"m\",\"requestedSchemK\":{\"type\":\"object\",\"properties\":{\"z\":{\"type\":\"array\",\"items\":{\"anyOf\":[{\"const\":\"a\",\"title\":\"A\"}]}}}}}")

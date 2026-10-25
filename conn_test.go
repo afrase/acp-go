@@ -616,3 +616,16 @@ func TestAWithdrawnRequestIsAnsweredRequestCancelled(t *testing.T) {
 		t.Errorf("answered %v", m)
 	}
 }
+
+// Text goes on the wire as it is: no < for a "<".
+func TestTextGoesAsItIs(t *testing.T) {
+	agent := &testAgent{prompt: func(ctx context.Context, a *testAgent, _ *acp.PromptRequest) (*acp.PromptResponse, error) {
+		return &acp.PromptResponse{StopReason: acp.StopReasonEndTurn}, a.say(ctx, "<b>&</b>")
+	}}
+	r := rawClient(t, agent)
+	r.send(`{"jsonrpc":"2.0","id":1,"method":"session/prompt","params":{"sessionId":"s1","prompt":[]}}`)
+	if !r.sc.Scan() || !strings.Contains(r.sc.Text(), `"text":"<b>&</b>"`) {
+		t.Errorf("sent %s", r.sc.Text())
+	}
+	r.read() // the result
+}

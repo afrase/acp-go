@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("{\"id\":\"\",\"method\":\"&000000\"}\n{\"metho\"m:\"0\"}")

@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("B!\n!\nX\n%\n'\n0\nC%\n1bY\nz \nX\n%\n'\n0\nC\n$\n1b\xf3\nz\na\n#\nb\n)\n)\n00\n00\xf3\n0\xbd\n0\xbd\nc\xbe\nA\n0\xf3\n0\xbd\n0\xbe\n0\xbd\n2\xbe\nA\n0%)\n\xbe\xbd\n18")

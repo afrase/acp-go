@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("{\"action\":\"accept\",\"content\":{\"0\":[],\"1\":true,\"\":2,\"2\":\"\x95\"}}")

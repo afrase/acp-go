@@ -6,23 +6,45 @@ import (
 	"bytes"
 	"encoding/json"
 	"strconv"
+	"sync"
 	"unicode/utf8"
 )
 
-// encodeValue encodes v as compact JSON, without HTML escapes; nil for
-// null (params then go unsent).
-func encodeValue(v any) ([]byte, error) {
-	var b bytes.Buffer
-	enc := json.NewEncoder(&b)
-	enc.SetEscapeHTML(false)
-	if err := enc.Encode(v); err != nil {
+// encoder is a JSON encoder that doesn't escape HTML (<, >, & in a
+// prompt or a file go as they are), with its buffer.
+type encoder struct {
+	buf bytes.Buffer
+	enc *json.Encoder
+}
+
+var encoders = sync.Pool{New: func() any {
+	e := &encoder{}
+	e.enc = json.NewEncoder(&e.buf)
+	e.enc.SetEscapeHTML(false)
+	return e
+}}
+
+// marshal encodes v as compact JSON without HTML escapes, into a slice of
+// its own.
+func marshal(v any) ([]byte, error) {
+	e := encoders.Get().(*encoder) //nolint:forcetypeassert // the pool holds encoders
+	defer func() {
+		e.buf.Reset()
+		encoders.Put(e)
+	}()
+	if err := e.enc.Encode(v); err != nil {
 		return nil, err
 	}
-	out := bytes.TrimSuffix(b.Bytes(), []byte("\n"))
-	if bytes.Equal(out, []byte("null")) {
-		return nil, nil
+	return bytes.Clone(bytes.TrimSuffix(e.buf.Bytes(), []byte("\n"))), nil
+}
+
+// encodeValue is marshal, with nil for null (params then go unsent).
+func encodeValue(v any) ([]byte, error) {
+	b, err := marshal(v)
+	if err != nil || bytes.Equal(b, []byte("null")) {
+		return nil, err
 	}
-	return out, nil
+	return b, nil
 }
 
 // The messages, each a line ending in "\n".

@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("not jso\x83\n[1,2]\n\"s\"\n{}\n\xfc{\"id\":null,\"method\":\"_x\"}\n")

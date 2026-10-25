@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("{\"jsonrpc\":\"2.0\",\"id\x82\x82\x82\x82\x82\x82\x82\":1,\"res\x93\x93\x93\x93\x93\x93\x93\x93\x93\x93ult\":{\"stopReason\":\"end_turn\"}}\n")

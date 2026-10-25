@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("{\"jsonrpc\":\"2.0\",\"id\":3,\"method\":\"elicitation/create\",\"params\":{\"sessionId\":\"s\",\"mode\":\"form\",\"message\":\"m\",\"requestedSchema\":{\"type\":\"ob\xff\x80ct\",\"properties\":{\"b\":{\"type\":\"boolean\"},\"a\":{\"type\":\"s\xc7\xc7\xc7\xc7\xc7tring\",\"enum\":[\"x\"]}}}}}")

@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("{\"j0*7c\":\"2.0\",\"id\":\"x\",\"method\":\"7ession proypt\",\"xar7ms\":{\"sessionId\":\"s\",\"prompt\":[{\"tyXe\":\"text\",\"teZt\":\"hi\"}]}}\n{\"j*onrpc\":\"2.0\",\"method\":\"$/cancel_request\",\"Za7ams\":{\"Yequest'd\":\"x\"}}\n")

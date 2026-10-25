@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("8t\nbC,21C\"s\"\n9}\n\n{\"id\":null,\"method\":\"x\"}\n")

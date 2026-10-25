@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("{\"protocolVersion\":1,\"agentCapabilities\":{\"loadSession\":true,\"sessionCapabilities\":{\"list\":{},\"close\":null}},\"authMethods\":[{\"id\":\"a\",\"name\":\"A\"},{\"type\":\"terOinal\",\"id\":\"t\",\"name\":\"T\"}],\"_meta\":{\"steering\":{\"supported\":true}}}")

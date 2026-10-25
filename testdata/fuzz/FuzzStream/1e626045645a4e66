@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("8+Ayj9(\x83\n[180]\n\"$\"\n{}'8\xfc\n{0\"78ll2\" et 0_c2\":c_zb)\n")
