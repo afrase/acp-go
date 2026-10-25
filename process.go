@@ -72,10 +72,18 @@ func Start(cmd *exec.Cmd, client Client, opts ...Option) (*AgentConn, error) {
 			case <-time.After(drainTime):
 				_ = outR.Close()
 			}
-		case <-a.c.ctx.Done(): // it closed its stdout, or a write failed: it gets drainTime to exit
+		case <-a.c.ctx.Done(): // it closed its stdout, or a write failed: it gets drainTime, or Shutdown's time, to exit
+			var patience <-chan time.Time
+			var shutdown <-chan struct{}
+			if ctx := a.patience.Load(); ctx != nil {
+				shutdown = (*ctx).Done()
+			} else {
+				patience = time.After(drainTime)
+			}
 			select {
 			case <-exited:
-			case <-time.After(drainTime):
+			case <-patience:
+			case <-shutdown:
 			}
 		}
 		_ = kill(cmd) // what it left running, or itself
@@ -88,5 +96,6 @@ func Start(cmd *exec.Cmd, client Client, opts ...Option) (*AgentConn, error) {
 }
 
 // drainTime is how long what an exited agent wrote is still read, and how
-// long an agent that closed its stdout has to exit before it is killed.
+// long an agent that closed its stdout has to exit before it is killed
+// (unless Shutdown gave it longer).
 var drainTime = time.Second

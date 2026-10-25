@@ -3,6 +3,7 @@ package acp
 import (
 	"context"
 	"io"
+	"sync/atomic"
 )
 
 // AgentConn is a client's connection to an agent: its methods call the
@@ -16,6 +17,9 @@ import (
 // Cancel and let Prompt return with [StopReasonCancelled].
 type AgentConn struct {
 	c *conn
+	// patience, for an agent Start ran, is how long it may take to exit
+	// once its stdout has closed: drainTime, or a Shutdown's context.
+	patience atomic.Pointer[context.Context]
 }
 
 // NewAgentConn speaks ACP to an agent over r (what the agent writes) and w
@@ -64,7 +68,9 @@ func (a *AgentConn) Notify(ctx context.Context, method string, params any) error
 
 // Done is closed once the connection has ended and every handler it ran
 // has returned (and, for an agent [Start] ran, its process has been
-// waited for: cmd.ProcessState says how it ended).
+// waited for: cmd.ProcessState says how it ended). A call waiting when
+// the connection ends fails at once, with an error errors.Is finds
+// [ErrClosed] in, which may be before Done is closed.
 func (a *AgentConn) Done() <-chan struct{} { return a.c.done }
 
 // Err is why the connection ended, which errors.Is finds [ErrClosed] in,
@@ -82,10 +88,13 @@ func (a *AgentConn) Close() error {
 
 // Shutdown ends the connection gently: it closes the agent's input, which
 // an agent takes as the end (claude-agent-acp, for one, ends its turns and
-// sessions then), and waits for the agent to end its side. If ctx ends
-// first, it closes the connection as Close does and returns ctx's error.
-// Either way it returns once Done is closed.
+// sessions then), and waits for the agent to end its side (an agent
+// [Start] ran has until ctx ends to exit, rather than a second once its
+// stdout closed). If ctx ends first, it closes the connection as Close
+// does and returns ctx's error. Either way it returns once Done is
+// closed.
 func (a *AgentConn) Shutdown(ctx context.Context) error {
+	a.patience.Store(&ctx)
 	if cw, ok := a.c.w.(io.Closer); ok {
 		_ = cw.Close() // the agent sees its input end
 	}
