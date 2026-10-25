@@ -124,7 +124,7 @@ func writeLenientDecode(b *bytes.Buffer, d *def, recv string) {
 	}
 	fmt.Fprintf(b, "\t}\n\tv.plain = (*plain)(%s)\n\tif err := json.Unmarshal(b, &v); err != nil {\n\t\treturn err\n\t}\n", recv)
 	for _, f := range lenientFields(d.fields) {
-		if f.skipInvalid {
+		if f.skipInvalid && strings.HasPrefix(f.typ, "[]") {
 			fmt.Fprintf(b, "\tskipInvalid(v.%s, &%s.%s)\n", f.name, recv, f.name)
 		} else {
 			fmt.Fprintf(b, "\tlenient(v.%s, &%s.%s)\n", f.name, recv, f.name)
