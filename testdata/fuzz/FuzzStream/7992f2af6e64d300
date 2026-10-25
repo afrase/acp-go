@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("y\xbe\n.C.\n1 \xf3\na\xbd\nX\nA\xbe\n\xab\nx\xfe\xbe\n\xab\xbe\nC7\n1a\xf3\n2\xbd\n2\xbd\nC\xbe\n\xab\n19z2c10(0Zz\xf3\n8\xbd\nA\xbe\n\xab\n)")

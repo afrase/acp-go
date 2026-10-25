@@ -171,15 +171,19 @@ func genTagged(b *bytes.Buffer, m *model, d *def) {
 	fmt.Fprintf(b, "// MarshalJSON encodes the variant set, with its tag, as one object.\nfunc (x %s) MarshalJSON() ([]byte, error) {\n\ttype plain %s\n", d.name, d.name)
 	fmt.Fprintf(b, "\tif x.%s == \"\" && x.Other == nil {\n\t\ttag, n := x.which()\n\t\tif n != 1 {\n\t\t\treturn nil, variantError(%q, n)\n\t\t}\n\t\tx.%s = tag\n\t}\n", d.tagField, d.name, d.tagField)
 	fmt.Fprintf(b, "\tswitch x.%s {\n", d.tagField)
+	encode := func(payload string) string { return "marshalUnion(plain(x), " + payload + ")" }
+	if len(d.fields) == 0 && !slices.ContainsFunc(d.vars, func(v *variant) bool { return v.def }) {
+		encode = func(payload string) string { return fmt.Sprintf("marshalTagged(%q, x.%s, %s)", d.tag, d.tagField, payload) }
+	}
 	for _, v := range d.vars {
 		if v.def {
 			continue
 		}
 		fmt.Fprintf(b, "\tcase %q:\n", v.tag)
 		if v.typ == "bool" {
-			b.WriteString("\t\treturn marshalUnion(plain(x), nil)\n")
+			b.WriteString("\t\treturn " + encode("nil") + "\n")
 		} else {
-			fmt.Fprintf(b, "\t\tif x.%s == nil {\n\t\t\treturn nil, missingVariant(%q, %q)\n\t\t}\n\t\treturn marshalUnion(plain(x), x.%s)\n", v.name, d.name, v.tag, v.name)
+			fmt.Fprintf(b, "\t\tif x.%s == nil {\n\t\t\treturn nil, missingVariant(%q, %q)\n\t\t}\n\t\treturn %s\n", v.name, d.name, v.tag, encode("x."+v.name))
 		}
 	}
 	b.WriteString("\t}\n\tif x.Other != nil {\n\t\treturn x.Other, nil\n\t}\n")

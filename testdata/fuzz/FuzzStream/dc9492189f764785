@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("{\"id\":\"7\",\"method\":\"session/prompt\",\"params\":{\"pr\xe6\xe6ompt\":[]}}\n\"Xҥ1߫")

@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("A\nB\n[A\nA\nA\n[A\n[A\n[A\nA\nB\n[A\n[B\nY\nA\n[A\nA\n[A\nA\nB\nZ\n[A\nA\nA")

@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("{\"sessionId\":\"s\",\"update\":{\"sessionUpdate\":\"session_info_update\",\"ti\xed\xed\xed\xed\xed\xed\xed\xedl,&updatedAt\":\"2026-01-01T00:00:00Z\"}}")

@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("{\"jsonrpc\":\"2.0\",\"id\":\"x\",\"method\":\"session/prompt\",\"params\":{\"sessionId\":\"s\",\x18\x18\x18\x18\x18\x18\x18\":[{\"type\":\"text\",\"text\":\"hi\"}]}}\n{\"jsonrpc\":\"2.0\",\"method\":\"$/cancel_request\",\"params\":{\"requestId\":\"x\"}}\n")

@@ -141,27 +141,38 @@ func skipInvalid[T any](raw json.RawMessage, dst *[]T) {
 // marshalUnion encodes a union's tag and the fields beside it (head), and
 // its variant's fields (payload, nil for none) as one object.
 func marshalUnion(head, payload any) ([]byte, error) {
-	h, err := json.Marshal(head)
+	h, err := marshal(head)
 	if err != nil {
 		return nil, err
 	}
+	return appendPayload(h[:len(h)-1], payload, len(h) > 2)
+}
+
+// marshalTagged encodes a union with nothing beside its tag: the tag, then
+// its variant's fields (payload, nil for none).
+func marshalTagged(key, value string, payload any) ([]byte, error) {
+	b := make([]byte, 0, 64)
+	b = append(appendString(append(b, '{'), key), ':')
+	return appendPayload(appendString(b, value), payload, true)
+}
+
+// appendPayload ends the object b (its fields so far, without the closing
+// brace; comma says whether there are any) with payload's fields.
+func appendPayload(b []byte, payload any, comma bool) ([]byte, error) {
 	if payload == nil {
-		return h, nil
+		return append(b, '}'), nil
 	}
-	p, err := json.Marshal(payload)
+	p, err := marshal(payload)
 	if err != nil {
 		return nil, err
 	}
-	switch {
-	case len(p) <= 2: // {}
-		return h, nil
-	case len(h) <= 2:
-		return p, nil
+	if len(p) <= 2 { // {}
+		return append(b, '}'), nil
 	}
-	out := make([]byte, 0, len(h)+len(p))
-	out = append(out, h[:len(h)-1]...)
-	out = append(out, ',')
-	return append(out, p[1:]...), nil
+	if comma {
+		b = append(b, ',')
+	}
+	return append(b, p[1:]...), nil
 }
 
 func variantError(union string, n int) error {

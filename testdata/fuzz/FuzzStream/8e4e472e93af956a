@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("{\"id\":\"\",\"method\":\"\xe6\xe6\xe6\xe6\xe6欬\xac\xac\xac\xe6\"}\n{\"metethhod\":\"0\"}")

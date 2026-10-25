@@ -1224,27 +1224,27 @@ func (x ContentBlock) MarshalJSON() ([]byte, error) {
 		if x.Text == nil {
 			return nil, missingVariant("ContentBlock", "text")
 		}
-		return marshalUnion(plain(x), x.Text)
+		return marshalTagged("type", x.Type, x.Text)
 	case "image":
 		if x.Image == nil {
 			return nil, missingVariant("ContentBlock", "image")
 		}
-		return marshalUnion(plain(x), x.Image)
+		return marshalTagged("type", x.Type, x.Image)
 	case "audio":
 		if x.Audio == nil {
 			return nil, missingVariant("ContentBlock", "audio")
 		}
-		return marshalUnion(plain(x), x.Audio)
+		return marshalTagged("type", x.Type, x.Audio)
 	case "resource_link":
 		if x.ResourceLink == nil {
 			return nil, missingVariant("ContentBlock", "resource_link")
 		}
-		return marshalUnion(plain(x), x.ResourceLink)
+		return marshalTagged("type", x.Type, x.ResourceLink)
 	case "resource":
 		if x.Resource == nil {
 			return nil, missingVariant("ContentBlock", "resource")
 		}
-		return marshalUnion(plain(x), x.Resource)
+		return marshalTagged("type", x.Type, x.Resource)
 	}
 	if x.Other != nil {
 		return x.Other, nil
@@ -2019,27 +2019,27 @@ func (x ElicitationPropertySchema) MarshalJSON() ([]byte, error) {
 		if x.String == nil {
 			return nil, missingVariant("ElicitationPropertySchema", "string")
 		}
-		return marshalUnion(plain(x), x.String)
+		return marshalTagged("type", x.Type, x.String)
 	case "number":
 		if x.Number == nil {
 			return nil, missingVariant("ElicitationPropertySchema", "number")
 		}
-		return marshalUnion(plain(x), x.Number)
+		return marshalTagged("type", x.Type, x.Number)
 	case "integer":
 		if x.Integer == nil {
 			return nil, missingVariant("ElicitationPropertySchema", "integer")
 		}
-		return marshalUnion(plain(x), x.Integer)
+		return marshalTagged("type", x.Type, x.Integer)
 	case "boolean":
 		if x.Boolean == nil {
 			return nil, missingVariant("ElicitationPropertySchema", "boolean")
 		}
-		return marshalUnion(plain(x), x.Boolean)
+		return marshalTagged("type", x.Type, x.Boolean)
 	case "array":
 		if x.Array == nil {
 			return nil, missingVariant("ElicitationPropertySchema", "array")
 		}
-		return marshalUnion(plain(x), x.Array)
+		return marshalTagged("type", x.Type, x.Array)
 	}
 	if x.Other != nil {
 		return x.Other, nil
@@ -4326,12 +4326,12 @@ func (x RequestPermissionOutcome) MarshalJSON() ([]byte, error) {
 	}
 	switch x.Outcome {
 	case "cancelled":
-		return marshalUnion(plain(x), nil)
+		return marshalTagged("outcome", x.Outcome, nil)
 	case "selected":
 		if x.Selected == nil {
 			return nil, missingVariant("RequestPermissionOutcome", "selected")
 		}
-		return marshalUnion(plain(x), x.Selected)
+		return marshalTagged("outcome", x.Outcome, x.Selected)
 	}
 	if x.Other != nil {
 		return x.Other, nil
@@ -5528,72 +5528,72 @@ func (x SessionUpdate) MarshalJSON() ([]byte, error) {
 		if x.UserMessageChunk == nil {
 			return nil, missingVariant("SessionUpdate", "user_message_chunk")
 		}
-		return marshalUnion(plain(x), x.UserMessageChunk)
+		return marshalTagged("sessionUpdate", x.SessionUpdate, x.UserMessageChunk)
 	case "agent_message_chunk":
 		if x.AgentMessageChunk == nil {
 			return nil, missingVariant("SessionUpdate", "agent_message_chunk")
 		}
-		return marshalUnion(plain(x), x.AgentMessageChunk)
+		return marshalTagged("sessionUpdate", x.SessionUpdate, x.AgentMessageChunk)
 	case "agent_thought_chunk":
 		if x.AgentThoughtChunk == nil {
 			return nil, missingVariant("SessionUpdate", "agent_thought_chunk")
 		}
-		return marshalUnion(plain(x), x.AgentThoughtChunk)
+		return marshalTagged("sessionUpdate", x.SessionUpdate, x.AgentThoughtChunk)
 	case "tool_call":
 		if x.ToolCall == nil {
 			return nil, missingVariant("SessionUpdate", "tool_call")
 		}
-		return marshalUnion(plain(x), x.ToolCall)
+		return marshalTagged("sessionUpdate", x.SessionUpdate, x.ToolCall)
 	case "tool_call_update":
 		if x.ToolCallUpdate == nil {
 			return nil, missingVariant("SessionUpdate", "tool_call_update")
 		}
-		return marshalUnion(plain(x), x.ToolCallUpdate)
+		return marshalTagged("sessionUpdate", x.SessionUpdate, x.ToolCallUpdate)
 	case "plan":
 		if x.Plan == nil {
 			return nil, missingVariant("SessionUpdate", "plan")
 		}
-		return marshalUnion(plain(x), x.Plan)
+		return marshalTagged("sessionUpdate", x.SessionUpdate, x.Plan)
 	case "available_commands_update":
 		if x.AvailableCommandsUpdate == nil {
 			return nil, missingVariant("SessionUpdate", "available_commands_update")
 		}
-		return marshalUnion(plain(x), x.AvailableCommandsUpdate)
+		return marshalTagged("sessionUpdate", x.SessionUpdate, x.AvailableCommandsUpdate)
 	case "current_mode_update":
 		if x.CurrentModeUpdate == nil {
 			return nil, missingVariant("SessionUpdate", "current_mode_update")
 		}
-		return marshalUnion(plain(x), x.CurrentModeUpdate)
+		return marshalTagged("sessionUpdate", x.SessionUpdate, x.CurrentModeUpdate)
 	case "config_option_update":
 		if x.ConfigOptionUpdate == nil {
 			return nil, missingVariant("SessionUpdate", "config_option_update")
 		}
-		return marshalUnion(plain(x), x.ConfigOptionUpdate)
+		return marshalTagged("sessionUpdate", x.SessionUpdate, x.ConfigOptionUpdate)
 	case "session_info_update":
 		if x.SessionInfoUpdate == nil {
 			return nil, missingVariant("SessionUpdate", "session_info_update")
 		}
-		return marshalUnion(plain(x), x.SessionInfoUpdate)
+		return marshalTagged("sessionUpdate", x.SessionUpdate, x.SessionInfoUpdate)
 	case "usage_update":
 		if x.UsageUpdate == nil {
 			return nil, missingVariant("SessionUpdate", "usage_update")
 		}
-		return marshalUnion(plain(x), x.UsageUpdate)
+		return marshalTagged("sessionUpdate", x.SessionUpdate, x.UsageUpdate)
 	case "notice":
 		if x.Notice == nil {
 			return nil, missingVariant("SessionUpdate", "notice")
 		}
-		return marshalUnion(plain(x), x.Notice)
+		return marshalTagged("sessionUpdate", x.SessionUpdate, x.Notice)
 	case "compaction_update":
 		if x.CompactionUpdate == nil {
 			return nil, missingVariant("SessionUpdate", "compaction_update")
 		}
-		return marshalUnion(plain(x), x.CompactionUpdate)
+		return marshalTagged("sessionUpdate", x.SessionUpdate, x.CompactionUpdate)
 	case "compaction_summary_chunk":
 		if x.CompactionSummaryChunk == nil {
 			return nil, missingVariant("SessionUpdate", "compaction_summary_chunk")
 		}
-		return marshalUnion(plain(x), x.CompactionSummaryChunk)
+		return marshalTagged("sessionUpdate", x.SessionUpdate, x.CompactionSummaryChunk)
 	}
 	if x.Other != nil {
 		return x.Other, nil
@@ -6436,17 +6436,17 @@ func (x ToolCallContent) MarshalJSON() ([]byte, error) {
 		if x.Content == nil {
 			return nil, missingVariant("ToolCallContent", "content")
 		}
-		return marshalUnion(plain(x), x.Content)
+		return marshalTagged("type", x.Type, x.Content)
 	case "diff":
 		if x.Diff == nil {
 			return nil, missingVariant("ToolCallContent", "diff")
 		}
-		return marshalUnion(plain(x), x.Diff)
+		return marshalTagged("type", x.Type, x.Diff)
 	case "terminal":
 		if x.Terminal == nil {
 			return nil, missingVariant("ToolCallContent", "terminal")
 		}
-		return marshalUnion(plain(x), x.Terminal)
+		return marshalTagged("type", x.Type, x.Terminal)
 	}
 	if x.Other != nil {
 		return x.Other, nil

@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":-32601,\"messag\x01\":\"Method not found\"}}\n")

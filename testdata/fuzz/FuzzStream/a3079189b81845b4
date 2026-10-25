@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("0\xbe=Te\xa9~\xbb>;p9\n0\n0\n0\n0\n{\"i]\":null,\"method\":\"0\"}")

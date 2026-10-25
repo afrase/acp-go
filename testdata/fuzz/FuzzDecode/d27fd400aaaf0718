@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("{\"sessionId\":\"0\",\"updAte\":{\"sessionUpdAte\":\"config_option_update\",\"ConfigOptions\":[{\"id\":\"000000\",\"tYpe\":\"select\",\"CurrentVAlue\":\"0\",\"\":[{\"\":\"00\"}]}]}}")

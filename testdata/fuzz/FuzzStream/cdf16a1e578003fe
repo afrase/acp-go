@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("00\n[no\n01\nA\nA\n[n0\n{\"\":n0")

@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("{\"sessionId\":\"s\",\"prompt\":[{\"type\":\"resource\",\"resource\":{\"uri\":\"file:///a\",\"text\":\"t\"}},{\"type\":\"image\",\"data\":\"AA==\",\"mimeType\":\"image/pngId\":\"s\"\"}]}")

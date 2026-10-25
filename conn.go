@@ -40,6 +40,7 @@ type conn struct {
 
 	ctx        context.Context //nolint:containedctx // the connection's lifetime: handlers' contexts derive from it
 	cancel     context.CancelFunc
+	notifyCtx  context.Context //nolint:containedctx // ctx, marked as a notification handler's
 	writes     chan writeReq // to the writing goroutine
 	writerDone chan struct{}
 
@@ -68,6 +69,7 @@ func newConn(r io.Reader, w io.Writer, closeFn func(cause error) error, opts opt
 		done: make(chan struct{}),
 	}
 	c.ctx, c.cancel = context.WithCancel(context.Background())
+	c.notifyCtx = context.WithValue(c.ctx, notificationKey{}, c)
 	return c
 }
 
@@ -265,8 +267,7 @@ func (c *conn) withdrawn(params json.RawMessage) {
 // goroutine: notifications are handled in order, and nothing more is read
 // until the handler returns.
 func (c *conn) notified(f frame) {
-	ctx := context.WithValue(c.ctx, notificationKey{}, c)
-	err := c.safeNotify(ctx, f.Method, f.Params)
+	err := c.safeNotify(c.notifyCtx, f.Method, f.Params)
 	switch {
 	case errors.Is(err, errUnknownNotification):
 		c.log.Debug("acp: notification ignored", "rpc", f.Method)
@@ -425,16 +426,19 @@ func (c *conn) write(ctx context.Context, msg []byte) (handed bool, err error) {
 	if limit := c.opts.writeLimit; limit > 0 && len(msg)-1 > limit {
 		return false, fmt.Errorf("%w: %d bytes, over the write limit of %d", ErrTooLarge, len(msg)-1, limit)
 	}
-	w := writeReq{msg: msg, done: make(chan error, 1)}
+	w := writeReq{msg: msg, done: doneChans.Get().(chan error)} //nolint:forcetypeassert // the pool holds channels
 	select {
 	case c.writes <- w:
 	case <-ctx.Done():
+		doneChans.Put(w.done)
 		return false, ctx.Err()
 	case <-c.ctx.Done():
+		doneChans.Put(w.done)
 		return false, c.Err()
 	}
 	select {
 	case err := <-w.done:
+		doneChans.Put(w.done) // empty again
 		return true, err
 	case <-ctx.Done():
 		return true, ctx.Err()
@@ -445,8 +449,12 @@ func (c *conn) write(ctx context.Context, msg []byte) (handed bool, err error) {
 
 type writeReq struct {
 	msg  []byte
-	done chan error
+	done chan error // buffered: the writer never waits on it
 }
+
+// doneChans are writeReq.done channels to reuse; one whose write a caller
+// stopped waiting for isn't put back.
+var doneChans = sync.Pool{New: func() any { return make(chan error, 1) }}
 
 // writer writes the messages handed to it, one at a time, until the
 // connection ends.

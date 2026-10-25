@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("{\"ܶ\xb6\xb6ض\xb6\xb6\xd8\xc4\xc4\xdc\":\"ضĶ\xd8\"}")

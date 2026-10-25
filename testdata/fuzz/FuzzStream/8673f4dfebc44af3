@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("00\n[no\n[no\n[o\nA\n[0o\nno\nA\nB\n[01\n1\"9")

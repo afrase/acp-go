@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("{\"id\":\"\x8f\",\"method\":\"session/prompt\",\"PArAms\":{\"prompt\":[{\"tYpe\":\"text\",\"teXt\":\"00\"}]}}\n{\"method\":\"00\"}")

@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("n2BYc\nX\n2)A\n{}A\n{\"AY\":nu&lYy!c\n")
