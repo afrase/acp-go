@@ -12,13 +12,13 @@ import (
 // Check fails t, when it ends, if a goroutine of this module's code that
 // wasn't running when Check was called is still running (after waiting up
 // to five seconds for it to end).
-func Check(t testing.TB) {
-	t.Helper()
+func Check(tb testing.TB) {
+	tb.Helper()
 	before := map[string]bool{}
 	for _, g := range goroutines() {
 		before[g.id] = true
 	}
-	t.Cleanup(func() {
+	tb.Cleanup(func() {
 		deadline := time.Now().Add(5 * time.Second)
 		for {
 			var left []string
@@ -31,7 +31,7 @@ func Check(t testing.TB) {
 				return
 			}
 			if time.Now().After(deadline) {
-				t.Errorf("%d goroutines left running:\n\n%s", len(left), strings.Join(left, "\n\n"))
+				tb.Errorf("%d goroutines left running:\n\n%s", len(left), strings.Join(left, "\n\n"))
 				return
 			}
 			time.Sleep(10 * time.Millisecond)

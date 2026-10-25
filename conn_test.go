@@ -133,6 +133,7 @@ func connect(t *testing.T, client acp.Client, agent *testAgent, opts ...acp.Opti
 }
 
 func ctxFor(t *testing.T) context.Context {
+	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	t.Cleanup(cancel)
 	return ctx
@@ -183,7 +184,7 @@ func TestNoSizeCapByDefault(t *testing.T) {
 		t.Fatal(err)
 	}
 	if got := client.texts(); len(got) != 1 || len(got[0]) != len(huge) {
-		t.Errorf("the echo lost its size")
+		t.Error("the echo lost its size")
 	}
 }
 
@@ -309,7 +310,7 @@ func TestTheAgentWithdrawsAQuestion(t *testing.T) {
 }
 
 func TestStartPromptThenCancel(t *testing.T) {
-	agent := &testAgent{prompt: func(ctx context.Context, a *testAgent, req *acp.PromptRequest) (*acp.PromptResponse, error) {
+	agent := &testAgent{prompt: func(ctx context.Context, a *testAgent, _ *acp.PromptRequest) (*acp.PromptResponse, error) {
 		for {
 			a.mu.Lock()
 			n := len(a.cancelled)
@@ -598,8 +599,12 @@ func TestBadInputIsAnsweredAsJSONRPCSays(t *testing.T) {
 	if m := r.read(); code(m) != -32602 || m["id"] != "a" {
 		t.Errorf("bad params: %v", m)
 	}
+	r.send(`{"jsonrpc":"2.0","id":"b","method":"session/new","params":{"mcpServers":[]}}`)
+	if m := r.read(); code(m) != -32602 || m["id"] != "b" {
+		t.Errorf("no cwd: %v", m)
+	}
 	r.send(`{"jsonrpc":"2.0","id":7,"method":"session/new","params":{"cwd":"/","mcpServers":[]}}`)
-	if m := r.read(); m["id"] != float64(7) || m["result"].(map[string]any)["sessionId"] != "s1" { //nolint:forcetypeassert // the test fails on a panic too
+	if m := r.read(); m["id"] != float64(7) || m["result"].(map[string]any)["sessionId"] != "s1" {
 		t.Errorf("a good request after the bad ones: %v", m)
 	}
 }

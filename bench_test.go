@@ -96,7 +96,7 @@ func BenchmarkCall(b *testing.B) {
 }
 
 func BenchmarkDecodeUpdate(b *testing.B) {
-	in := []byte(`{"sessionId":"s1","update":{"sessionUpdate":"agent_message_chunk","messageId":"m1","content":{"type":"text","text":"token token token token token token token token token token "}}}`)
+	in := []byte(`{"sessionId":"s1","update":{"sessionUpdate":"agent_message_chunk","messageId":"m1","content":{"type":"text","text":"a chunk of a model's reply, as it streams to the client"}}}`)
 	b.SetBytes(int64(len(in)))
 	b.ReportAllocs()
 	for b.Loop() {

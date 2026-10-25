@@ -14,6 +14,7 @@ type method struct {
 	side      string // who handles it: "agent" or "client"
 	req, resp string // Go types; resp is "" for a notification
 	doc       string
+	required  []string // the request's required properties
 }
 
 func (m method) notification() bool { return m.resp == "" }
@@ -46,6 +47,7 @@ func methods(md *model, meta []byte) ([]method, error) {
 		}
 		mt.req = goName(n)
 		mt.doc = docs[n]
+		mt.required = x.Required
 		mt.name = strings.TrimSuffix(strings.TrimSuffix(mt.req, "Request"), "Notification")
 		if mt.req == "SessionNotification" {
 			mt.name = "SessionUpdate"
@@ -95,87 +97,101 @@ func methodDocs(s *schema) map[string]string {
 	return docs
 }
 
+// side is the Agent or the Client: the interface for the methods it
+// handles, and the connection the other side calls them on.
+type side struct{ name, conn, doc, other string }
+
 // genMethods writes the Agent and Client interfaces, their Unimplemented
 // types, the dispatch of incoming messages to them, and the calls each
 // connection makes.
 func genMethods(b *bytes.Buffer, md *model, ms []method) {
 	docs := methodDocs(md.s)
-	for _, side := range []struct{ name, conn, doc string }{
-		{"Agent", "AgentConn", agentDoc},
-		{"Client", "ClientConn", clientDoc},
+	for _, sd := range []side{
+		{"Agent", "AgentConn", agentDoc, "agent's"},
+		{"Client", "ClientConn", clientDoc, "client's"},
 	} {
-		lower := strings.ToLower(side.name)
 		var mine []method
 		for _, m := range ms {
-			if m.side == lower {
+			if strings.EqualFold(m.side, sd.name) {
 				mine = append(mine, m)
 			}
 		}
-		// The interface.
-		b.WriteString(side.doc)
-		fmt.Fprintf(b, "type %s interface {\n", side.name)
-		for _, m := range mine {
-			md.comment(b, "\t", m.doc, "")
-			if m.notification() {
-				fmt.Fprintf(b, "\t%s(ctx context.Context, n *%s) error\n", m.name, m.req)
-			} else {
-				fmt.Fprintf(b, "\t%s(ctx context.Context, req *%s) (*%s, error)\n", m.name, m.req, m.resp)
-			}
-		}
-		md.comment(b, "\t", docs["ExtMethodRequest"]+extMethodNote, "")
-		b.WriteString("\tExtMethod(ctx context.Context, method string, params json.RawMessage) (any, error)\n")
-		md.comment(b, "\t", docs["ExtNotification"]+extNotificationNote, "")
-		b.WriteString("\tExtNotification(ctx context.Context, method string, params json.RawMessage) error\n")
-		fmt.Fprintf(b, "\tmustEmbedUnimplemented%s()\n}\n\n", side.name)
+		genInterface(b, md, sd, mine, docs)
+		genUnimplemented(b, sd, mine)
+		genDispatch(b, sd, mine)
+		genCalls(b, sd, mine)
+	}
+}
 
-		// Unimplemented.
-		fmt.Fprintf(b, "// Unimplemented%s answers every request with ACP's \"Method not found\"\n// error and ignores every notification. Embed it in a %s: the methods\n// you write replace its, and a method a later release of this package\n// adds is answered for you.\ntype Unimplemented%s struct{}\n\n", side.name, side.name, side.name)
-		for _, m := range mine {
-			fmt.Fprintf(b, "// %s answers %s", m.name, m.wire)
-			if m.notification() {
-				fmt.Fprintf(b, " by ignoring it.\nfunc (Unimplemented%s) %s(context.Context, *%s) error { return nil }\n\n", side.name, m.name, m.req)
-			} else {
-				fmt.Fprintf(b, " with \"Method not found\".\nfunc (Unimplemented%s) %s(context.Context, *%s) (*%s, error) {\n\treturn nil, methodNotFound(%q)\n}\n\n", side.name, m.name, m.req, m.resp, m.wire)
-			}
+func genInterface(b *bytes.Buffer, md *model, sd side, mine []method, docs map[string]string) {
+	b.WriteString(sd.doc)
+	fmt.Fprintf(b, "type %s interface {\n", sd.name)
+	for _, m := range mine {
+		md.comment(b, "\t", m.doc, "")
+		if m.notification() {
+			fmt.Fprintf(b, "\t%s(ctx context.Context, n *%s) error\n", m.name, m.req)
+		} else {
+			fmt.Fprintf(b, "\t%s(ctx context.Context, req *%s) (*%s, error)\n", m.name, m.req, m.resp)
 		}
-		fmt.Fprintf(b, "// ExtMethod answers with \"Method not found\".\nfunc (Unimplemented%s) ExtMethod(_ context.Context, method string, _ json.RawMessage) (any, error) {\n\treturn nil, methodNotFound(method)\n}\n\n", side.name)
-		fmt.Fprintf(b, "// ExtNotification ignores the notification.\nfunc (Unimplemented%s) ExtNotification(context.Context, string, json.RawMessage) error { return nil }\n\n", side.name)
-		fmt.Fprintf(b, "func (Unimplemented%s) mustEmbedUnimplemented%s() {}\n\n", side.name, side.name)
+	}
+	md.comment(b, "\t", docs["ExtMethodRequest"]+extMethodNote, "")
+	b.WriteString("\tExtMethod(ctx context.Context, method string, params json.RawMessage) (any, error)\n")
+	md.comment(b, "\t", docs["ExtNotification"]+extNotificationNote, "")
+	b.WriteString("\tExtNotification(ctx context.Context, method string, params json.RawMessage) error\n")
+	fmt.Fprintf(b, "\tmustEmbedUnimplemented%s()\n}\n\n", sd.name)
+}
 
-		// Dispatch.
-		fmt.Fprintf(b, "// %sHandler routes the messages for a %s to its methods.\nfunc %sHandler(x %s) handler {\n\treturn handler{\n", lower, side.name, lower, side.name)
-		b.WriteString("\t\trequest: func(ctx context.Context, method string, params json.RawMessage) (any, error) {\n\t\t\tswitch method {\n")
-		for _, m := range mine {
-			if m.notification() {
-				continue
-			}
-			fmt.Fprintf(b, "\t\t\tcase %q:\n\t\t\t\tvar req %s\n\t\t\t\tif err := decodeParams(params, &req); err != nil {\n\t\t\t\t\treturn nil, err\n\t\t\t\t}\n", m.wire, m.req)
-			fmt.Fprintf(b, "\t\t\t\tresp, err := x.%s(ctx, &req)\n\t\t\t\tif err != nil {\n\t\t\t\t\treturn nil, err\n\t\t\t\t}\n\t\t\t\tif resp == nil {\n\t\t\t\t\tresp = new(%s)\n\t\t\t\t}\n\t\t\t\treturn resp, nil\n", m.name, m.resp)
+func genUnimplemented(b *bytes.Buffer, sd side, mine []method) {
+	fmt.Fprintf(b, "// Unimplemented%s answers every request with ACP's \"Method not found\"\n// error and ignores every notification. Embed it in a %s: the methods\n// you write replace its, and a method a later release of this package\n// adds is answered for you.\ntype Unimplemented%s struct{}\n\n", sd.name, sd.name, sd.name)
+	for _, m := range mine {
+		fmt.Fprintf(b, "// %s answers %s", m.name, m.wire)
+		if m.notification() {
+			fmt.Fprintf(b, " by ignoring it.\nfunc (Unimplemented%s) %s(context.Context, *%s) error { return nil }\n\n", sd.name, m.name, m.req)
+		} else {
+			fmt.Fprintf(b, " with \"Method not found\".\nfunc (Unimplemented%s) %s(context.Context, *%s) (*%s, error) {\n\treturn nil, methodNotFound(%q)\n}\n\n", sd.name, m.name, m.req, m.resp, m.wire)
 		}
-		b.WriteString("\t\t\t}\n\t\t\tif isExtension(method) {\n\t\t\t\treturn x.ExtMethod(ctx, method, params)\n\t\t\t}\n\t\t\treturn nil, methodNotFound(method)\n\t\t},\n")
-		b.WriteString("\t\tnotify: func(ctx context.Context, method string, params json.RawMessage) error {\n\t\t\tswitch method {\n")
-		for _, m := range mine {
-			if !m.notification() {
-				continue
-			}
+	}
+	fmt.Fprintf(b, "// ExtMethod answers with \"Method not found\".\nfunc (Unimplemented%s) ExtMethod(_ context.Context, method string, _ json.RawMessage) (any, error) {\n\treturn nil, methodNotFound(method)\n}\n\n", sd.name)
+	fmt.Fprintf(b, "// ExtNotification ignores the notification.\nfunc (Unimplemented%s) ExtNotification(context.Context, string, json.RawMessage) error { return nil }\n\n", sd.name)
+	fmt.Fprintf(b, "func (Unimplemented%s) mustEmbedUnimplemented%s() {}\n\n", sd.name, sd.name)
+}
+
+func genDispatch(b *bytes.Buffer, sd side, mine []method) {
+	lower := strings.ToLower(sd.name)
+	fmt.Fprintf(b, "// %sHandler routes the messages for a %s to its methods.\nfunc %sHandler(x %s) handler {\n\treturn handler{\n", lower, sd.name, lower, sd.name)
+	b.WriteString("\t\trequest: func(ctx context.Context, method string, params json.RawMessage) (any, error) {\n\t\t\tswitch method {\n")
+	for _, m := range mine {
+		if m.notification() {
+			continue
+		}
+		var args strings.Builder
+		for _, r := range m.required {
+			fmt.Fprintf(&args, ", %q", r)
+		}
+		fmt.Fprintf(b, "\t\t\tcase %q:\n\t\t\t\tvar req %s\n\t\t\t\tif err := decodeParams(params, &req%s); err != nil {\n\t\t\t\t\treturn nil, err\n\t\t\t\t}\n", m.wire, m.req, args.String())
+		fmt.Fprintf(b, "\t\t\t\tresp, err := x.%s(ctx, &req)\n\t\t\t\tif err != nil {\n\t\t\t\t\treturn nil, err\n\t\t\t\t}\n\t\t\t\tif resp == nil {\n\t\t\t\t\tresp = new(%s)\n\t\t\t\t}\n\t\t\t\treturn resp, nil\n", m.name, m.resp)
+	}
+	b.WriteString("\t\t\t}\n\t\t\tif isExtension(method) {\n\t\t\t\treturn x.ExtMethod(ctx, method, params)\n\t\t\t}\n\t\t\treturn nil, methodNotFound(method)\n\t\t},\n")
+	b.WriteString("\t\tnotify: func(ctx context.Context, method string, params json.RawMessage) error {\n\t\t\tswitch method {\n")
+	for _, m := range mine {
+		if m.notification() {
 			fmt.Fprintf(b, "\t\t\tcase %q:\n\t\t\t\tvar n %s\n\t\t\t\tif err := decodeParams(params, &n); err != nil {\n\t\t\t\t\treturn err\n\t\t\t\t}\n\t\t\t\treturn x.%s(ctx, &n)\n", m.wire, m.req, m.name)
 		}
-		b.WriteString("\t\t\t}\n\t\t\tif isExtension(method) {\n\t\t\t\treturn x.ExtNotification(ctx, method, params)\n\t\t\t}\n\t\t\treturn errUnknownNotification\n\t\t},\n\t}\n}\n\n")
+	}
+	b.WriteString("\t\t\t}\n\t\t\tif isExtension(method) {\n\t\t\t\treturn x.ExtNotification(ctx, method, params)\n\t\t\t}\n\t\t\treturn errUnknownNotification\n\t\t},\n\t}\n}\n\n")
+}
 
-		// The other side's calls.
-		other := "agent's"
-		if side.name == "Client" {
-			other = "client's"
+// genCalls writes the other side's calls of sd's methods, on its
+// connection.
+func genCalls(b *bytes.Buffer, sd side, mine []method) {
+	for _, m := range mine {
+		if m.notification() {
+			fmt.Fprintf(b, "// %s sends the %s notification: see [%s.%s].\n", m.name, m.wire, sd.name, m.name)
+			fmt.Fprintf(b, "func (c *%s) %s(ctx context.Context, n *%s) error {\n\treturn c.c.notify(ctx, %q, n)\n}\n\n", sd.conn, m.name, m.req, m.wire)
+			continue
 		}
-		for _, m := range mine {
-			if m.notification() {
-				fmt.Fprintf(b, "// %s sends the %s notification: see [%s.%s].\n", m.name, m.wire, side.name, m.name)
-				fmt.Fprintf(b, "func (c *%s) %s(ctx context.Context, n *%s) error {\n\treturn c.c.notify(ctx, %q, n)\n}\n\n", side.conn, m.name, m.req, m.wire)
-				continue
-			}
-			fmt.Fprintf(b, "// %s calls the %s %s: see [%s.%s].\n", m.name, other, m.wire, side.name, m.name)
-			fmt.Fprintf(b, "func (c *%s) %s(ctx context.Context, req *%s) (*%s, error) {\n\tresp := new(%s)\n\tif err := c.c.call(ctx, %q, req, resp); err != nil {\n\t\treturn nil, err\n\t}\n\treturn resp, nil\n}\n\n", side.conn, m.name, m.req, m.resp, m.resp, m.wire)
-		}
+		fmt.Fprintf(b, "// %s calls the %s %s: see [%s.%s].\n", m.name, sd.other, m.wire, sd.name, m.name)
+		fmt.Fprintf(b, "func (c *%s) %s(ctx context.Context, req *%s) (*%s, error) {\n\tresp := new(%s)\n\tif err := c.c.call(ctx, %q, req, resp); err != nil {\n\t\treturn nil, err\n\t}\n\treturn resp, nil\n}\n\n", sd.conn, m.name, m.req, m.resp, m.resp, m.wire)
 	}
 }
 

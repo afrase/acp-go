@@ -105,7 +105,8 @@ func Example_client() {
 	ctx := context.Background()
 	client := &printer{}
 
-	// conn, err := acp.Start(exec.Command("claude-agent-acp"), client)
+	// Start runs a real agent's command (claude-agent-acp, codex-acp, ...);
+	// here the agent runs in this process.
 	agentIn, toAgent, agentOut, toClient := pipes()
 	agentSide := acp.NewClientConn(agentIn, toClient, func(c *acp.ClientConn) acp.Agent { return &echoAgent{client: c} })
 	conn := acp.NewAgentConn(agentOut, toAgent, client)

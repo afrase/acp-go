@@ -264,7 +264,7 @@ func agentHandler(x Agent) handler {
 			switch method {
 			case "initialize":
 				var req InitializeRequest
-				if err := decodeParams(params, &req); err != nil {
+				if err := decodeParams(params, &req, "protocolVersion"); err != nil {
 					return nil, err
 				}
 				resp, err := x.Initialize(ctx, &req)
@@ -277,7 +277,7 @@ func agentHandler(x Agent) handler {
 				return resp, nil
 			case "authenticate":
 				var req AuthenticateRequest
-				if err := decodeParams(params, &req); err != nil {
+				if err := decodeParams(params, &req, "methodId"); err != nil {
 					return nil, err
 				}
 				resp, err := x.Authenticate(ctx, &req)
@@ -290,7 +290,7 @@ func agentHandler(x Agent) handler {
 				return resp, nil
 			case "session/new":
 				var req NewSessionRequest
-				if err := decodeParams(params, &req); err != nil {
+				if err := decodeParams(params, &req, "cwd", "mcpServers"); err != nil {
 					return nil, err
 				}
 				resp, err := x.NewSession(ctx, &req)
@@ -303,7 +303,7 @@ func agentHandler(x Agent) handler {
 				return resp, nil
 			case "session/load":
 				var req LoadSessionRequest
-				if err := decodeParams(params, &req); err != nil {
+				if err := decodeParams(params, &req, "mcpServers", "cwd", "sessionId"); err != nil {
 					return nil, err
 				}
 				resp, err := x.LoadSession(ctx, &req)
@@ -316,7 +316,7 @@ func agentHandler(x Agent) handler {
 				return resp, nil
 			case "session/set_mode":
 				var req SetSessionModeRequest
-				if err := decodeParams(params, &req); err != nil {
+				if err := decodeParams(params, &req, "sessionId", "modeId"); err != nil {
 					return nil, err
 				}
 				resp, err := x.SetSessionMode(ctx, &req)
@@ -329,7 +329,7 @@ func agentHandler(x Agent) handler {
 				return resp, nil
 			case "session/set_config_option":
 				var req SetSessionConfigOptionRequest
-				if err := decodeParams(params, &req); err != nil {
+				if err := decodeParams(params, &req, "sessionId", "configId"); err != nil {
 					return nil, err
 				}
 				resp, err := x.SetSessionConfigOption(ctx, &req)
@@ -342,7 +342,7 @@ func agentHandler(x Agent) handler {
 				return resp, nil
 			case "session/prompt":
 				var req PromptRequest
-				if err := decodeParams(params, &req); err != nil {
+				if err := decodeParams(params, &req, "sessionId", "prompt"); err != nil {
 					return nil, err
 				}
 				resp, err := x.Prompt(ctx, &req)
@@ -368,7 +368,7 @@ func agentHandler(x Agent) handler {
 				return resp, nil
 			case "session/delete":
 				var req DeleteSessionRequest
-				if err := decodeParams(params, &req); err != nil {
+				if err := decodeParams(params, &req, "sessionId"); err != nil {
 					return nil, err
 				}
 				resp, err := x.DeleteSession(ctx, &req)
@@ -381,7 +381,7 @@ func agentHandler(x Agent) handler {
 				return resp, nil
 			case "session/resume":
 				var req ResumeSessionRequest
-				if err := decodeParams(params, &req); err != nil {
+				if err := decodeParams(params, &req, "sessionId", "cwd"); err != nil {
 					return nil, err
 				}
 				resp, err := x.ResumeSession(ctx, &req)
@@ -394,7 +394,7 @@ func agentHandler(x Agent) handler {
 				return resp, nil
 			case "session/close":
 				var req CloseSessionRequest
-				if err := decodeParams(params, &req); err != nil {
+				if err := decodeParams(params, &req, "sessionId"); err != nil {
 					return nil, err
 				}
 				resp, err := x.CloseSession(ctx, &req)
@@ -790,7 +790,7 @@ func clientHandler(x Client) handler {
 			switch method {
 			case "session/request_permission":
 				var req RequestPermissionRequest
-				if err := decodeParams(params, &req); err != nil {
+				if err := decodeParams(params, &req, "sessionId", "toolCall", "options"); err != nil {
 					return nil, err
 				}
 				resp, err := x.RequestPermission(ctx, &req)
@@ -803,7 +803,7 @@ func clientHandler(x Client) handler {
 				return resp, nil
 			case "fs/write_text_file":
 				var req WriteTextFileRequest
-				if err := decodeParams(params, &req); err != nil {
+				if err := decodeParams(params, &req, "sessionId", "path", "content"); err != nil {
 					return nil, err
 				}
 				resp, err := x.WriteTextFile(ctx, &req)
@@ -816,7 +816,7 @@ func clientHandler(x Client) handler {
 				return resp, nil
 			case "fs/read_text_file":
 				var req ReadTextFileRequest
-				if err := decodeParams(params, &req); err != nil {
+				if err := decodeParams(params, &req, "sessionId", "path"); err != nil {
 					return nil, err
 				}
 				resp, err := x.ReadTextFile(ctx, &req)
@@ -829,7 +829,7 @@ func clientHandler(x Client) handler {
 				return resp, nil
 			case "terminal/create":
 				var req CreateTerminalRequest
-				if err := decodeParams(params, &req); err != nil {
+				if err := decodeParams(params, &req, "sessionId", "command"); err != nil {
 					return nil, err
 				}
 				resp, err := x.CreateTerminal(ctx, &req)
@@ -842,7 +842,7 @@ func clientHandler(x Client) handler {
 				return resp, nil
 			case "terminal/output":
 				var req TerminalOutputRequest
-				if err := decodeParams(params, &req); err != nil {
+				if err := decodeParams(params, &req, "sessionId", "terminalId"); err != nil {
 					return nil, err
 				}
 				resp, err := x.TerminalOutput(ctx, &req)
@@ -855,7 +855,7 @@ func clientHandler(x Client) handler {
 				return resp, nil
 			case "terminal/release":
 				var req ReleaseTerminalRequest
-				if err := decodeParams(params, &req); err != nil {
+				if err := decodeParams(params, &req, "sessionId", "terminalId"); err != nil {
 					return nil, err
 				}
 				resp, err := x.ReleaseTerminal(ctx, &req)
@@ -868,7 +868,7 @@ func clientHandler(x Client) handler {
 				return resp, nil
 			case "terminal/wait_for_exit":
 				var req WaitForTerminalExitRequest
-				if err := decodeParams(params, &req); err != nil {
+				if err := decodeParams(params, &req, "sessionId", "terminalId"); err != nil {
 					return nil, err
 				}
 				resp, err := x.WaitForTerminalExit(ctx, &req)
@@ -881,7 +881,7 @@ func clientHandler(x Client) handler {
 				return resp, nil
 			case "terminal/kill":
 				var req KillTerminalRequest
-				if err := decodeParams(params, &req); err != nil {
+				if err := decodeParams(params, &req, "sessionId", "terminalId"); err != nil {
 					return nil, err
 				}
 				resp, err := x.KillTerminal(ctx, &req)
@@ -894,7 +894,7 @@ func clientHandler(x Client) handler {
 				return resp, nil
 			case "elicitation/create":
 				var req CreateElicitationRequest
-				if err := decodeParams(params, &req); err != nil {
+				if err := decodeParams(params, &req, "message"); err != nil {
 					return nil, err
 				}
 				resp, err := x.CreateElicitation(ctx, &req)
