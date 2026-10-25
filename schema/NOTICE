@@ -1,0 +1,6 @@
+The files in this folder (schema.json, schema.unstable.json, meta.json,
+meta.unstable.json) are ACP's schema, release 1.26.0, from
+https://github.com/agentclientprotocol/agent-client-protocol
+(tag schema-v1.26.0, commit e2d83349bc9e28a4059ea3acefa1c91c966f74e2),
+under the Apache License 2.0 in LICENSE beside them. The doc comments of
+the generated Go code are the schema's descriptions.
