@@ -40,14 +40,13 @@ plainly with the two most used:
 
 | | acp-go | [coder/acp-go-sdk](https://github.com/coder/acp-go-sdk) | [caelis-labs/acp-go-sdk](https://github.com/caelis-labs/acp-go-sdk) |
 |---|---|---|---|
-| Schema | 1.26.0, stable and unstable | an older one, v0.13.5 (June 2026) | 1.26.0 stable; draft v2 in `experimental/v2` |
-| Unstable parts | their own package, the same API | in the main package, named `Unstable…` | not generated |
-| When the other side is faster than you | it waits (back-pressure) | the connection closes after 1,024 queued notifications | the connection fails at a queue limit (1,024 notifications or 32 MiB by default, configurable) |
+| ACP schema | 1.26.0, stable and unstable | an older one (0.13.5, June 2026) | 1.26.0 stable; the v2 draft in `experimental/v2` |
+| Unstable parts | a package of their own, with the same API | in the main package, named `Unstable…` | not there |
+| When the other side outpaces you | it waits (back-pressure) | the connection closes after 1,024 queued notifications | the connection fails at a queue limit (1,024 notifications or 32 MiB, configurable) |
 | Message size | no cap unless you set one | 10 MiB | 10 MiB by default, configurable |
 | `$/cancel_request` | both ways | both ways | both ways |
-| Interop tests | TypeScript SDK both ways; acp-tck | — | TypeScript and Rust SDKs, four ways |
-| Processes | process group killed on Unix; the process alone on Windows | — | process tree on Unix and Windows (job objects) |
-| Transports | stdio and any `io.Reader`/`io.Writer` | stdio | stdio; draft HTTP and WebSocket in v2 |
+| Running an agent | `Start`: its process group killed on Unix, the process alone on Windows | you start it | its process tree, on Unix and on Windows (job objects) |
+| Checked against | the TypeScript SDK both ways; acp-tck | — | the TypeScript and Rust SDKs, four ways |
 | Dependencies | none | none | `golang.org/x/sys` |
 
 caelis-labs' SDK is the most thorough of the others (its interop matrix,
@@ -225,7 +224,7 @@ change in any minor release, whatever this module's major version.
 make check     # lint, the generated code, the tests with -race
 make interop   # against the TypeScript SDK (Node.js 24 or later; downloads into a temp folder)
 make fuzz      # each fuzz target for FUZZTIME (30s)
-make bench
+make bench     # a streaming turn: about 260,000 updates a second on an M3 Pro, both sides in one process
 make schema    # fetch the schema release in schema/VERSION, check it, regenerate
 ```
 

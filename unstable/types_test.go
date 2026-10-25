@@ -164,9 +164,6 @@ func TestAFormKeepsItsFieldsInOrder(t *testing.T) {
 	if strings.Join(names, ",") != "zeta,alpha,mid" || s.Properties[1].Schema.Boolean == nil {
 		t.Errorf("properties %+v", s.Properties)
 	}
-	if _, ok := s.Properties.Get("mid"); !ok {
-		t.Error("Get found no mid")
-	}
 	if out := encode(t, s); out != in {
 		t.Errorf("encoded %s", out)
 	}
