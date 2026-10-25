@@ -34,7 +34,7 @@ func TestForkAndUsage(t *testing.T) {
 	toAgentR, toAgentW := io.Pipe()
 	toClientR, toClientW := io.Pipe()
 	agentSide := acp.NewClientConn(toAgentR, toClientW, func(*acp.ClientConn) acp.Agent { return forkingAgent{} })
-	conn := acp.NewAgentConn(toClientR, toAgentW, struct{ acp.UnimplementedClient }{})
+	conn := acp.NewAgentConn(toClientR, toAgentW, func(*acp.AgentConn) acp.Client { return struct{ acp.UnimplementedClient }{} })
 	t.Cleanup(func() {
 		_ = conn.Close()
 		<-conn.Done()

@@ -25,16 +25,13 @@ type AgentConn struct {
 }
 
 // NewAgentConn speaks ACP to an agent over r (what the agent writes) and w
-// (what it reads), and hands what the agent sends to client. It starts
-// reading at once. Close closes r and w, those that are io.Closers; to
-// run an agent's command, use [Start].
-func NewAgentConn(r io.Reader, w io.Writer, client Client, opts ...Option) *AgentConn {
-	return newAgentConn(r, w, closeBoth(r, w), client, newOptions(opts))
-}
-
-func newAgentConn(r io.Reader, w io.Writer, closeFn func(error) error, client Client, o options) *AgentConn {
-	a := &AgentConn{c: newConn(r, w, closeFn, o)}
-	a.c.start(clientHandler(client))
+// (what it reads). It calls newClient with the connection, before reading
+// anything, so the client can keep it to call the agent; what the agent
+// sends goes to the client it returns. Close closes r and w, those that
+// are io.Closers; to run an agent's command, use [Start].
+func NewAgentConn(r io.Reader, w io.Writer, newClient func(*AgentConn) Client, opts ...Option) *AgentConn {
+	a := &AgentConn{c: newConn(r, w, closeBoth(r, w), newOptions(opts))}
+	a.c.start(clientHandler(newClient(a)))
 	return a
 }
 

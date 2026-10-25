@@ -159,7 +159,7 @@ func startTSAgent(t *testing.T, c *client) *acp.AgentConn {
 	cmd := exec.Command("node", "agent.ts")
 	cmd.Dir = work
 	cmd.Stderr = os.Stderr
-	conn, err := acp.Start(cmd, c)
+	conn, err := acp.Start(cmd, func(*acp.AgentConn) acp.Client { return c })
 	if err != nil {
 		t.Fatal(err)
 	}

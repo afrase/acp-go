@@ -46,7 +46,7 @@ func Example() {
 	toAgentR, toAgentW := io.Pipe()
 	toClientR, toClientW := io.Pipe()
 	agentSide := acp.NewClientConn(toAgentR, toClientW, func(*acp.ClientConn) acp.Agent { return a })
-	conn := acp.NewAgentConn(toClientR, toAgentW, struct{ acp.UnimplementedClient }{})
+	conn := acp.NewAgentConn(toClientR, toAgentW, func(*acp.AgentConn) acp.Client { return struct{ acp.UnimplementedClient }{} })
 	defer func() { _ = conn.Close(); <-agentSide.Done() }()
 
 	init, err := conn.Initialize(ctx, &acp.InitializeRequest{ProtocolVersion: acp.LatestProtocolVersion})

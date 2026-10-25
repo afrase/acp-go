@@ -14,7 +14,8 @@
 // with [NewAgentConn]) and calls it through the [AgentConn]: Initialize,
 // NewSession, Prompt. What the agent sends back (session/update
 // notifications, permission requests, file reads) goes to the [Client]
-// it was given, which embeds [UnimplementedClient] for what it doesn't do.
+// its factory returns, called with the connection so the client can keep
+// it; the Client embeds [UnimplementedClient] for what it doesn't do.
 //
 // # An agent
 //

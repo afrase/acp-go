@@ -103,7 +103,7 @@ func run(ctx context.Context, command []string, prompt, cwd, load string, list b
 	}
 	cmd := exec.CommandContext(ctx, command[0], command[1:]...) //nolint:gosec // the agent the user names
 	cmd.Stderr = os.Stderr
-	agent, err := acp.Start(cmd, c)
+	agent, err := acp.Start(cmd, func(*acp.AgentConn) acp.Client { return c })
 	if err != nil {
 		return err
 	}

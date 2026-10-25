@@ -4,6 +4,17 @@ This module follows semantic versioning; see the README's Versioning
 section for what that covers. Each release names the release of ACP's
 schema it follows.
 
+## v0.2.0 (2026-10-25)
+
+ACP schema 1.26.0 (protocol version 1).
+
+- **Breaking:** `NewAgentConn` and `Start` (and `unstable`'s) take a factory,
+  `func(*AgentConn) Client`, rather than a `Client`, as `NewClientConn`
+  already did and as the TypeScript SDK's `ClientSideConnection` does. It is
+  called with the connection before anything is read, so a client can keep
+  it without a race. To migrate, wrap the client:
+  `acp.Start(cmd, func(*acp.AgentConn) acp.Client { return client })`.
+
 ## v0.1.0 (2026-10-25)
 
 ACP schema 1.26.0 (protocol version 1).

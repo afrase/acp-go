@@ -124,7 +124,7 @@ func connect(t *testing.T, client acp.Client, agent *testAgent, opts ...acp.Opti
 		agent.client = c
 		return agent
 	})
-	cc := acp.NewAgentConn(toClientR, toAgentW, client, opts...)
+	cc := acp.NewAgentConn(toClientR, toAgentW, func(*acp.AgentConn) acp.Client { return client }, opts...)
 	t.Cleanup(func() {
 		_ = cc.Close()
 		_ = ac.Close()
@@ -139,6 +139,38 @@ func ctxFor(t *testing.T) context.Context {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	t.Cleanup(cancel)
 	return ctx
+}
+
+// keepingClient keeps the connection NewAgentConn gives it, and says
+// which connection it had when the agent's first message came.
+type keepingClient struct {
+	acp.UnimplementedClient
+	conn *acp.AgentConn
+	seen chan *acp.AgentConn
+}
+
+func (c *keepingClient) SessionUpdate(context.Context, *acp.SessionNotification) error {
+	c.seen <- c.conn
+	return nil
+}
+
+func TestTheClientHasItsConnectionBeforeTheAgentSpeaks(t *testing.T) {
+	leaktest.Check(t)
+	update := `{"jsonrpc":"2.0","method":"session/update","params":{"sessionId":"s","update":{"sessionUpdate":"agent_message_chunk","content":{"type":"text","text":"hi"}}}}` + "\n"
+	c := &keepingClient{seen: make(chan *acp.AgentConn, 1)}
+	conn := acp.NewAgentConn(strings.NewReader(update), io.Discard, func(a *acp.AgentConn) acp.Client {
+		c.conn = a
+		return c
+	})
+	<-conn.Done()
+	select {
+	case got := <-c.seen:
+		if got != conn {
+			t.Fatalf("the client had %p when the agent spoke, want %p", got, conn)
+		}
+	default:
+		t.Fatal("the update didn't reach the client")
+	}
 }
 
 func TestATurnsUpdatesArriveBeforeItsResult(t *testing.T) {

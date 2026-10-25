@@ -63,7 +63,7 @@ func startTestAgent(t *testing.T, client acp.Client, env ...string) (*acp.AgentC
 	// GORACE: -race would wait a second as the agent exits.
 	cmd.Env = append(append(os.Environ(), "ACPGO_TEST_AGENT=1", "GORACE=atexit_sleep_ms=0"), env...)
 	cmd.Stderr = os.Stderr
-	conn, err := acp.Start(cmd, client)
+	conn, err := acp.Start(cmd, func(*acp.AgentConn) acp.Client { return client })
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -130,10 +130,10 @@ func TestAnAgentThatExits(t *testing.T) {
 func TestStartRefusesWhatItCant(t *testing.T) {
 	cmd := exec.Command("true")
 	cmd.Stdout = os.Stdout
-	if _, err := acp.Start(cmd, &testClient{}); err == nil {
+	if _, err := acp.Start(cmd, func(*acp.AgentConn) acp.Client { return &testClient{} }); err == nil {
 		t.Error("Start took a command with its own stdout")
 	}
-	if _, err := acp.Start(exec.Command("/no/such/agent"), &testClient{}); !errors.Is(err, fs.ErrNotExist) && !errors.Is(err, exec.ErrNotFound) { // Unix, Windows
+	if _, err := acp.Start(exec.Command("/no/such/agent"), func(*acp.AgentConn) acp.Client { return &testClient{} }); !errors.Is(err, fs.ErrNotExist) && !errors.Is(err, exec.ErrNotFound) { // Unix, Windows
 		t.Errorf("a missing agent: %v", err)
 	}
 }

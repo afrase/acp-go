@@ -84,7 +84,7 @@ func Example_agent() {
 
 	// A client, to see it work.
 	client := &printer{}
-	agent := acp.NewAgentConn(fromAgent, toAgent, client)
+	agent := acp.NewAgentConn(fromAgent, toAgent, func(*acp.AgentConn) acp.Client { return client })
 	ctx := context.Background()
 	if _, err := agent.Initialize(ctx, &acp.InitializeRequest{ProtocolVersion: acp.LatestProtocolVersion}); err != nil {
 		panic(err)
@@ -109,7 +109,7 @@ func Example_client() {
 	// here the agent runs in this process.
 	agentIn, toAgent, agentOut, toClient := pipes()
 	agentSide := acp.NewClientConn(agentIn, toClient, func(c *acp.ClientConn) acp.Agent { return &echoAgent{client: c} })
-	conn := acp.NewAgentConn(agentOut, toAgent, client)
+	conn := acp.NewAgentConn(agentOut, toAgent, func(*acp.AgentConn) acp.Client { return client })
 	defer func() {
 		_ = conn.Shutdown(ctx) // conn.Close() kills it at once
 		<-agentSide.Done()
