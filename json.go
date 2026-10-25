@@ -49,16 +49,6 @@ type ElicitationProperty struct {
 	Schema ElicitationPropertySchema
 }
 
-// Get returns the schema of the field named name.
-func (p ElicitationProperties) Get(name string) (ElicitationPropertySchema, bool) {
-	for _, f := range p {
-		if f.Name == name {
-			return f.Schema, true
-		}
-	}
-	return ElicitationPropertySchema{}, false
-}
-
 // MarshalJSON encodes the fields as an object, in order.
 func (p ElicitationProperties) MarshalJSON() ([]byte, error) {
 	b := []byte{'{'}
