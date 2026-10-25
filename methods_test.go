@@ -1,0 +1,69 @@
+package acp_test
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"reflect"
+	"strings"
+	"testing"
+
+	"github.com/afrase/acp-go"
+)
+
+// seeds are requests whose zero value has a union with no variant set.
+var seeds = map[string]string{
+	"SetSessionConfigOptionRequest": `{"sessionId":"s","configId":"c","value":"v"}`,
+	"CreateElicitationRequest":      `{"message":"m","mode":"url","elicitationId":"e","url":"https://example.com"}`,
+	"SessionNotification":           `{"sessionId":"s","update":{"sessionUpdate":"plan","entries":[]}}`,
+}
+
+// Every method of each connection reaches the other side's method of the
+// same name: each request is answered "Method not found" by the
+// Unimplemented side, which says which method it got.
+func TestEveryMethodIsRouted(t *testing.T) {
+	agentConn, clientConn := connect(t, struct{ acp.UnimplementedClient }{}, &testAgent{})
+	// The test agent answers a few itself; the rest are UnimplementedAgent's.
+	answered := map[string]bool{"Initialize": true, "NewSession": true, "Prompt": true}
+	ctx := ctxFor(t)
+	for _, conn := range []any{agentConn, clientConn} {
+		v := reflect.ValueOf(conn)
+		for i := range v.NumMethod() {
+			m := v.Type().Method(i)
+			ft := m.Type
+			if ft.NumIn() != 3 || ft.In(1) != reflect.TypeFor[context.Context]() || ft.In(2).Kind() != reflect.Pointer || m.Name == "StartPrompt" {
+				continue // Call, Notify, Close and the like
+			}
+			req := reflect.New(ft.In(2).Elem())
+			if seed, ok := seeds[ft.In(2).Elem().Name()]; ok { // a zero union can't be sent
+				if err := json.Unmarshal([]byte(seed), req.Interface()); err != nil {
+					t.Fatal(err)
+				}
+			}
+			out := v.Method(i).Call([]reflect.Value{reflect.ValueOf(ctx), req})
+			errv := out[len(out)-1]
+			if ft.NumOut() == 1 { // a notification
+				if !errv.IsNil() {
+					t.Errorf("%T.%s: %v", conn, m.Name, errv.Interface())
+				}
+				continue
+			}
+			if answered[m.Name] && v.Type() == reflect.TypeOf(agentConn) {
+				continue
+			}
+			var e *acp.Error
+			err, _ := reflect.TypeAssert[error](errv)
+			if !errors.As(err, &e) || e.Code != acp.ErrorCodeMethodNotFound {
+				t.Errorf("%T.%s: %v", conn, m.Name, err)
+				continue
+			}
+			var data struct {
+				Method string `json:"method"`
+			}
+			_ = json.Unmarshal(e.Data, &data)
+			if !strings.HasPrefix(err.Error(), data.Method+": ") {
+				t.Errorf("%T.%s called %q, which reached %q", conn, m.Name, err, data.Method)
+			}
+		}
+	}
+}

@@ -557,10 +557,15 @@ func (r *raw) read() map[string]any {
 // rawClient serves agent to a raw client.
 func rawClient(t *testing.T, agent *testAgent) *raw {
 	t.Helper()
+	return rawClientWith(t, agent)
+}
+
+func rawClientWith(t *testing.T, agent *testAgent, opts ...acp.Option) *raw {
+	t.Helper()
 	leaktest.Check(t)
 	toAgentR, toAgentW := io.Pipe()
 	toClientR, toClientW := io.Pipe()
-	c := acp.NewClientConn(toAgentR, toClientW, func(c *acp.ClientConn) acp.Agent { agent.client = c; return agent })
+	c := acp.NewClientConn(toAgentR, toClientW, func(c *acp.ClientConn) acp.Agent { agent.client = c; return agent }, opts...)
 	t.Cleanup(func() {
 		_ = toAgentW.Close()
 		go func() { _, _ = io.Copy(io.Discard, toClientR) }()
