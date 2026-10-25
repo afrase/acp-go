@@ -30,8 +30,9 @@ type handler struct {
 // the reading, and the other side's writes, down (back-pressure); its
 // requests are each handled on a goroutine of their own, after every
 // notification that came before them; a response is delivered once every
-// notification before it was handled. Writes take turns and wait as long as
-// the other side doesn't read, or until their context ends.
+// notification before it was handled. Messages are written one at a time
+// by the writing goroutine; a caller waits while the other side doesn't
+// read, until its context ends.
 type conn struct {
 	r     io.Reader
 	w     io.Writer
@@ -63,7 +64,7 @@ type response struct {
 	err    *Error
 }
 
-// newConn makes a connection and starts reading from r.
+// newConn makes a connection, which start sets going.
 func newConn(r io.Reader, w io.Writer, closeFn func(cause error) error, opts options) *conn {
 	c := &conn{
 		r: r, w: w, close: closeFn, opts: opts, log: opts.logger(),
