@@ -1,0 +1,63 @@
+//go:build unix
+
+package acp_test
+
+import (
+	"context"
+	"io"
+	"os"
+	"strings"
+	"syscall"
+	"testing"
+	"time"
+
+	"github.com/afrase/acp-go"
+	"github.com/afrase/acp-go/internal/leaktest"
+)
+
+// blockingPipe is a pipe in blocking mode, as an agent's stdin and stdout
+// usually are (os.Pipe's can be interrupted).
+func blockingPipe(t *testing.T) (r, w *os.File) {
+	t.Helper()
+	var fds [2]int
+	if err := syscall.Pipe(fds[:]); err != nil {
+		t.Fatal(err)
+	}
+	r, w = os.NewFile(uintptr(fds[0]), "r"), os.NewFile(uintptr(fds[1]), "w")
+	t.Cleanup(func() {
+		_ = r.Close()
+		_ = w.Close()
+	})
+	return r, w
+}
+
+// Close ends an agent's connection on blocking stdio though the client
+// keeps it open and is silent (the read waits), or doesn't read (a write
+// waits).
+func TestCloseOnBlockingStdio(t *testing.T) {
+	for _, stuck := range []string{"read", "write"} {
+		t.Run(stuck, func(t *testing.T) {
+			leaktest.Check(t)
+			stdin, client := blockingPipe(t)
+			unread, stdout := blockingPipe(t)
+			agent := &testAgent{}
+			conn := acp.NewClientConn(stdin, stdout, func(c *acp.ClientConn) acp.Agent { agent.client = c; return agent })
+			if stuck == "write" {
+				go func() { _ = agent.say(context.Background(), strings.Repeat("w", 1<<20)) }() // more than the pipe holds
+			}
+			time.Sleep(50 * time.Millisecond) // the read, or the write, waits
+			_ = conn.Close()
+			select {
+			case <-conn.Done():
+			case <-time.After(5 * time.Second):
+				_ = client.Close() // lets the test end
+				go func() { _, _ = io.Copy(io.Discard, unread) }()
+				<-conn.Done()
+				t.Fatal("Done was still open 5s after Close")
+			}
+			if _, err := client.WriteString("x"); err == nil {
+				t.Error("the agent's stdin is still open")
+			}
+		})
+	}
+}

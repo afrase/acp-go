@@ -20,6 +20,7 @@ import (
 	"os/exec"
 	"os/signal"
 	"strings"
+	"time"
 
 	"github.com/afrase/acp-go"
 )
@@ -108,7 +109,11 @@ func run(ctx context.Context, command []string, prompt, cwd, load string, list b
 		return err
 	}
 	defer func() {
-		_ = agent.Shutdown(ctx)
+		// The agent has five seconds to end its turns and exit; one that
+		// doesn't is killed.
+		sctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+		defer cancel()
+		_ = agent.Shutdown(sctx)
 	}()
 	init, err := agent.Initialize(ctx, &acp.InitializeRequest{
 		ProtocolVersion: acp.LatestProtocolVersion,

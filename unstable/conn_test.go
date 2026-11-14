@@ -8,6 +8,8 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"net"
+	"runtime"
 	"strings"
 	"sync"
 	"testing"
@@ -235,11 +237,70 @@ func TestLimits(t *testing.T) {
 	if _, err := agentConn.NewSession(ctx, &acp.NewSessionRequest{Cwd: "/"}); err != nil {
 		t.Fatalf("the connection didn't go on: %v", err)
 	}
-	// The agent's update is over the read limit: the connection ends.
-	_, err = agentConn.Prompt(ctx, &acp.PromptRequest{SessionID: "s1", Prompt: []acp.ContentBlock{{Text: &acp.TextContent{Text: "go"}}}})
-	<-agentConn.Done()
-	if !errors.Is(err, acp.ErrClosed) || !errors.Is(agentConn.Err(), acp.ErrTooLarge) {
-		t.Errorf("a message over the read limit: %v; the connection ended with %v", err, agentConn.Err())
+	// The agent's update is over the read limit: it is dropped, and the
+	// connection goes on.
+	resp, err := agentConn.Prompt(ctx, &acp.PromptRequest{SessionID: "s1", Prompt: []acp.ContentBlock{{Text: &acp.TextContent{Text: "go"}}}})
+	if err != nil || resp.StopReason != acp.StopReasonEndTurn {
+		t.Errorf("a turn with an update over the read limit: %+v, %v", resp, err)
+	}
+	// The agent's answer is over the read limit: the call fails.
+	agent.ext = func(context.Context, string, json.RawMessage) (any, error) { return strings.Repeat("r", 5000), nil }
+	if err := agentConn.Call(ctx, "_big", nil, nil); !errors.Is(err, acp.ErrTooLarge) {
+		t.Errorf("an answer over the read limit: %v", err)
+	}
+	if _, err := agentConn.NewSession(ctx, &acp.NewSessionRequest{Cwd: "/"}); err != nil {
+		t.Fatalf("the connection didn't go on: %v", err)
+	}
+}
+
+// A request over the read limit is answered with an error by its id, and
+// the connection goes on.
+func TestARequestOverTheReadLimit(t *testing.T) {
+	r := rawClientWith(t, &testAgent{}, acp.WithReadLimit(1000))
+	r.send(`{"jsonrpc":"2.0","id":"big","method":"session/prompt","params":{"sessionId":"s1","prompt":[{"type":"text","text":"` + strings.Repeat("a", 200<<10) + `"}]}}`) // more than the reading buffer
+	if m := r.read(); code(m) != -32600 || m["id"] != "big" {
+		t.Errorf("a request over the read limit: %v", m)
+	}
+	r.send(`{"jsonrpc":"2.0","method":"session/cancel","params":{"sessionId":"s1","x":"` + strings.Repeat("a", 2000) + `"}}`) // dropped
+	r.send(`{"jsonrpc":"2.0","id":2,"method":"session/new","params":{"cwd":"/","mcpServers":[]}}`)
+	if m := r.read(); m["id"] != float64(2) || m["result"] == nil {
+		t.Errorf("the request after: %v", m)
+	}
+}
+
+// bigClient answers an extension's call with more than a write limit of
+// 200 lets through.
+type bigClient struct{ testClient }
+
+func (*bigClient) ExtMethod(context.Context, string, json.RawMessage) (any, error) {
+	return map[string]string{"text": strings.Repeat("b", 1000)}, nil
+}
+
+// A response over the write limit is answered with an error in its place:
+// the other side's call doesn't wait forever.
+func TestAResponseOverTheWriteLimit(t *testing.T) {
+	_, agentSide := connect(t, &bigClient{}, &testAgent{}, acp.WithWriteLimit(200))
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	var e *acp.Error
+	if err := agentSide.Call(ctx, "_big", nil, nil); !errors.As(err, &e) || e.Code != acp.ErrorCodeInternalError || !strings.Contains(e.Message, "write limit") {
+		t.Errorf("the call: %v", err)
+	}
+}
+
+// A handler that returns a nil *acp.Error as its error (a non-nil error)
+// is answered with an internal error, not a line that isn't JSON.
+func TestANilErrorFromAHandler(t *testing.T) {
+	nilError := func() *acp.Error { return nil }
+	agent := &testAgent{prompt: func(context.Context, *testAgent, *acp.PromptRequest) (*acp.PromptResponse, error) {
+		return &acp.PromptResponse{StopReason: acp.StopReasonEndTurn}, nilError()
+	}}
+	agentConn, _ := connect(t, &testClient{}, agent)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	var e *acp.Error
+	if _, err := agentConn.Prompt(ctx, &acp.PromptRequest{SessionID: "s1"}); !errors.As(err, &e) || e.Code != acp.ErrorCodeInternalError {
+		t.Errorf("the prompt: %v", err)
 	}
 }
 
@@ -343,23 +404,143 @@ func TestTheAgentWithdrawsAQuestion(t *testing.T) {
 	}
 }
 
-func TestStartPromptThenCancel(t *testing.T) {
-	agent := &testAgent{prompt: func(ctx context.Context, a *testAgent, _ *acp.PromptRequest) (*acp.PromptResponse, error) {
-		for {
-			a.mu.Lock()
-			n := len(a.cancelled)
-			a.mu.Unlock()
-			if n > 0 {
-				return &acp.PromptResponse{StopReason: acp.StopReasonCancelled}, nil
-			}
-			select {
-			case <-ctx.Done():
-				return nil, ctx.Err()
-			case <-time.After(time.Millisecond):
-			}
+// turnAgent's Prompt runs a turn until a Cancel ends it. Its Cancel ends
+// the turns it knows of; with bySeq, it also keeps the Cancel's sequence,
+// so a Prompt read before the Cancel that registers its turn only after it
+// is cancelled all the same.
+type turnAgent struct {
+	acp.UnimplementedAgent
+	setup time.Duration // a Prompt's work before it registers its turn
+	bySeq bool
+
+	mu        sync.Mutex
+	cancelSeq uint64
+	turns     map[chan struct{}]uint64 // running turns, with their prompts' sequence
+}
+
+func (a *turnAgent) Prompt(ctx context.Context, _ *acp.PromptRequest) (*acp.PromptResponse, error) {
+	time.Sleep(a.setup)
+	seq, _ := acp.SequenceFromContext(ctx)
+	stop := make(chan struct{})
+	a.mu.Lock()
+	if a.bySeq && a.cancelSeq > seq {
+		a.mu.Unlock()
+		return &acp.PromptResponse{StopReason: acp.StopReasonCancelled}, nil
+	}
+	if a.turns == nil {
+		a.turns = map[chan struct{}]uint64{}
+	}
+	a.turns[stop] = seq
+	a.mu.Unlock()
+	select {
+	case <-stop:
+		return &acp.PromptResponse{StopReason: acp.StopReasonCancelled}, nil
+	case <-time.After(time.Second):
+		return &acp.PromptResponse{StopReason: acp.StopReasonEndTurn}, nil
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
+}
+
+func (a *turnAgent) Cancel(ctx context.Context, _ *acp.CancelNotification) error {
+	seq, ok := acp.SequenceFromContext(ctx)
+	if !ok {
+		return errors.New("a notification without its sequence")
+	}
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	a.cancelSeq = seq
+	for stop := range a.turns {
+		close(stop)
+		delete(a.turns, stop)
+	}
+	return nil
+}
+
+// serveLines serves agent the client's lines, written to it at once (so
+// the connection reads them all with one Read), and returns what the
+// agent answered each id with.
+func serveLines(t *testing.T, agent acp.Agent, lines ...string) map[string]any {
+	t.Helper()
+	leaktest.Check(t)
+	toAgentR, toAgentW := io.Pipe()
+	toClientR, toClientW := io.Pipe()
+	c := acp.NewClientConn(toAgentR, toClientW, func(*acp.ClientConn) acp.Agent { return agent })
+	defer func() {
+		_ = toAgentW.Close()
+		go func() { _, _ = io.Copy(io.Discard, toClientR) }()
+		<-c.Done()
+	}()
+	go func() { _, _ = io.WriteString(toAgentW, strings.Join(lines, "\n")+"\n") }()
+	sc := bufio.NewScanner(toClientR)
+	answers := map[string]any{}
+	for range strings.Count(strings.Join(lines, "\n"), `"id":`) {
+		if !sc.Scan() {
+			t.Fatalf("no answer: %v", sc.Err())
 		}
-	}}
-	agentConn, _ := connect(t, &testClient{}, agent)
+		var m struct {
+			ID     json.RawMessage `json:"id"`
+			Result struct {
+				StopReason string `json:"stopReason"`
+			} `json:"result"`
+			Error any `json:"error"`
+		}
+		if err := json.Unmarshal(sc.Bytes(), &m); err != nil {
+			t.Fatal(err)
+		}
+		if m.Error != nil {
+			answers[string(m.ID)] = m.Error
+		} else {
+			answers[string(m.ID)] = m.Result.StopReason
+		}
+	}
+	return answers
+}
+
+const (
+	promptLine = `{"jsonrpc":"2.0","id":1,"method":"session/prompt","params":{"sessionId":"s1","prompt":[]}}`
+	cancelLine = `{"jsonrpc":"2.0","method":"session/cancel","params":{"sessionId":"s1"}}`
+)
+
+// A session/cancel read right after a session/prompt is handled only once
+// the prompt's handler has started. With one P, the handler then runs up
+// to its first wait before the reading goes on, so an agent that cancels
+// the turns it knows of sees the turn (it didn't when the reading went on
+// at once and ran Cancel first).
+func TestARequestsHandlerStartsBeforeWhatFollowsIt(t *testing.T) {
+	defer runtime.GOMAXPROCS(runtime.GOMAXPROCS(1))
+	for range 20 {
+		if got := serveLines(t, &turnAgent{}, promptLine, cancelLine)["1"]; got != string(acp.StopReasonCancelled) {
+			t.Fatalf("the prompt ended %v", got)
+		}
+	}
+}
+
+// A Cancel that runs while the prompt before it still sets up: the
+// sequences say the cancel came after it. One before a prompt doesn't
+// cancel it.
+func TestACancelAfterAPromptCancelsItThoughItRunsFirst(t *testing.T) {
+	agent := &turnAgent{setup: 50 * time.Millisecond, bySeq: true}
+	if got := serveLines(t, agent, promptLine, cancelLine)["1"]; got != string(acp.StopReasonCancelled) {
+		t.Errorf("the prompt ended %v", got)
+	}
+	agent = &turnAgent{setup: 50 * time.Millisecond, bySeq: true}
+	if got := serveLines(t, agent, cancelLine, promptLine)["1"]; got != string(acp.StopReasonEndTurn) {
+		t.Errorf("a prompt after a cancel ended %v", got)
+	}
+}
+
+func TestStartPromptThenCancel(t *testing.T) {
+	leaktest.Check(t)
+	toAgentR, toAgentW := io.Pipe()
+	toClientR, toClientW := io.Pipe()
+	ac := acp.NewClientConn(toAgentR, toClientW, func(*acp.ClientConn) acp.Agent { return &turnAgent{setup: 20 * time.Millisecond, bySeq: true} })
+	agentConn := acp.NewAgentConn(toClientR, toAgentW, func(*acp.AgentConn) acp.Client { return &testClient{} })
+	t.Cleanup(func() {
+		_ = agentConn.Close()
+		<-agentConn.Done()
+		<-ac.Done()
+	})
 	ctx := ctxFor(t)
 	wait, err := agentConn.StartPrompt(ctx, &acp.PromptRequest{SessionID: "s1"})
 	if err != nil {
@@ -543,6 +724,80 @@ func TestShutdownLetsTheAgentEnd(t *testing.T) {
 	<-agentSide.Done()
 }
 
+// byeAgent is an agent that, once its input ends, sends one last update
+// and closes its output, as an agent ends its turns at Shutdown. It may
+// first ask a question.
+func byeAgent(t *testing.T, in io.Reader, out io.WriteCloser, ask bool) {
+	t.Helper()
+	if ask {
+		_, _ = io.WriteString(out, `{"jsonrpc":"2.0","id":1,"method":"session/request_permission","params":{"sessionId":"s1","toolCall":{"toolCallId":"t"},"options":[]}}`+"\n")
+	}
+	_, _ = io.Copy(io.Discard, in)     // until its input ends
+	time.Sleep(100 * time.Millisecond) // its turns ending; the question is answered meanwhile
+	_, _ = io.WriteString(out, `{"jsonrpc":"2.0","method":"session/update","params":{"sessionId":"s1","update":{"sessionUpdate":"agent_message_chunk","content":{"type":"text","text":"bye"}}}}`+"\n")
+	_ = out.Close()
+}
+
+// A question answered after Shutdown closed the agent's input doesn't end
+// the connection: the agent's last update still arrives.
+func TestShutdownWithAQuestionOpen(t *testing.T) {
+	leaktest.Check(t)
+	toAgentR, toAgentW := io.Pipe()
+	toClientR, toClientW := io.Pipe()
+	asked, release := make(chan struct{}), make(chan struct{})
+	client := &testClient{permission: func(context.Context, *acp.RequestPermissionRequest) (*acp.RequestPermissionResponse, error) {
+		close(asked)
+		<-release
+		return &acp.RequestPermissionResponse{Outcome: acp.RequestPermissionOutcome{Cancelled: true}}, nil
+	}}
+	conn := acp.NewAgentConn(toClientR, toAgentW, func(*acp.AgentConn) acp.Client { return client })
+	go byeAgent(t, toAgentR, toClientW, true)
+	<-asked
+	shut := make(chan error, 1)
+	go func() { shut <- conn.Shutdown(ctxFor(t)) }()
+	time.Sleep(20 * time.Millisecond) // Shutdown closes the input
+	close(release)                    // the answer is written after it
+	if err := <-shut; err != nil {
+		t.Fatal(err)
+	}
+	if got := client.texts(); len(got) != 1 || got[0] != "bye" {
+		t.Errorf("the agent's last updates: %v", got)
+	}
+	if err := conn.Err(); !errors.Is(err, io.EOF) {
+		t.Errorf("the connection ended with %v, not the agent's EOF", err)
+	}
+}
+
+// Over a socket, Shutdown closes the writing side alone: what the agent
+// sends at the end is still read.
+func TestShutdownOverASocket(t *testing.T) {
+	leaktest.Check(t)
+	l, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = l.Close() }()
+	go func() {
+		c, err := l.Accept()
+		if err != nil {
+			return
+		}
+		byeAgent(t, c, c, false)
+	}()
+	sock, err := net.Dial("tcp", l.Addr().String())
+	if err != nil {
+		t.Fatal(err)
+	}
+	client := &testClient{}
+	conn := acp.NewAgentConn(sock, sock, func(*acp.AgentConn) acp.Client { return client })
+	if err := conn.Shutdown(ctxFor(t)); err != nil {
+		t.Fatal(err)
+	}
+	if got := client.texts(); len(got) != 1 || got[0] != "bye" {
+		t.Errorf("the agent's last updates: %v", got)
+	}
+}
+
 func TestAHandlerKnowsItsRequestID(t *testing.T) {
 	ids := make(chan string, 1)
 	agent := &testAgent{ext: func(ctx context.Context, _ string, _ json.RawMessage) (any, error) {
@@ -645,6 +900,75 @@ func TestBadInputIsAnsweredAsJSONRPCSays(t *testing.T) {
 	r.send(`{"jsonrpc":"2.0","id":7,"method":"session/new","params":{"cwd":"/","mcpServers":[]}}`)
 	if m := r.read(); m["id"] != float64(7) || m["result"].(map[string]any)["sessionId"] != "s1" {
 		t.Errorf("a good request after the bad ones: %v", m)
+	}
+}
+
+// A message whose id can be read but whose method or error can't is
+// answered by its id: a request with an error that names it, a response
+// by failing the call it answers (with no reply).
+func TestAnUndecodableMessageIsTakenByItsID(t *testing.T) {
+	agent := &testAgent{}
+	r := rawClient(t, agent)
+	r.send(`{"jsonrpc":"2.0","id":5,"method":42}`)
+	if m := r.read(); code(m) != -32600 || m["id"] != float64(5) {
+		t.Errorf("a request whose method isn't a string: %v", m)
+	}
+	called := make(chan error, 1)
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		called <- agent.client.Call(ctx, "_ask", nil, nil)
+	}()
+	if m := r.read(); m["method"] != "_ask" {
+		t.Fatalf("the agent's call: %v", m)
+	}
+	r.send(`{"jsonrpc":"2.0","id":1,"error":{"code":"bad","message":"an error with a string code"}}`)
+	var e *acp.Error
+	if err := <-called; !errors.As(err, &e) || e.Code != acp.ErrorCodeInternalError {
+		t.Errorf("the call answered with an error that doesn't decode: %v", err)
+	}
+	r.send(`{"jsonrpc":"2.0","id":6,"method":"session/new","params":{"cwd":"/","mcpServers":[]}}`)
+	if m := r.read(); m["id"] != float64(6) {
+		t.Errorf("what came next: %v (a reply to the response?)", m)
+	}
+}
+
+// stuckWriter is an other side that doesn't read: a Write waits until
+// Close.
+type stuckWriter struct {
+	once   sync.Once
+	closed chan struct{}
+}
+
+func (w *stuckWriter) Write([]byte) (int, error) {
+	<-w.closed
+	return 0, io.ErrClosedPipe
+}
+
+func (w *stuckWriter) Close() error {
+	w.once.Do(func() { close(w.closed) })
+	return nil
+}
+
+// An agent that logs to stdout while it doesn't read its input: the
+// answers to its lines don't pile up a goroutine each.
+func TestBadLinesDontPileUp(t *testing.T) {
+	leaktest.Check(t)
+	before := runtime.NumGoroutine()
+	r, w := io.Pipe()
+	conn := acp.NewAgentConn(r, &stuckWriter{closed: make(chan struct{})}, func(*acp.AgentConn) acp.Client { return &testClient{} })
+	defer func() {
+		_ = conn.Close()
+		<-conn.Done()
+	}()
+	for range 1000 {
+		if _, err := io.WriteString(w, "some agent log line\n"); err != nil {
+			t.Fatal(err)
+		}
+	}
+	time.Sleep(50 * time.Millisecond) // the last lines handled
+	if n := runtime.NumGoroutine() - before; n > 20 {
+		t.Errorf("%d goroutines for 1000 bad lines", n)
 	}
 }
 

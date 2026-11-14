@@ -60,6 +60,50 @@ schema it follows.
   sends them.
 - CI checks that `schema/` is the pinned release (`make pinned`, in
   `make check` too).
+- Docs: a connection's factory must not call the other side (nothing is
+  read until it returns); a call from a notification handler fails at
+  once only when made with the handler's context; the README's client and
+  `examples/prompt` give `Shutdown` five seconds rather than a context
+  that never ends.
+- A request's handler has started before anything read after the request
+  is handled: an agent's Cancel no longer runs before the Prompt of a
+  session/prompt that came before it was called.
+- `SequenceFromContext`: where a message came among the other side's, so
+  an agent can tell a Cancel that came after a Prompt still setting up.
+- `Shutdown` closes the agent's input through the writer, after the
+  message being written, and with `CloseWrite` on a socket. What is sent
+  after it fails with `ErrClosed` but no longer ends the connection, so
+  the agent's last updates and results still arrive.
+- A response over the write limit is sent as an internal error in its
+  place, and a handler's nil `*acp.Error` (in a non-nil error) as an
+  internal error rather than a line that isn't JSON: the other side's
+  call no longer waits forever.
+- Lines that aren't JSON-RPC no longer start a goroutine each while the
+  other side doesn't read: at most 8 answers wait, and later lines go
+  unanswered (and are counted in the log).
+- A message whose id can be read but whose method or error can't (an
+  error code that isn't an integer) is taken by its id: a response fails
+  the call it answers, with no reply, and a request is answered Invalid
+  request with its id. Before, the call waited forever.
+- A message over the read limit no longer ends the connection: it is read
+  to its end and skipped. A request is answered Invalid request by its
+  id, a response fails its call with `ErrTooLarge`, and a notification is
+  dropped.
+- `Start` on Unix: a command with `Setsid` starts (it was refused with
+  EPERM), and when the agent doesn't lead its group (a `Pgid` you set),
+  Close kills the agent itself rather than nothing.
+- What an agent `Start` ran wrote before it exited is all read, however
+  slow the client's handlers are: its stdout is given up on only once a
+  read has waited a second with nothing to read, not a second after the
+  exit. Its process group is killed as soon as it exits.
+- `Start` on Windows: the agent starts a console process group of its own
+  (so the console's Ctrl+C reaches the client alone, as on Unix) and runs
+  in a job object, so Close kills the processes it started too.
+- `Close` ends a connection on a blocking pipe or socket file (an agent's
+  stdin and stdout, usually) though the other side is silent or doesn't
+  read: on Unix such a file is read and written through a non-blocking
+  duplicate. Before, `Done` stayed open until the other side wrote or
+  closed its end.
 
 ## v0.3.0 (2026-11-14)
 

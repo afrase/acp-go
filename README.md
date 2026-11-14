@@ -30,7 +30,8 @@ It needs Go 1.25 or later and uses only the standard library.
 - **Back-pressure, no queues.** Notifications are handled in order, as they
   are read. A slow client slows the agent down. Nothing is dropped, and a
   busy connection never closes.
-- **No message size limit**, unless you set one.
+- **No message size limit**, unless you set one. A message over it is
+  skipped and answered with an error, and the connection goes on.
 - **Contexts everywhere.** `$/cancel_request` works in both directions. A
   handler panic becomes an error. A connection that ends leaves no
   goroutines behind.
@@ -64,7 +65,12 @@ func run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	defer agent.Shutdown(ctx)
+	defer func() {
+		// The agent has five seconds to end its turns and exit.
+		sctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+		defer cancel()
+		_ = agent.Shutdown(sctx)
+	}()
 
 	if _, err := agent.Initialize(ctx, &acp.InitializeRequest{ProtocolVersion: acp.LatestProtocolVersion}); err != nil {
 		return err
@@ -168,6 +174,12 @@ both. Its unstable parts can change in any minor release (see
   [`steering`](https://pkg.go.dev/github.com/afrase/acp-go/steering) package
   is one extension: `_session/steering`, which claude-agent-acp, codex-acp
   and others support.
+- **Order.** Notifications are handled one at a time, in the order they
+  arrive. Each request is handled on its own goroutine, and that goroutine
+  has started before anything after the request is handled. So an agent's
+  `Cancel` runs only after `Prompt` was called for each prompt before it.
+  The two then run side by side, and `Prompt` may not have registered its
+  turn yet. `acp.SequenceFromContext` tells which message came first.
 - **Errors.** An error from the other side is an `*acp.Error` with ACP's
   code (use `errors.As`). A call after the connection ends returns
   `acp.ErrClosed`.
@@ -181,10 +193,10 @@ both. Its unstable parts can change in any minor release (see
 | Case | What acp-go does |
 |---|---|
 | JSON-RPC batches | Refused with Invalid request. ACP v1 does not mention batches, and the TypeScript SDK refuses them in v1 too. |
-| A line that is not JSON (some agents log to stdout) | Answered with a Parse error (null id), as JSON-RPC says. Logged by size only. The connection continues. |
+| A line that is not JSON (some agents log to stdout) | Answered with a Parse error (null id), as JSON-RPC says. While the other side does not read, at most 8 such answers wait, and later lines go unanswered. Logged by size only. The connection continues. |
 | A call whose context ends | Returns at once and withdraws the request with `$/cancel_request`. A late answer is dropped. To stop a prompt, use `Cancel` (session/cancel) instead, as ACP says. The turn then ends with stop reason `cancelled`. |
 | Absent and null | The same, as ACP says, except for `Nullable` fields and required properties. |
-| An agent that exits | Its remaining output is read for up to one second, in case a child process still holds its stdout open. Then its process group is killed. An agent that closes its stdout first has one second to exit, or, under `Shutdown`, until the context ends. |
+| An agent that exits | Its process group is killed, and its remaining output is all read, however slow the client is to handle it. A process outside the group that still holds its stdout is given up on once a read has waited a second with nothing to read. An agent that closes its stdout first has one second to exit, or, under `Shutdown`, until the context ends. |
 | A number in an elicitation's answer | A JSON number without a fraction or exponent decodes as `Integer`. |
 | Required properties | Checked at every level of every incoming message, as the TypeScript and Rust SDKs do; a JSON-RPC error object is the one exception (its answer would otherwise be lost). Outgoing messages always have them: a nil required list is sent as `[]`. |
 
@@ -234,15 +246,15 @@ complete):
 | When the other side outpaces you | it waits (back-pressure) | the connection closes after 1,024 queued notifications | the connection fails at a queue limit (1,024 notifications or 32 MiB, configurable) |
 | Message size | no cap unless you set one | 10 MiB | 10 MiB by default, configurable |
 | `$/cancel_request` | both ways | both ways | both ways |
-| Running an agent | `Start`: its process group killed on Unix, the process alone on Windows | you start it | its process tree, on Unix and on Windows (job objects) |
+| Running an agent | `Start`: its process group killed on Unix, its job object on Windows | you start it | its process tree, on Unix and on Windows (job objects) |
 | Checked against | the TypeScript SDK both ways; acp-tck | its own tests and examples, including a Gemini CLI client | the TypeScript and Rust SDKs, four ways |
 | Dependencies | none | none | `golang.org/x/sys` |
 
-caelis-labs' SDK is the most thorough of the others. Its interop matrix,
-Windows job objects and v2 draft go further than acp-go. Its API is also
-much larger (prepared requests, readiness hooks, raw session updates).
+caelis-labs' SDK is the most thorough of the others. Its interop matrix
+and v2 draft go further than acp-go. Its API is also much larger
+(prepared requests, readiness hooks, raw session updates).
 
-- Pick caelis-labs' SDK if you need ACP v2 or Windows process trees.
+- Pick caelis-labs' SDK if you need ACP v2.
 - Pick acp-go if you want the unstable protocol, a small API, or a
   connection that never gives up under load.
 

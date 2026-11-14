@@ -5,6 +5,7 @@ package unstable
 import (
 	"context"
 	"io"
+	"os"
 	"sync/atomic"
 )
 
@@ -26,10 +27,14 @@ type AgentConn struct {
 
 // NewAgentConn speaks ACP to an agent over r (what the agent writes) and w
 // (what it reads). It calls newClient with the connection, before reading
-// anything, so the client can keep it to call the agent; what the agent
-// sends goes to the client it returns. Close closes r and w, those that
-// are io.Closers; to run an agent's command, use [Start].
+// anything, so the client can keep it to call the agent later; what the
+// agent sends goes to the client it returns. newClient must not call the
+// agent itself: nothing is read until it returns, so such a call would
+// wait for its answer forever. Close closes r and w, those that
+// are io.Closers (a blocking pipe file as [NewClientConn] says); to run an
+// agent's command, use [Start].
 func NewAgentConn(r io.Reader, w io.Writer, newClient func(*AgentConn) Client, opts ...Option) *AgentConn {
+	r, w = streams(r, w)
 	a := &AgentConn{c: newConn(r, w, closeBoth(r, w), newOptions(opts))}
 	a.c.start(clientHandler(newClient(a)))
 	return a
@@ -37,8 +42,10 @@ func NewAgentConn(r io.Reader, w io.Writer, newClient func(*AgentConn) Client, o
 
 // StartPrompt sends a session/prompt and returns once it is written,
 // before the turn ends; wait waits for the turn's result. A Cancel sent
-// after StartPrompt returns reaches the agent after the prompt, which
-// Prompt can't promise when the two are called from different goroutines.
+// after StartPrompt returns is written after the prompt, which Prompt
+// can't promise when the two are called from different goroutines. (An
+// agent on this package handles it once its Prompt has been called;
+// [SequenceFromContext] orders the two.)
 func (a *AgentConn) StartPrompt(ctx context.Context, req *PromptRequest) (wait func(context.Context) (*PromptResponse, error), err error) {
 	w, err := a.c.send(ctx, "session/prompt", req)
 	if err != nil {
@@ -91,12 +98,18 @@ func (a *AgentConn) Close() error {
 // [Start] ran has until ctx ends to exit, rather than a second once its
 // stdout closed). If ctx ends first, it closes the connection as Close
 // does and returns ctx's error. Either way it returns once Done is
-// closed.
+// closed, so a ctx that never ends waits for the agent as long as it
+// takes.
+//
+// The input is closed once the message being written is, with CloseWrite
+// when the writer has it (a TCP or Unix socket, whose reading goes on),
+// else Close; a writer that is neither is left open, and Shutdown just
+// waits. What is sent after that (a handler's answer, a Cancel) fails with
+// an error errors.Is finds [ErrClosed] in, and the reading goes on: the
+// agent's last updates and results still arrive.
 func (a *AgentConn) Shutdown(ctx context.Context) error {
 	a.patience.Store(&ctx)
-	if cw, ok := a.c.w.(io.Closer); ok {
-		_ = cw.Close() // the agent sees its input end
-	}
+	_ = a.c.closeInput(ctx) // the agent sees its input end; an error is ctx's, or the connection ended
 	select {
 	case <-a.c.done:
 		return nil
@@ -105,6 +118,24 @@ func (a *AgentConn) Shutdown(ctx context.Context) error {
 		<-a.c.done
 		return ctx.Err()
 	}
+}
+
+// streams readies r and w for a connection: an *os.File among them whose
+// Read or Write under way Close couldn't end (a blocking pipe, such as an
+// agent's stdin often is) is swapped for one it can.
+func streams(r io.Reader, w io.Writer) (io.Reader, io.Writer) {
+	rf, rok := r.(*os.File)
+	wf, wok := w.(*os.File)
+	if rok {
+		r = interruptible(rf)
+	}
+	switch {
+	case wok && rok && wf == rf:
+		w = r.(io.Writer) //nolint:forcetypeassert // interruptible's is a ReadWriteCloser
+	case wok:
+		w = interruptible(wf)
+	}
+	return r, w
 }
 
 // closeBoth closes r and w, those that are io.Closers.

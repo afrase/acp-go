@@ -23,8 +23,8 @@ func (e *Error) Error() string {
 var ErrClosed = errors.New("acp: connection closed")
 
 // ErrTooLarge is returned for a message over the write limit
-// ([WithWriteLimit]), which isn't sent; a message over the read limit
-// ([WithReadLimit]) ends the connection with it.
+// ([WithWriteLimit]), which isn't sent, and by a call whose answer is over
+// the read limit ([WithReadLimit]), which is skipped.
 var ErrTooLarge = errors.New("acp: message too large")
 
 // closedError is why a connection ended.
@@ -60,6 +60,9 @@ func methodNotFound(method string) error {
 func errorFor(ctx context.Context, err error) *Error {
 	var e *Error
 	if errors.As(err, &e) {
+		if e == nil { // a nil *Error in a non-nil error: it has no text to send
+			return &Error{Code: ErrorCodeInternalError, Message: "Internal error: the handler returned a nil *acp.Error as its error"}
+		}
 		return e
 	}
 	if ctx.Err() != nil && errors.Is(err, context.Canceled) {

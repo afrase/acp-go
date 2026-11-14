@@ -5,22 +5,33 @@ import (
 	"os"
 	"os/exec"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
 // Start runs an agent's command and speaks ACP to it over its stdin and
 // stdout. It calls newClient with the connection once the agent has
 // started, before reading anything, so the client can keep it to call the
-// agent; what the agent sends goes to the client it returns. cmd's Stdin
-// and Stdout must be unset; its Stderr is left as it is (nil discards the
-// agent's logs). On Unix the agent runs in a process group of its own, so Close
-// kills the processes it started too (an agent run through a launcher,
-// such as npx, is a child of the launcher).
+// agent later (not in newClient: nothing is read until it returns, so the
+// call would wait forever); what the agent sends goes to the client it
+// returns. cmd's Stdin and Stdout must be unset; its Stderr is left as it
+// is (nil discards the agent's logs). On Unix the agent runs in a process group of its own, so
+// Close kills the processes it started too (an agent run through a
+// launcher, such as npx, is a child of the launcher), and a terminal's
+// Ctrl-C reaches the client alone. Start sets cmd.SysProcAttr.Setpgid
+// for that, unless Setsid is set (a session's leader leads its own
+// group); a Pgid you set puts the agent in that group instead, and Close
+// then kills the agent alone. On Windows the agent starts a console
+// process group of its own (CREATE_NEW_PROCESS_GROUP), for Ctrl+C, and
+// runs in a job object, so Close kills the processes it started too.
 //
 // The connection ends when the agent closes its stdout, or exits: what it
-// wrote before exiting is still read, for up to a second (a process it
-// left running may hold its stdout open). Done is closed once its process
-// has been waited for; cmd.ProcessState then says how it ended. If cmd's
+// wrote before exiting is still read, however long the client takes to
+// handle it; once a read has waited a second with nothing to read (a
+// process it left running may hold its stdout open), the reading ends.
+// Done is closed once its process has been waited for; cmd.ProcessState
+// then says how it ended. (A process that can't be killed, such as one
+// running as another user, keeps Done open until it exits.) If cmd's
 // WaitDelay is zero, Start sets it to a second.
 func Start(cmd *exec.Cmd, newClient func(*AgentConn) Client, opts ...Option) (*AgentConn, error) {
 	if cmd.Stdin != nil || cmd.Stdout != nil {
@@ -50,16 +61,18 @@ func Start(cmd *exec.Cmd, newClient func(*AgentConn) Client, opts ...Option) (*A
 	}
 	_ = inR.Close() // the agent's ends
 	_ = outW.Close()
+	g := newGroup(cmd)
 
 	var once sync.Once
 	closeFn := func(cause error) error {
 		once.Do(func() { _ = inW.Close() })
 		if cause == nil {
-			_ = kill(cmd) // Close: now
+			_ = g.kill() // Close: now
 		}
 		return outR.Close()
 	}
-	a := &AgentConn{c: newConn(outR, inW, closeFn, newOptions(opts))}
+	out := &watched{File: outR}
+	a := &AgentConn{c: newConn(out, inW, closeFn, newOptions(opts))}
 	exited := make(chan struct{})
 	go func() {
 		_ = cmd.Wait() // its result is in cmd.ProcessState
@@ -69,11 +82,8 @@ func Start(cmd *exec.Cmd, newClient func(*AgentConn) Client, opts ...Option) (*A
 	go func() {
 		select {
 		case <-exited: // what it wrote last is still read, unless a process it left holds its stdout
-			select {
-			case <-a.c.ctx.Done():
-			case <-time.After(drainTime):
-				_ = outR.Close()
-			}
+			_ = g.kill() // what it left running in its group, which may hold its stdout
+			out.drain(a.c.ctx.Done())
 		case <-a.c.ctx.Done(): // it closed its stdout, or a write failed: it gets drainTime, or Shutdown's time, to exit
 			var patience <-chan time.Time
 			var shutdown <-chan struct{}
@@ -88,8 +98,9 @@ func Start(cmd *exec.Cmd, newClient func(*AgentConn) Client, opts ...Option) (*A
 			case <-shutdown:
 			}
 		}
-		_ = kill(cmd) // what it left running, or itself
+		_ = g.kill() // what it left running, or itself
 		<-exited
+		g.release()
 		close(waited)
 	}()
 	a.c.wait = func() { <-waited }
@@ -97,7 +108,41 @@ func Start(cmd *exec.Cmd, newClient func(*AgentConn) Client, opts ...Option) (*A
 	return a, nil
 }
 
-// drainTime is how long what an exited agent wrote is still read, and how
-// long an agent that closed its stdout has to exit before it is killed
-// (unless Shutdown gave it longer).
+// drainTime is how long a read of an exited agent's stdout may wait with
+// nothing to read before the reading ends, and how long an agent that
+// closed its stdout has to exit before it is killed (unless Shutdown gave
+// it longer).
 var drainTime = time.Second
+
+// watched is the agent's stdout, which tells whether its reader is waiting
+// on it: edges counts each Read's start and its end, so an odd count is a
+// Read under way.
+type watched struct {
+	*os.File
+	edges atomic.Int64
+}
+
+func (w *watched) Read(p []byte) (int, error) {
+	w.edges.Add(1)
+	defer w.edges.Add(1)
+	return w.File.Read(p)
+}
+
+// drain waits for the reading to end (ended), or closes the pipe once a
+// Read has waited drainTime with nothing to read. A reader that is behind,
+// still handling what it read, isn't cut off: what the agent wrote before
+// it exited is still in the pipe, a result maybe among it.
+func (w *watched) drain(ended <-chan struct{}) {
+	for {
+		armed := w.edges.Load()
+		select {
+		case <-ended:
+			return
+		case <-time.After(drainTime):
+		}
+		if armed%2 == 1 && w.edges.Load() == armed {
+			_ = w.Close()
+			return
+		}
+	}
+}

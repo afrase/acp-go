@@ -12,6 +12,7 @@ import (
 	"runtime/debug"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -27,10 +28,11 @@ type handler struct {
 // handled one at a time on the reading goroutine, so a slow handler slows
 // the reading, and the other side's writes, down (back-pressure); its
 // requests are each handled on a goroutine of their own, after every
-// notification that came before them; a response is delivered once every
-// notification before it was handled. Messages are written one at a time
-// by the writing goroutine; a caller waits while the other side doesn't
-// read, until its context ends.
+// notification that came before them, and that goroutine has started
+// before anything after the request is handled; a response is delivered
+// once every notification before it was handled. Messages are written one
+// at a time by the writing goroutine; a caller waits while the other side
+// doesn't read, until its context ends.
 type conn struct {
 	r     io.Reader
 	w     io.Writer
@@ -41,9 +43,9 @@ type conn struct {
 
 	ctx        context.Context //nolint:containedctx // the connection's lifetime: handlers' contexts derive from it
 	cancel     context.CancelFunc
-	notifyCtx  context.Context //nolint:containedctx // ctx, marked as a notification handler's
-	writes     chan writeReq   // to the writing goroutine
+	writes     chan writeReq // to the writing goroutine
 	writerDone chan struct{}
+	handedOff  chan struct{} // a request's goroutine has started (serve waits for it)
 
 	mu       sync.Mutex
 	nextID   int64
@@ -55,22 +57,24 @@ type conn struct {
 	done     chan struct{}  // closed once the reading, the handlers and wait have ended
 	wait     func()         // run after the reading ends, before done closes (a process's Wait)
 	junk     int            // lines that weren't JSON-RPC (on the reading goroutine)
+	skipped  int            // of the answers reply had to send, those it didn't (on the reading goroutine)
+	replying atomic.Int32   // reply's answers being written
+	seq      uint64         // lines read (on the reading goroutine): a message's place in the order
 }
 
 type response struct {
 	result json.RawMessage
-	err    *Error
+	err    error // the other side's *Error, or why the response couldn't be read
 }
 
 // newConn makes a connection, which start sets going.
 func newConn(r io.Reader, w io.Writer, closeFn func(cause error) error, opts options) *conn {
 	c := &conn{
 		r: r, w: w, close: closeFn, opts: opts, log: opts.logger(),
-		writes: make(chan writeReq), writerDone: make(chan struct{}), pending: map[int64]chan response{}, incoming: map[string]context.CancelFunc{},
-		done: make(chan struct{}),
+		writes: make(chan writeReq), writerDone: make(chan struct{}), handedOff: make(chan struct{}),
+		pending: map[int64]chan response{}, incoming: map[string]context.CancelFunc{}, done: make(chan struct{}),
 	}
 	c.ctx, c.cancel = context.WithCancel(context.Background())
-	c.notifyCtx = context.WithValue(c.ctx, notificationKey{}, c)
 	return c
 }
 
@@ -86,16 +90,20 @@ func (c *conn) read() {
 	var err error
 	for {
 		var line []byte
-		line, err = c.readLine(br)
-		if len(line) > 0 {
+		var over bool
+		line, over, err = c.readLine(br)
+		switch {
+		case over:
+			c.tooLarge(line)
+		case len(line) > 0:
 			c.dispatch(line)
 		}
 		if err != nil {
 			break
 		}
 	}
-	if c.junk > maxJunkLogged {
-		c.log.Warn("acp: lines that weren't JSON-RPC", "lines", c.junk)
+	if c.junk > maxJunkLogged || c.skipped > 0 {
+		c.log.Warn("acp: lines that weren't JSON-RPC", "lines", c.junk, "unanswered", c.skipped)
 	}
 	c.fail(err)
 	c.handlers.Wait()
@@ -106,22 +114,89 @@ func (c *conn) read() {
 	close(c.done)
 }
 
-// readLine reads one line, of any length unless a read limit is set.
-func (c *conn) readLine(br *bufio.Reader) ([]byte, error) {
-	var line []byte
+// readLine reads one line, of any length unless a read limit is set. A
+// line over the limit is read to its end, but only its head is kept (to
+// answer it by its id), and over is true.
+func (c *conn) readLine(br *bufio.Reader) (line []byte, over bool, err error) {
+	limit := c.opts.readLimit
 	for {
 		chunk, err := br.ReadSlice('\n')
-		if limit := c.opts.readLimit; limit > 0 && len(line)+len(bytes.TrimRight(chunk, "\r\n")) > limit {
-			return nil, fmt.Errorf("%w: a message over the read limit of %d bytes", ErrTooLarge, limit)
+		if !over && limit > 0 && len(line)+len(bytes.TrimRight(chunk, "\r\n")) > limit {
+			over = true
+			line = line[:min(len(line), headSize)]
 		}
-		if line == nil && err == nil {
-			return append([]byte(nil), chunk...), nil // the usual case: the line fit the buffer
+		switch {
+		case over:
+			line = append(line, chunk[:min(len(chunk), headSize-len(line))]...)
+		case line == nil && err == nil:
+			return append([]byte(nil), chunk...), false, nil // the usual case: the line fit the buffer
+		default:
+			line = append(line, chunk...)
 		}
-		line = append(line, chunk...)
 		if !errors.Is(err, bufio.ErrBufferFull) {
-			return line, err
+			return line, over, err
 		}
 	}
+}
+
+// headSize is how much of a line over the read limit is kept: enough for
+// the id and method that come before the params.
+const headSize = 4 << 10
+
+// tooLarge answers a message over the read limit by what its head says
+// it is, and the connection goes on: a request is answered with an
+// error, a response fails the call it answers with [ErrTooLarge], and a
+// notification is dropped.
+func (c *conn) tooLarge(head []byte) {
+	c.seq++
+	limit := c.opts.readLimit
+	id, method, isResponse := peek(head)
+	c.log.Warn("acp: a message over the read limit", "limit", limit, "rpc", method)
+	e := &Error{Code: ErrorCodeInvalidRequest, Message: fmt.Sprintf("Invalid request: over the read limit of %d bytes", limit)}
+	switch {
+	case isResponse && id != nil:
+		c.settle(id, response{err: fmt.Errorf("%w: a response over the read limit of %d bytes", ErrTooLarge, limit)})
+	case method != "" && id != nil && idKey(id) != "":
+		msg := encodeError(id, e)
+		c.handlers.Go(func() { // the other side's call waits for it
+			_, _ = c.write(c.ctx, msg) // the connection may be ending
+		})
+	case method != "" && id == nil: // a notification: no one waits for it
+	default:
+		c.reply(e)
+	}
+}
+
+// peek reads a message's id and method from its head, as far as the head
+// goes; response says it has a result or an error.
+func peek(head []byte) (id json.RawMessage, method string, response bool) {
+	dec := json.NewDecoder(bytes.NewReader(head))
+	if t, err := dec.Token(); err != nil || t != json.Delim('{') {
+		return nil, "", false
+	}
+	for dec.More() {
+		t, err := dec.Token()
+		key, ok := t.(string)
+		if err != nil || !ok {
+			break
+		}
+		var v json.RawMessage
+		switch key {
+		case "id":
+			err = dec.Decode(&id)
+		case "method":
+			err = dec.Decode(&method)
+		case "result", "error":
+			response = true
+			err = dec.Decode(&v) // the line's cut short in it, most likely
+		default:
+			err = dec.Decode(&v)
+		}
+		if err != nil {
+			break
+		}
+	}
+	return id, method, response
 }
 
 // maxJunkLogged is how many lines that aren't JSON-RPC are logged one by
@@ -142,9 +217,14 @@ func (c *conn) dispatch(line []byte) {
 	if len(line) == 0 {
 		return
 	}
+	c.seq++
 	var f frame
-	if line[0] != '{' || json.Unmarshal(line, &f) != nil {
+	if line[0] != '{' {
 		c.junkLine(line)
+		return
+	}
+	if err := json.Unmarshal(line, &f); err != nil {
+		c.undecodable(line, err)
 		return
 	}
 	switch {
@@ -159,6 +239,35 @@ func (c *conn) dispatch(line []byte) {
 	default:
 		c.reply(&Error{Code: ErrorCodeInvalidRequest, Message: "Invalid request: neither a method nor an id"})
 	}
+}
+
+// undecodable handles an object that isn't a JSON-RPC message as it
+// should be (its method isn't a string, its error's code isn't an
+// integer) by its id, when that can be read: a response settles the call
+// it answers with an error, and a request is answered Invalid request
+// with its id. Either way, nothing waits forever for it.
+func (c *conn) undecodable(line []byte, err error) {
+	var head struct {
+		ID     json.RawMessage `json:"id"`
+		Method json.RawMessage `json:"method"`
+	}
+	if json.Unmarshal(line, &head) != nil || head.ID == nil {
+		c.junkLine(line)
+		return
+	}
+	c.log.Warn("acp: a message that doesn't decode", "bytes", len(line)) // its error may quote what it holds
+	if head.Method == nil {
+		c.settle(head.ID, response{err: &Error{Code: ErrorCodeInternalError, Message: "Internal error: the response doesn't decode: " + err.Error()}})
+		return
+	}
+	if idKey(head.ID) == "" {
+		c.reply(&Error{Code: ErrorCodeInvalidRequest, Message: "Invalid request: a bad id"})
+		return
+	}
+	msg := encodeError(head.ID, &Error{Code: ErrorCodeInvalidRequest, Message: "Invalid request: " + err.Error()})
+	c.handlers.Go(func() { // the other side's call waits for it: not one reply may skip
+		_, _ = c.write(c.ctx, msg) // the connection may be ending
+	})
 }
 
 // junkLine answers a line that isn't a JSON-RPC message as JSON-RPC says
@@ -179,11 +288,25 @@ func (c *conn) junkLine(line []byte) {
 	}
 }
 
+// maxReplies is how many of reply's answers may wait to be written at
+// once. Past that, while the other side doesn't read, a bad line goes
+// unanswered: an agent that logs to stdout and doesn't read its input
+// would otherwise pile up a goroutine a line.
+const maxReplies = 8
+
 // reply sends an error for a message that can't be answered by a handler
 // (one with a bad shape), on a goroutine of its own: the reading goroutine
-// mustn't wait for the other side to read.
+// mustn't wait for the other side to read. Its id is null, so no call of
+// the other side waits for it, and it is skipped when maxReplies are
+// already waiting.
 func (c *conn) reply(e *Error) {
+	if c.replying.Add(1) > maxReplies {
+		c.replying.Add(-1)
+		c.skipped++
+		return
+	}
 	c.handlers.Go(func() {
+		defer c.replying.Add(-1)
 		_, _ = c.write(c.ctx, encodeError(nil, e)) // the connection may be ending
 	})
 }
@@ -211,7 +334,11 @@ func idKey(id json.RawMessage) string {
 	return ""
 }
 
-// serve handles one of the other side's requests on a goroutine of its own.
+// serve handles one of the other side's requests on a goroutine of its own,
+// and returns once that goroutine has started: what was read after the
+// request (a session/cancel after a session/prompt) is handled only then,
+// as the TypeScript SDK runs a handler up to its first await before it
+// reads on.
 //
 //nolint:contextcheck // the response is written with the connection's context: it answers a withdrawn request too
 func (c *conn) serve(f frame) {
@@ -220,11 +347,12 @@ func (c *conn) serve(f frame) {
 		c.reply(&Error{Code: ErrorCodeInvalidRequest, Message: "Invalid request: a bad id"})
 		return
 	}
-	ctx, cancel := context.WithCancel(context.WithValue(c.ctx, requestIDKey{}, f.ID))
+	ctx, cancel := context.WithCancel(context.WithValue(context.WithValue(c.ctx, requestIDKey{}, f.ID), seqKey{}, c.seq))
 	c.mu.Lock()
 	c.incoming[key] = cancel
 	c.mu.Unlock()
 	c.handlers.Go(func() {
+		c.handedOff <- struct{}{}
 		defer cancel()
 		start := time.Now()
 		result, err := c.safeRequest(ctx, f.Method, f.Params)
@@ -241,10 +369,16 @@ func (c *conn) serve(f frame) {
 			msg = encodeError(f.ID, errorFor(ctx, err))
 		}
 		c.logDone(ctx, "acp: request handled", f.Method, start, err)
-		if _, werr := c.write(c.ctx, msg); werr != nil && !errors.Is(werr, ErrClosed) {
+		_, werr := c.write(c.ctx, msg)
+		if errors.Is(werr, ErrTooLarge) { // the other side still gets an answer
+			_, werr = c.write(c.ctx, encodeError(f.ID, &Error{Code: ErrorCodeInternalError,
+				Message: fmt.Sprintf("Internal error: the response is over the write limit of %d bytes", c.opts.writeLimit)}))
+		}
+		if werr != nil && !errors.Is(werr, ErrClosed) {
 			c.log.Warn("acp: a response wasn't sent", "rpc", f.Method, "err", werr)
 		}
 	})
+	<-c.handedOff
 }
 
 // withdrawn ends the context of a request the other side withdrew
@@ -265,8 +399,10 @@ func (c *conn) withdrawn(params json.RawMessage) {
 // notified handles one of the other side's notifications, on the reading
 // goroutine: notifications are handled in order, and nothing more is read
 // until the handler returns.
+//
+//nolint:contextcheck // its handler's context is the connection's
 func (c *conn) notified(f frame) {
-	err := c.safeNotify(c.notifyCtx, f.Method, f.Params)
+	err := c.safeNotify(&notifyCtx{Context: c.ctx, c: c, seq: c.seq}, f.Method, f.Params)
 	switch {
 	case errors.Is(err, errUnknownNotification):
 		c.log.Debug("acp: notification ignored", "rpc", f.Method)
@@ -277,18 +413,47 @@ func (c *conn) notified(f frame) {
 	}
 }
 
+// notifyCtx is a notification handler's context: the connection's, marked
+// as a notification handler's, with the notification's sequence. It is
+// one allocation, not two context.WithValues: a turn sends an update a
+// chunk.
+type notifyCtx struct {
+	context.Context //nolint:containedctx // the connection's
+	c               *conn
+	seq             uint64
+}
+
+func (n *notifyCtx) Value(key any) any {
+	switch key.(type) {
+	case notificationKey:
+		return n.c
+	case seqKey:
+		return n.seq
+	}
+	return n.Context.Value(key)
+}
+
 // answered delivers a response to the call waiting for it.
 func (c *conn) answered(f frame) {
-	id, err := strconv.ParseInt(string(f.ID), 10, 64)
+	r := response{result: f.Result}
+	if f.Error != nil {
+		r.err = f.Error
+	}
+	c.settle(f.ID, r)
+}
+
+// settle hands r to the call with id, if one waits.
+func (c *conn) settle(rawID json.RawMessage, r response) {
+	id, err := strconv.ParseInt(string(rawID), 10, 64)
 	c.mu.Lock()
 	ch := c.pending[id]
 	delete(c.pending, id)
 	c.mu.Unlock()
 	if err != nil || ch == nil {
-		c.log.Debug("acp: a response to no request of ours", "bytes", len(f.ID))
+		c.log.Debug("acp: a response to no request of ours", "bytes", len(rawID))
 		return
 	}
-	ch <- response{result: f.Result, err: f.Error}
+	ch <- r
 }
 
 // safeRequest runs the request handler, turning a panic into an error: one
@@ -453,8 +618,21 @@ func (c *conn) write(ctx context.Context, msg []byte) (handed bool, err error) {
 }
 
 type writeReq struct {
-	msg  []byte
+	msg  []byte     // nil: close w's writing side (Shutdown)
 	done chan error // buffered: the writer never waits on it
+}
+
+// errInputClosed is what a write after closeInput returns: the other side
+// can't read it, but the connection goes on until it closes its end.
+var errInputClosed = &closedError{cause: errors.New("the other side's input was closed (Shutdown)")}
+
+// closeInput closes w's writing side once the messages handed over before
+// are written, never in the middle of one: CloseWrite when w has it (a
+// socket, whose reading then goes on), else Close. Later writes fail with
+// errInputClosed and leave the connection up.
+func (c *conn) closeInput(ctx context.Context) error {
+	_, err := c.write(ctx, nil)
+	return err
 }
 
 // doneChans are writeReq.done channels to reuse; one whose write a caller
@@ -465,9 +643,19 @@ var doneChans = sync.Pool{New: func() any { return make(chan error, 1) }}
 // connection ends.
 func (c *conn) writer() {
 	defer close(c.writerDone)
+	inputClosed := false
 	for {
 		select {
 		case w := <-c.writes:
+			switch {
+			case inputClosed:
+				w.done <- errInputClosed
+				continue
+			case w.msg == nil:
+				inputClosed = true
+				w.done <- closeWrite(c.w)
+				continue
+			}
 			if _, err := c.w.Write(w.msg); err != nil {
 				c.fail(fmt.Errorf("writing: %w", err))
 				w.done <- c.Err()
@@ -478,6 +666,18 @@ func (c *conn) writer() {
 			return
 		}
 	}
+}
+
+// closeWrite closes w's writing side: CloseWrite when it has it, else
+// Close, if it is an io.Closer.
+func closeWrite(w io.Writer) error {
+	switch w := w.(type) {
+	case interface{ CloseWrite() error }:
+		return w.CloseWrite()
+	case io.Closer:
+		return w.Close()
+	}
+	return nil
 }
 
 // fail ends the connection with cause, once: calls waiting fail, handlers'
@@ -523,6 +723,7 @@ func (c *conn) logDone(ctx context.Context, what, method string, start time.Time
 type (
 	requestIDKey    struct{}
 	notificationKey struct{}
+	seqKey          struct{}
 )
 
 // RequestIDFromContext returns the JSON-RPC id of the request whose handler
@@ -531,4 +732,18 @@ type (
 func RequestIDFromContext(ctx context.Context) (RequestID, bool) {
 	id, ok := ctx.Value(requestIDKey{}).(RequestID)
 	return id, ok
+}
+
+// SequenceFromContext returns where the message whose handler got ctx
+// came among the other side's messages: one read later has a larger
+// number.
+//
+// It orders a request and a notification whose handlers run side by
+// side. An agent's Cancel can run while the Prompt before it is still
+// setting up, before it has registered its turn. So the agent keeps the
+// last Cancel's sequence, and a Prompt that registers its turn with a
+// smaller sequence than that is cancelled already.
+func SequenceFromContext(ctx context.Context) (uint64, bool) {
+	n, ok := ctx.Value(seqKey{}).(uint64)
+	return n, ok
 }
