@@ -164,6 +164,12 @@ both. Its unstable parts can change in any minor release (see
   [`steering`](https://pkg.go.dev/github.com/afrase/acp-go/steering) package
   is one extension: `_session/steering`, which claude-agent-acp, codex-acp
   and others support.
+- **Order.** Notifications are handled one at a time, in the order they
+  arrive. Each request is handled on its own goroutine, and that goroutine
+  has started before anything after the request is handled. So an agent's
+  `Cancel` runs only after `Prompt` was called for each prompt before it.
+  The two then run side by side, and `Prompt` may not have registered its
+  turn yet. `acp.SequenceFromContext` tells which message came first.
 - **Errors.** An error from the other side is an `*acp.Error` with ACP's
   code (use `errors.As`). A call after the connection ends returns
   `acp.ErrClosed`.

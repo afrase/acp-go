@@ -4,6 +4,14 @@ This module follows semantic versioning; see the README's Versioning
 section for what that covers. Each release names the release of ACP's
 schema it follows.
 
+## Unreleased
+
+- A request's handler has started before anything read after the request
+  is handled: an agent's Cancel no longer runs before the Prompt of a
+  session/prompt that came before it was called.
+- `SequenceFromContext`: where a message came among the other side's, so
+  an agent can tell a Cancel that came after a Prompt still setting up.
+
 ## v0.3.0 (2026-11-14)
 
 ACP schema 1.31.0 (protocol version 1).

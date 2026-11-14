@@ -32,7 +32,12 @@
 // response is delivered once every notification that came before it was
 // handled: when Prompt returns, every update of the turn has been seen.
 // Requests from the other side are each handled on a goroutine of their
-// own, so they may wait (for a user's answer) and may call back. A
+// own, so they may wait (for a user's answer) and may call back. That
+// goroutine has started before anything read after the request is
+// handled: a session/cancel that follows a session/prompt reaches the
+// agent's Cancel only once its Prompt has been called. The two then run
+// side by side, so Prompt may not have registered its turn yet;
+// [SequenceFromContext] says which of two messages came first. A
 // notification handler must not call the other side and wait (the answer
 // can't be read until it returns); such a call fails at once.
 //
