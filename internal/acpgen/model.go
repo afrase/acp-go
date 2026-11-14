@@ -266,12 +266,20 @@ func (m *model) tagged(d *def, n *node, vs []*node) error {
 		vr.typ = payload
 		d.vars = append(d.vars, vr)
 	}
-	for _, v := range d.vars {
-		for _, f := range d.fields {
-			if f.name == v.name || v.name == d.tagField || v.name == "Other" {
-				return fmt.Errorf("variant %s's field clashes", v.name)
-			}
+	// Every field, variant, the tag and Other share the struct: a clash
+	// would only show as a compile error in the generated code.
+	taken := map[string]string{d.tagField: "the tag", "Other": "Other"}
+	for _, f := range d.fields {
+		if what, ok := taken[f.name]; ok {
+			return fmt.Errorf("field %s clashes with %s", f.json, what)
 		}
+		taken[f.name] = "field " + f.json
+	}
+	for _, v := range d.vars {
+		if what, ok := taken[v.name]; ok {
+			return fmt.Errorf("variant %s clashes with %s", quoteTag(v), what)
+		}
+		taken[v.name] = "variant " + quoteTag(v)
 	}
 	return nil
 }

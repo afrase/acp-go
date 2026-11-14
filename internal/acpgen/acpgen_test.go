@@ -154,3 +154,26 @@ func TestTheGeneratedCodeIsCurrent(t *testing.T) {
 		}
 	}
 }
+
+// A tagged union whose variants, tag, head fields or Other would be the
+// same Go field is refused by acpgen, not left for the compiler.
+func TestTaggedClashes(t *testing.T) {
+	variant := func(tag string) string {
+		return `{"type":"object","properties":{"type":{"type":"string","const":"` + tag + `"}},"required":["type"]}`
+	}
+	for name, union := range map[string]string{
+		"Other":         `{"anyOf":[` + variant("text") + `,` + variant("other") + `]}`,
+		"the tag":       `{"anyOf":[` + variant("text") + `,` + variant("type") + `]}`,
+		"same Go name":  `{"anyOf":[` + variant("foo_bar") + `,` + variant("fooBar") + `]}`,
+		"a head field":  `{"properties":{"text":{"type":"string"}},"anyOf":[` + variant("text") + `]}`,
+		"Other, a head": `{"properties":{"other":{"type":"string"}},"anyOf":[` + variant("text") + `]}`,
+	} {
+		s, err := loadSchema([]byte(`{"$defs":{"U":` + union + `}}`))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := newModel(s, "acp"); err == nil || !strings.Contains(err.Error(), "clashes") {
+			t.Errorf("%s: %v, want a clash", name, err)
+		}
+	}
+}
