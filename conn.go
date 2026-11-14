@@ -64,7 +64,7 @@ type conn struct {
 
 type response struct {
 	result json.RawMessage
-	err    *Error
+	err    error // the other side's *Error, or why the response couldn't be read
 }
 
 // newConn makes a connection, which start sets going.
@@ -148,8 +148,12 @@ func (c *conn) dispatch(line []byte) {
 	}
 	c.seq++
 	var f frame
-	if line[0] != '{' || json.Unmarshal(line, &f) != nil {
+	if line[0] != '{' {
 		c.junkLine(line)
+		return
+	}
+	if err := json.Unmarshal(line, &f); err != nil {
+		c.undecodable(line, err)
 		return
 	}
 	switch {
@@ -164,6 +168,35 @@ func (c *conn) dispatch(line []byte) {
 	default:
 		c.reply(&Error{Code: ErrorCodeInvalidRequest, Message: "Invalid request: neither a method nor an id"})
 	}
+}
+
+// undecodable handles an object that isn't a JSON-RPC message as it
+// should be (its method isn't a string, its error's code isn't an
+// integer) by its id, when that can be read: a response settles the call
+// it answers with an error, and a request is answered Invalid request
+// with its id. Either way, nothing waits forever for it.
+func (c *conn) undecodable(line []byte, err error) {
+	var head struct {
+		ID     json.RawMessage `json:"id"`
+		Method json.RawMessage `json:"method"`
+	}
+	if json.Unmarshal(line, &head) != nil || head.ID == nil {
+		c.junkLine(line)
+		return
+	}
+	c.log.Warn("acp: a message that doesn't decode", "bytes", len(line), "err", err)
+	if head.Method == nil {
+		c.settle(head.ID, response{err: &Error{Code: ErrorCodeInternalError, Message: "Internal error: the response doesn't decode: " + err.Error()}})
+		return
+	}
+	if idKey(head.ID) == "" {
+		c.reply(&Error{Code: ErrorCodeInvalidRequest, Message: "Invalid request: a bad id"})
+		return
+	}
+	msg := encodeError(head.ID, &Error{Code: ErrorCodeInvalidRequest, Message: "Invalid request: " + err.Error()})
+	c.handlers.Go(func() { // the other side's call waits for it: not one reply may skip
+		_, _ = c.write(c.ctx, msg) // the connection may be ending
+	})
 }
 
 // junkLine answers a line that isn't a JSON-RPC message as JSON-RPC says
@@ -331,16 +364,25 @@ func (n *notifyCtx) Value(key any) any {
 
 // answered delivers a response to the call waiting for it.
 func (c *conn) answered(f frame) {
-	id, err := strconv.ParseInt(string(f.ID), 10, 64)
+	r := response{result: f.Result}
+	if f.Error != nil {
+		r.err = f.Error
+	}
+	c.settle(f.ID, r)
+}
+
+// settle hands r to the call with id, if one waits.
+func (c *conn) settle(rawID json.RawMessage, r response) {
+	id, err := strconv.ParseInt(string(rawID), 10, 64)
 	c.mu.Lock()
 	ch := c.pending[id]
 	delete(c.pending, id)
 	c.mu.Unlock()
 	if err != nil || ch == nil {
-		c.log.Debug("acp: a response to no request of ours", "bytes", len(f.ID))
+		c.log.Debug("acp: a response to no request of ours", "bytes", len(rawID))
 		return
 	}
-	ch <- response{result: f.Result, err: f.Error}
+	ch <- r
 }
 
 // safeRequest runs the request handler, turning a panic into an error: one

@@ -878,6 +878,36 @@ func TestBadInputIsAnsweredAsJSONRPCSays(t *testing.T) {
 	}
 }
 
+// A message whose id can be read but whose method or error can't is
+// answered by its id: a request with an error that names it, a response
+// by failing the call it answers (with no reply).
+func TestAnUndecodableMessageIsTakenByItsID(t *testing.T) {
+	agent := &testAgent{}
+	r := rawClient(t, agent)
+	r.send(`{"jsonrpc":"2.0","id":5,"method":42}`)
+	if m := r.read(); code(m) != -32600 || m["id"] != float64(5) {
+		t.Errorf("a request whose method isn't a string: %v", m)
+	}
+	called := make(chan error, 1)
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		called <- agent.client.Call(ctx, "_ask", nil, nil)
+	}()
+	if m := r.read(); m["method"] != "_ask" {
+		t.Fatalf("the agent's call: %v", m)
+	}
+	r.send(`{"jsonrpc":"2.0","id":1,"error":{"code":"bad","message":"an error with a string code"}}`)
+	var e *acp.Error
+	if err := <-called; !errors.As(err, &e) || e.Code != acp.ErrorCodeInternalError {
+		t.Errorf("the call answered with an error that doesn't decode: %v", err)
+	}
+	r.send(`{"jsonrpc":"2.0","id":6,"method":"session/new","params":{"cwd":"/","mcpServers":[]}}`)
+	if m := r.read(); m["id"] != float64(6) {
+		t.Errorf("what came next: %v (a reply to the response?)", m)
+	}
+}
+
 // stuckWriter is an other side that doesn't read: a Write waits until
 // Close.
 type stuckWriter struct {
