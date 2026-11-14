@@ -37,8 +37,10 @@ func NewAgentConn(r io.Reader, w io.Writer, newClient func(*AgentConn) Client, o
 
 // StartPrompt sends a session/prompt and returns once it is written,
 // before the turn ends; wait waits for the turn's result. A Cancel sent
-// after StartPrompt returns reaches the agent after the prompt, which
-// Prompt can't promise when the two are called from different goroutines.
+// after StartPrompt returns is written after the prompt, which Prompt
+// can't promise when the two are called from different goroutines. (An
+// agent on this package handles it once its Prompt has been called;
+// [SequenceFromContext] orders the two.)
 func (a *AgentConn) StartPrompt(ctx context.Context, req *PromptRequest) (wait func(context.Context) (*PromptResponse, error), err error) {
 	w, err := a.c.send(ctx, "session/prompt", req)
 	if err != nil {

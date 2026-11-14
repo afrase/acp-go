@@ -29,10 +29,11 @@ type handler struct {
 // handled one at a time on the reading goroutine, so a slow handler slows
 // the reading, and the other side's writes, down (back-pressure); its
 // requests are each handled on a goroutine of their own, after every
-// notification that came before them; a response is delivered once every
-// notification before it was handled. Messages are written one at a time
-// by the writing goroutine; a caller waits while the other side doesn't
-// read, until its context ends.
+// notification that came before them, and that goroutine has started
+// before anything after the request is handled; a response is delivered
+// once every notification before it was handled. Messages are written one
+// at a time by the writing goroutine; a caller waits while the other side
+// doesn't read, until its context ends.
 type conn struct {
 	r     io.Reader
 	w     io.Writer
@@ -43,9 +44,9 @@ type conn struct {
 
 	ctx        context.Context //nolint:containedctx // the connection's lifetime: handlers' contexts derive from it
 	cancel     context.CancelFunc
-	notifyCtx  context.Context //nolint:containedctx // ctx, marked as a notification handler's
-	writes     chan writeReq   // to the writing goroutine
+	writes     chan writeReq // to the writing goroutine
 	writerDone chan struct{}
+	handedOff  chan struct{} // a request's goroutine has started (serve waits for it)
 
 	mu       sync.Mutex
 	nextID   int64
@@ -57,6 +58,7 @@ type conn struct {
 	done     chan struct{}  // closed once the reading, the handlers and wait have ended
 	wait     func()         // run after the reading ends, before done closes (a process's Wait)
 	junk     int            // lines that weren't JSON-RPC (on the reading goroutine)
+	seq      uint64         // lines read (on the reading goroutine): a message's place in the order
 }
 
 type response struct {
@@ -68,11 +70,10 @@ type response struct {
 func newConn(r io.Reader, w io.Writer, closeFn func(cause error) error, opts options) *conn {
 	c := &conn{
 		r: r, w: w, close: closeFn, opts: opts, log: opts.logger(),
-		writes: make(chan writeReq), writerDone: make(chan struct{}), pending: map[int64]chan response{}, incoming: map[string]context.CancelFunc{},
-		done: make(chan struct{}),
+		writes: make(chan writeReq), writerDone: make(chan struct{}), handedOff: make(chan struct{}),
+		pending: map[int64]chan response{}, incoming: map[string]context.CancelFunc{}, done: make(chan struct{}),
 	}
 	c.ctx, c.cancel = context.WithCancel(context.Background())
-	c.notifyCtx = context.WithValue(c.ctx, notificationKey{}, c)
 	return c
 }
 
@@ -144,6 +145,7 @@ func (c *conn) dispatch(line []byte) {
 	if len(line) == 0 {
 		return
 	}
+	c.seq++
 	var f frame
 	if line[0] != '{' || json.Unmarshal(line, &f) != nil {
 		c.junkLine(line)
@@ -213,7 +215,11 @@ func idKey(id json.RawMessage) string {
 	return ""
 }
 
-// serve handles one of the other side's requests on a goroutine of its own.
+// serve handles one of the other side's requests on a goroutine of its own,
+// and returns once that goroutine has started: what was read after the
+// request (a session/cancel after a session/prompt) is handled only then,
+// as the TypeScript SDK runs a handler up to its first await before it
+// reads on.
 //
 //nolint:contextcheck // the response is written with the connection's context: it answers a withdrawn request too
 func (c *conn) serve(f frame) {
@@ -222,11 +228,12 @@ func (c *conn) serve(f frame) {
 		c.reply(&Error{Code: ErrorCodeInvalidRequest, Message: "Invalid request: a bad id"})
 		return
 	}
-	ctx, cancel := context.WithCancel(context.WithValue(c.ctx, requestIDKey{}, f.ID))
+	ctx, cancel := context.WithCancel(context.WithValue(context.WithValue(c.ctx, requestIDKey{}, f.ID), seqKey{}, c.seq))
 	c.mu.Lock()
 	c.incoming[key] = cancel
 	c.mu.Unlock()
 	c.handlers.Go(func() {
+		c.handedOff <- struct{}{}
 		defer cancel()
 		start := time.Now()
 		result, err := c.safeRequest(ctx, f.Method, f.Params)
@@ -247,6 +254,7 @@ func (c *conn) serve(f frame) {
 			c.log.Warn("acp: a response wasn't sent", "rpc", f.Method, "err", werr)
 		}
 	})
+	<-c.handedOff
 }
 
 // withdrawn ends the context of a request the other side withdrew
@@ -267,8 +275,10 @@ func (c *conn) withdrawn(params json.RawMessage) {
 // notified handles one of the other side's notifications, on the reading
 // goroutine: notifications are handled in order, and nothing more is read
 // until the handler returns.
+//
+//nolint:contextcheck // its handler's context is the connection's
 func (c *conn) notified(f frame) {
-	err := c.safeNotify(c.notifyCtx, f.Method, f.Params)
+	err := c.safeNotify(&notifyCtx{Context: c.ctx, c: c, seq: c.seq}, f.Method, f.Params)
 	switch {
 	case errors.Is(err, errUnknownNotification):
 		c.log.Debug("acp: notification ignored", "rpc", f.Method)
@@ -277,6 +287,26 @@ func (c *conn) notified(f frame) {
 	case f.Method != "session/update": // a turn sends one a chunk
 		c.log.Debug("acp: notification handled", "rpc", f.Method)
 	}
+}
+
+// notifyCtx is a notification handler's context: the connection's, marked
+// as a notification handler's, with the notification's sequence. It is
+// one allocation, not two context.WithValues: a turn sends an update a
+// chunk.
+type notifyCtx struct {
+	context.Context //nolint:containedctx // the connection's
+	c               *conn
+	seq             uint64
+}
+
+func (n *notifyCtx) Value(key any) any {
+	switch key.(type) {
+	case notificationKey:
+		return n.c
+	case seqKey:
+		return n.seq
+	}
+	return n.Context.Value(key)
 }
 
 // answered delivers a response to the call waiting for it.
@@ -525,6 +555,7 @@ func (c *conn) logDone(ctx context.Context, what, method string, start time.Time
 type (
 	requestIDKey    struct{}
 	notificationKey struct{}
+	seqKey          struct{}
 )
 
 // RequestIDFromContext returns the JSON-RPC id of the request whose handler
@@ -533,4 +564,18 @@ type (
 func RequestIDFromContext(ctx context.Context) (RequestID, bool) {
 	id, ok := ctx.Value(requestIDKey{}).(RequestID)
 	return id, ok
+}
+
+// SequenceFromContext returns where the message whose handler got ctx
+// came among the other side's messages: one read later has a larger
+// number.
+//
+// It orders a request and a notification whose handlers run side by
+// side. An agent's Cancel can run while the Prompt before it is still
+// setting up, before it has registered its turn. So the agent keeps the
+// last Cancel's sequence, and a Prompt that registers its turn with a
+// smaller sequence than that is cancelled already.
+func SequenceFromContext(ctx context.Context) (uint64, bool) {
+	n, ok := ctx.Value(seqKey{}).(uint64)
+	return n, ok
 }

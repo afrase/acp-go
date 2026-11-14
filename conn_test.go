@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"runtime"
 	"strings"
 	"sync"
 	"testing"
@@ -341,23 +342,143 @@ func TestTheAgentWithdrawsAQuestion(t *testing.T) {
 	}
 }
 
-func TestStartPromptThenCancel(t *testing.T) {
-	agent := &testAgent{prompt: func(ctx context.Context, a *testAgent, _ *acp.PromptRequest) (*acp.PromptResponse, error) {
-		for {
-			a.mu.Lock()
-			n := len(a.cancelled)
-			a.mu.Unlock()
-			if n > 0 {
-				return &acp.PromptResponse{StopReason: acp.StopReasonCancelled}, nil
-			}
-			select {
-			case <-ctx.Done():
-				return nil, ctx.Err()
-			case <-time.After(time.Millisecond):
-			}
+// turnAgent's Prompt runs a turn until a Cancel ends it. Its Cancel ends
+// the turns it knows of; with bySeq, it also keeps the Cancel's sequence,
+// so a Prompt read before the Cancel that registers its turn only after it
+// is cancelled all the same.
+type turnAgent struct {
+	acp.UnimplementedAgent
+	setup time.Duration // a Prompt's work before it registers its turn
+	bySeq bool
+
+	mu        sync.Mutex
+	cancelSeq uint64
+	turns     map[chan struct{}]uint64 // running turns, with their prompts' sequence
+}
+
+func (a *turnAgent) Prompt(ctx context.Context, _ *acp.PromptRequest) (*acp.PromptResponse, error) {
+	time.Sleep(a.setup)
+	seq, _ := acp.SequenceFromContext(ctx)
+	stop := make(chan struct{})
+	a.mu.Lock()
+	if a.bySeq && a.cancelSeq > seq {
+		a.mu.Unlock()
+		return &acp.PromptResponse{StopReason: acp.StopReasonCancelled}, nil
+	}
+	if a.turns == nil {
+		a.turns = map[chan struct{}]uint64{}
+	}
+	a.turns[stop] = seq
+	a.mu.Unlock()
+	select {
+	case <-stop:
+		return &acp.PromptResponse{StopReason: acp.StopReasonCancelled}, nil
+	case <-time.After(time.Second):
+		return &acp.PromptResponse{StopReason: acp.StopReasonEndTurn}, nil
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
+}
+
+func (a *turnAgent) Cancel(ctx context.Context, _ *acp.CancelNotification) error {
+	seq, ok := acp.SequenceFromContext(ctx)
+	if !ok {
+		return errors.New("a notification without its sequence")
+	}
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	a.cancelSeq = seq
+	for stop := range a.turns {
+		close(stop)
+		delete(a.turns, stop)
+	}
+	return nil
+}
+
+// serveLines serves agent the client's lines, written to it at once (so
+// the connection reads them all with one Read), and returns what the
+// agent answered each id with.
+func serveLines(t *testing.T, agent acp.Agent, lines ...string) map[string]any {
+	t.Helper()
+	leaktest.Check(t)
+	toAgentR, toAgentW := io.Pipe()
+	toClientR, toClientW := io.Pipe()
+	c := acp.NewClientConn(toAgentR, toClientW, func(*acp.ClientConn) acp.Agent { return agent })
+	defer func() {
+		_ = toAgentW.Close()
+		go func() { _, _ = io.Copy(io.Discard, toClientR) }()
+		<-c.Done()
+	}()
+	go func() { _, _ = io.WriteString(toAgentW, strings.Join(lines, "\n")+"\n") }()
+	sc := bufio.NewScanner(toClientR)
+	answers := map[string]any{}
+	for range strings.Count(strings.Join(lines, "\n"), `"id":`) {
+		if !sc.Scan() {
+			t.Fatalf("no answer: %v", sc.Err())
 		}
-	}}
-	agentConn, _ := connect(t, &testClient{}, agent)
+		var m struct {
+			ID     json.RawMessage `json:"id"`
+			Result struct {
+				StopReason string `json:"stopReason"`
+			} `json:"result"`
+			Error any `json:"error"`
+		}
+		if err := json.Unmarshal(sc.Bytes(), &m); err != nil {
+			t.Fatal(err)
+		}
+		if m.Error != nil {
+			answers[string(m.ID)] = m.Error
+		} else {
+			answers[string(m.ID)] = m.Result.StopReason
+		}
+	}
+	return answers
+}
+
+const (
+	promptLine = `{"jsonrpc":"2.0","id":1,"method":"session/prompt","params":{"sessionId":"s1","prompt":[]}}`
+	cancelLine = `{"jsonrpc":"2.0","method":"session/cancel","params":{"sessionId":"s1"}}`
+)
+
+// A session/cancel read right after a session/prompt is handled only once
+// the prompt's handler has started. With one P, the handler then runs up
+// to its first wait before the reading goes on, so an agent that cancels
+// the turns it knows of sees the turn (it didn't when the reading went on
+// at once and ran Cancel first).
+func TestARequestsHandlerStartsBeforeWhatFollowsIt(t *testing.T) {
+	defer runtime.GOMAXPROCS(runtime.GOMAXPROCS(1))
+	for range 20 {
+		if got := serveLines(t, &turnAgent{}, promptLine, cancelLine)["1"]; got != string(acp.StopReasonCancelled) {
+			t.Fatalf("the prompt ended %v", got)
+		}
+	}
+}
+
+// A Cancel that runs while the prompt before it still sets up: the
+// sequences say the cancel came after it. One before a prompt doesn't
+// cancel it.
+func TestACancelAfterAPromptCancelsItThoughItRunsFirst(t *testing.T) {
+	agent := &turnAgent{setup: 50 * time.Millisecond, bySeq: true}
+	if got := serveLines(t, agent, promptLine, cancelLine)["1"]; got != string(acp.StopReasonCancelled) {
+		t.Errorf("the prompt ended %v", got)
+	}
+	agent = &turnAgent{setup: 50 * time.Millisecond, bySeq: true}
+	if got := serveLines(t, agent, cancelLine, promptLine)["1"]; got != string(acp.StopReasonEndTurn) {
+		t.Errorf("a prompt after a cancel ended %v", got)
+	}
+}
+
+func TestStartPromptThenCancel(t *testing.T) {
+	leaktest.Check(t)
+	toAgentR, toAgentW := io.Pipe()
+	toClientR, toClientW := io.Pipe()
+	ac := acp.NewClientConn(toAgentR, toClientW, func(*acp.ClientConn) acp.Agent { return &turnAgent{setup: 20 * time.Millisecond, bySeq: true} })
+	agentConn := acp.NewAgentConn(toClientR, toAgentW, func(*acp.AgentConn) acp.Client { return &testClient{} })
+	t.Cleanup(func() {
+		_ = agentConn.Close()
+		<-agentConn.Done()
+		<-ac.Done()
+	})
 	ctx := ctxFor(t)
 	wait, err := agentConn.StartPrompt(ctx, &acp.PromptRequest{SessionID: "s1"})
 	if err != nil {
