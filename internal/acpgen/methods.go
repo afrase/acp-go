@@ -105,7 +105,6 @@ type side struct{ name, conn, doc, other string }
 // types, the dispatch of incoming messages to them, and the calls each
 // connection makes.
 func genMethods(b *bytes.Buffer, md *model, ms []method) {
-	docs := methodDocs(md.s)
 	for _, sd := range []side{
 		{"Agent", "AgentConn", agentDoc, "agent's"},
 		{"Client", "ClientConn", clientDoc, "client's"},
@@ -116,14 +115,14 @@ func genMethods(b *bytes.Buffer, md *model, ms []method) {
 				mine = append(mine, m)
 			}
 		}
-		genInterface(b, md, sd, mine, docs)
+		genInterface(b, md, sd, mine)
 		genUnimplemented(b, sd, mine)
 		genDispatch(b, sd, mine)
 		genCalls(b, sd, mine)
 	}
 }
 
-func genInterface(b *bytes.Buffer, md *model, sd side, mine []method, docs map[string]string) {
+func genInterface(b *bytes.Buffer, md *model, sd side, mine []method) {
 	b.WriteString(sd.doc)
 	fmt.Fprintf(b, "type %s interface {\n", sd.name)
 	for _, m := range mine {
@@ -134,9 +133,15 @@ func genInterface(b *bytes.Buffer, md *model, sd side, mine []method, docs map[s
 			fmt.Fprintf(b, "\t%s(ctx context.Context, req *%s) (*%s, error)\n", m.name, m.req, m.resp)
 		}
 	}
-	md.comment(b, "\t", docs["ExtMethodRequest"]+extMethodNote, "")
+	// The schema's docs for these are the client's (they say the agent
+	// sends them), so each side gets its own.
+	from := "agent"
+	if sd.name == "Agent" {
+		from = "client"
+	}
+	md.comment(b, "\t", fmt.Sprintf(extMethodDoc, from), "")
 	b.WriteString("\tExtMethod(ctx context.Context, method string, params json.RawMessage) (any, error)\n")
-	md.comment(b, "\t", docs["ExtNotification"]+extNotificationNote, "")
+	md.comment(b, "\t", fmt.Sprintf(extNotificationDoc, from), "")
 	b.WriteString("\tExtNotification(ctx context.Context, method string, params json.RawMessage) error\n")
 	fmt.Fprintf(b, "\tmustEmbedUnimplemented%s()\n}\n\n", sd.name)
 }
@@ -195,6 +200,22 @@ func genCalls(b *bytes.Buffer, sd side, mine []method) {
 	}
 }
 
+// genRecorders writes, for the tests, a RecordingAgent and a
+// RecordingClient: each sends the name of every notification method called
+// on it, so a test can see a notification reach the method of its name.
+// They are exported from a _test.go file of the package, for its external
+// tests.
+func genRecorders(b *bytes.Buffer, ms []method) {
+	for _, sd := range []string{"Agent", "Client"} {
+		fmt.Fprintf(b, "// Recording%s is %s that sends the name of each notification\n// method called to Got.\ntype Recording%s struct {\n\tUnimplemented%s\n\tGot chan<- string\n}\n\n", sd, map[string]string{"Agent": "an Agent", "Client": "a Client"}[sd], sd, sd)
+		for _, m := range ms {
+			if m.notification() && strings.EqualFold(m.side, sd) {
+				fmt.Fprintf(b, "// %s records the call.\nfunc (r Recording%s) %s(context.Context, *%s) error {\n\tr.Got <- %q\n\treturn nil\n}\n\n", m.name, sd, m.name, m.req, m.name)
+			}
+		}
+	}
+}
+
 const agentDoc = `// Agent is what an agent does: the methods a client calls and the
 // notifications it sends. Its methods run as the client's messages arrive:
 // each request on a goroutine of its own, each notification in turn on
@@ -220,7 +241,10 @@ const clientDoc = `// Client is what a client does: the methods an agent calls a
 `
 
 const (
-	extMethodNote = "\n\nExtMethod gets every request whose method starts with \"_\"; its result\nis encoded as the response."
-	// The notes start on a paragraph of their own.
-	extNotificationNote = "\n\nExtNotification gets every notification whose method starts with \"_\"."
+	extMethodDoc = "ExtMethod answers the %s's requests whose method starts with \"_\":\n" +
+		"methods outside ACP, which extensions add. Its result is encoded as\n" +
+		"the response.\n\nSee protocol docs: [Extensibility](/protocol/v1/extensibility)"
+	extNotificationDoc = "ExtNotification gets the %s's notifications whose method starts\n" +
+		"with \"_\": notifications outside ACP, which extensions add.\n\n" +
+		"See protocol docs: [Extensibility](/protocol/v1/extensibility)"
 )

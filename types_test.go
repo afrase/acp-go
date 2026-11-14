@@ -190,3 +190,119 @@ func TestErrorsCarryTheirCode(t *testing.T) {
 		t.Errorf("%v", err)
 	}
 }
+
+// What a connection sends isn't HTML-escaped at any depth: < > & go as
+// they are, in a required list, an untagged union or a Nullable too.
+func TestNothingIsHTMLEscaped(t *testing.T) {
+	text := acp.ContentBlock{Text: &acp.TextContent{Text: "<a & b>"}}
+	title := "<a & b>"
+	for _, v := range []any{
+		&acp.PromptRequest{SessionID: "s", Prompt: []acp.ContentBlock{text}},
+		acp.EmbeddedResourceResource{TextResourceContents: &acp.TextResourceContents{URI: "file:///a", Text: "<a & b>"}},
+		acp.SessionInfoUpdate{Title: acp.Nullable[string]{Value: &title, Present: true}},
+	} {
+		var b strings.Builder
+		enc := json.NewEncoder(&b)
+		enc.SetEscapeHTML(false) // as the connection's encoder
+		if err := enc.Encode(v); err != nil {
+			t.Fatal(err)
+		}
+		if !strings.Contains(b.String(), "<a & b>") {
+			t.Errorf("%T: %s", v, b.String())
+		}
+	}
+}
+
+// An optional list's [] is sent, and passed on: in an update it replaces
+// the list with nothing, where an absent one leaves it as it was.
+func TestAnEmptyOptionalListIsSent(t *testing.T) {
+	got := encode(t, acp.ToolCallUpdate{ToolCallID: "t", Content: []acp.ToolCallContent{}})
+	if want := `{"toolCallId":"t","content":[]}`; got != want {
+		t.Errorf("got %s, want %s", got, want)
+	}
+	if got := encode(t, acp.ToolCallUpdate{ToolCallID: "t"}); got != `{"toolCallId":"t"}` {
+		t.Errorf("a nil list: %s", got)
+	}
+	in := `{"sessionId":"s","update":{"sessionUpdate":"tool_call_update","toolCallId":"t","content":[],"locations":[]}}`
+	if got := encode(t, decode[acp.SessionNotification](t, in)); got != in {
+		t.Errorf("passed on as %s", got)
+	}
+}
+
+// The variant without a tag is also taken when the tag is its title (some
+// peers send an MCP server's "type":"stdio"), and is sent without one.
+func TestTheUntaggedVariantByItsTitle(t *testing.T) {
+	s := decode[acp.MCPServer](t, `{"type":"stdio","name":"fs","command":"/bin/fs","args":[],"env":[]}`)
+	if s.Stdio == nil || s.Stdio.Command != "/bin/fs" || s.Other != nil {
+		t.Errorf("stdio: %+v", s)
+	}
+	if a := decode[acp.AuthMethod](t, `{"type":"agent","id":"x","name":"n"}`); a.Agent == nil || a.Agent.ID != "x" {
+		t.Errorf("agent: %+v", a)
+	}
+	got := encode(t, acp.MCPServer{Type: "stdio", Stdio: &acp.MCPServerStdio{Name: "fs", Command: "/bin/fs"}})
+	if want := `{"name":"fs","command":"/bin/fs","args":[],"env":[]}`; got != want {
+		t.Errorf("sent as %s, want %s", got, want)
+	}
+}
+
+// A required property, at any depth, must be there and not null (unless
+// the schema lets it be null): in requests, notifications, union variants
+// and responses alike, as the TypeScript and Rust SDKs check.
+func TestRequiredPropertiesAtEveryLevel(t *testing.T) {
+	for _, tc := range []struct {
+		in   string
+		into any
+	}{
+		{`{"sessionId":"s","configId":"c","type":"boolean"}`, new(acp.SetSessionConfigOptionRequest)},
+		{`{"sessionId":null,"prompt":[]}`, new(acp.PromptRequest)},
+		{`{"sessionId":"s","prompt":[{"type":"text"}]}`, new(acp.PromptRequest)},
+		{`{"sessionId":"s","prompt":[null]}`, new(acp.PromptRequest)},
+		{`{}`, new(acp.SessionNotification)},
+		{`{"sessionId":"s","update":{"sessionUpdate":"agent_message_chunk"}}`, new(acp.SessionNotification)},
+		{`{}`, new(acp.NewSessionResponse)},
+		{`{}`, new(acp.CancelRequestNotification)},
+		{`{"sessionId":"s","prompt":[{"type":"resource","resource":null}]}`, new(acp.PromptRequest)},
+	} {
+		if err := json.Unmarshal([]byte(tc.in), tc.into); err == nil {
+			t.Errorf("%T %s decoded: %+v", tc.into, tc.in, tc.into)
+		}
+	}
+	for _, tc := range []struct {
+		in   string
+		into any
+	}{
+		{`{"requestId":null}`, new(acp.CancelRequestNotification)}, // a JSON-RPC id may be null
+		{` { "sessionId" : "s" , "prompt" : [ { "type" : "text" , "text" : "}{\"sessionId\"" } ] } `, new(acp.PromptRequest)},
+		{`{"sessionId":"s","prompt":[]}`, new(acp.PromptRequest)},
+		{`{"sessionId":"s","prompt":[],"x":{"a":[1,{"b":"]}"}],"c":null}}`, new(acp.PromptRequest)},
+	} {
+		if err := json.Unmarshal([]byte(tc.in), tc.into); err != nil {
+			t.Errorf("%T %s: %v", tc.into, tc.in, err)
+		}
+	}
+}
+
+// A message without its required properties doesn't reach its handler: a
+// request is answered Invalid params, a notification is dropped.
+func TestAMessageWithoutItsRequiredPropertiesIsRefused(t *testing.T) {
+	agent := &testAgent{}
+	r := rawClient(t, agent)
+	for _, line := range []string{
+		`{"jsonrpc":"2.0","id":1,"method":"session/prompt","params":{"sessionId":null,"prompt":[]}}`,
+		`{"jsonrpc":"2.0","id":2,"method":"session/prompt","params":{"sessionId":"s1","prompt":[{"type":"text"}]}}`,
+	} {
+		r.send(line)
+		if m := r.read(); code(m) != -32602 {
+			t.Errorf("%s: answered %v", line, m)
+		}
+	}
+	r.send(`{"jsonrpc":"2.0","method":"session/cancel","params":{}}`)
+	r.send(`{"jsonrpc":"2.0","method":"session/cancel","params":{"sessionId":"s1"}}`)
+	r.send(`{"jsonrpc":"2.0","id":3,"method":"session/new","params":{"cwd":"/","mcpServers":[]}}`)
+	r.read() // the notifications before it have been handled
+	agent.mu.Lock()
+	defer agent.mu.Unlock()
+	if len(agent.cancelled) != 1 || agent.cancelled[0] != "s1" {
+		t.Errorf("cancelled %q", agent.cancelled)
+	}
+}
