@@ -237,15 +237,15 @@ complete):
 | When the other side outpaces you | it waits (back-pressure) | the connection closes after 1,024 queued notifications | the connection fails at a queue limit (1,024 notifications or 32 MiB, configurable) |
 | Message size | no cap unless you set one | 10 MiB | 10 MiB by default, configurable |
 | `$/cancel_request` | both ways | both ways | both ways |
-| Running an agent | `Start`: its process group killed on Unix, the process alone on Windows | you start it | its process tree, on Unix and on Windows (job objects) |
+| Running an agent | `Start`: its process group killed on Unix, its job object on Windows | you start it | its process tree, on Unix and on Windows (job objects) |
 | Checked against | the TypeScript SDK both ways; acp-tck | its own tests and examples, including a Gemini CLI client | the TypeScript and Rust SDKs, four ways |
 | Dependencies | none | none | `golang.org/x/sys` |
 
-caelis-labs' SDK is the most thorough of the others. Its interop matrix,
-Windows job objects and v2 draft go further than acp-go. Its API is also
-much larger (prepared requests, readiness hooks, raw session updates).
+caelis-labs' SDK is the most thorough of the others. Its interop matrix
+and v2 draft go further than acp-go. Its API is also much larger
+(prepared requests, readiness hooks, raw session updates).
 
-- Pick caelis-labs' SDK if you need ACP v2 or Windows process trees.
+- Pick caelis-labs' SDK if you need ACP v2.
 - Pick acp-go if you want the unstable protocol, a small API, or a
   connection that never gives up under load.
 

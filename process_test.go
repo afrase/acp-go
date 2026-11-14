@@ -23,6 +23,10 @@ func TestMain(m *testing.M) {
 		serveTestAgent()
 		os.Exit(0)
 	}
+	if d, err := time.ParseDuration(os.Getenv("ACPGO_TEST_SLEEP")); err == nil {
+		time.Sleep(d) // the test agent's child
+		os.Exit(0)
+	}
 	m.Run()
 }
 
@@ -37,7 +41,8 @@ func serveTestAgent() {
 	a.ext = func(ctx context.Context, method string, _ json.RawMessage) (any, error) {
 		switch method {
 		case "_test/spawn":
-			cmd := exec.Command("sleep", "30")
+			cmd := exec.Command(os.Args[0]) //nolint:gosec // the test binary
+			cmd.Env = append(os.Environ(), "ACPGO_TEST_AGENT=", "ACPGO_TEST_SLEEP=30s")
 			cmd.Stdout = os.Stdout // holds the agent's stdout open
 			if err := cmd.Start(); err != nil {
 				return nil, err

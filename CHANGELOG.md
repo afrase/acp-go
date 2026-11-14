@@ -45,6 +45,10 @@ schema it follows.
   read has waited a second with nothing to read, not a second after the
   exit. Its process group is killed as soon as it exits.
 
+- `Start` on Windows: the agent starts a console process group of its own
+  (so the console's Ctrl+C reaches the client alone, as on Unix) and runs
+  in a job object, so Close kills the processes it started too.
+
 ## v0.3.0 (2026-11-14)
 
 ACP schema 1.31.0 (protocol version 1).

@@ -1,0 +1,20 @@
+//go:build windows
+
+package acp
+
+import (
+	"os/exec"
+	"syscall"
+	"testing"
+)
+
+// The agent starts a console process group of its own, so the console's
+// Ctrl+C doesn't reach it; the caller's flags stay.
+func TestTheAgentHasAConsoleGroupOfItsOwn(t *testing.T) {
+	cmd := exec.Command("agent")
+	cmd.SysProcAttr = &syscall.SysProcAttr{CreationFlags: syscall.CREATE_UNICODE_ENVIRONMENT}
+	ownGroup(cmd)
+	if f := cmd.SysProcAttr.CreationFlags; f&syscall.CREATE_NEW_PROCESS_GROUP == 0 || f&syscall.CREATE_UNICODE_ENVIRONMENT == 0 {
+		t.Errorf("creation flags %#x", f)
+	}
+}

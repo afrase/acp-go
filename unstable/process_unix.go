@@ -21,11 +21,20 @@ func ownGroup(cmd *exec.Cmd) {
 	}
 }
 
-// kill kills cmd's process group, or, when cmd doesn't lead one (its
-// SysProcAttr put it in another), cmd's process alone.
-func kill(cmd *exec.Cmd) error {
-	if err := syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL); err == nil {
+// group is a started agent's process group.
+type group struct{ cmd *exec.Cmd }
+
+func newGroup(cmd *exec.Cmd) *group { return &group{cmd: cmd} }
+
+// kill kills the agent's process group, or, when the agent doesn't lead
+// one (its SysProcAttr put it in another), the agent alone.
+func (g *group) kill() error {
+	if err := syscall.Kill(-g.cmd.Process.Pid, syscall.SIGKILL); err == nil {
 		return nil
 	}
-	return cmd.Process.Kill()
+	return g.cmd.Process.Kill()
 }
+
+// release lets go of what the group holds, once the agent has been waited
+// for.
+func (g *group) release() {}
