@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -23,8 +24,9 @@ import (
 // group instead, and Close then kills the agent alone.
 //
 // The connection ends when the agent closes its stdout, or exits: what it
-// wrote before exiting is still read, for up to a second (a process it
-// left running may hold its stdout open). Done is closed once its process
+// wrote before exiting is still read, however long the client takes to
+// handle it; once a read has waited a second with nothing to read (a
+// process it left running may hold its stdout open), the reading ends. Done is closed once its process
 // has been waited for; cmd.ProcessState then says how it ended. (A process
 // that can't be killed, such as one running as another user, keeps Done
 // open until it exits.) If cmd's WaitDelay is zero, Start sets it to a
@@ -66,7 +68,8 @@ func Start(cmd *exec.Cmd, newClient func(*AgentConn) Client, opts ...Option) (*A
 		}
 		return outR.Close()
 	}
-	a := &AgentConn{c: newConn(outR, inW, closeFn, newOptions(opts))}
+	out := &watched{File: outR}
+	a := &AgentConn{c: newConn(out, inW, closeFn, newOptions(opts))}
 	exited := make(chan struct{})
 	go func() {
 		_ = cmd.Wait() // its result is in cmd.ProcessState
@@ -76,11 +79,8 @@ func Start(cmd *exec.Cmd, newClient func(*AgentConn) Client, opts ...Option) (*A
 	go func() {
 		select {
 		case <-exited: // what it wrote last is still read, unless a process it left holds its stdout
-			select {
-			case <-a.c.ctx.Done():
-			case <-time.After(drainTime):
-				_ = outR.Close()
-			}
+			_ = kill(cmd) // what it left running in its group, which may hold its stdout
+			out.drain(a.c.ctx.Done())
 		case <-a.c.ctx.Done(): // it closed its stdout, or a write failed: it gets drainTime, or Shutdown's time, to exit
 			var patience <-chan time.Time
 			var shutdown <-chan struct{}
@@ -104,7 +104,41 @@ func Start(cmd *exec.Cmd, newClient func(*AgentConn) Client, opts ...Option) (*A
 	return a, nil
 }
 
-// drainTime is how long what an exited agent wrote is still read, and how
-// long an agent that closed its stdout has to exit before it is killed
-// (unless Shutdown gave it longer).
+// drainTime is how long a read of an exited agent's stdout may wait with
+// nothing to read before the reading ends, and how long an agent that
+// closed its stdout has to exit before it is killed (unless Shutdown gave
+// it longer).
 var drainTime = time.Second
+
+// watched is the agent's stdout, which tells whether its reader is waiting
+// on it: edges counts each Read's start and its end, so an odd count is a
+// Read under way.
+type watched struct {
+	*os.File
+	edges atomic.Int64
+}
+
+func (w *watched) Read(p []byte) (int, error) {
+	w.edges.Add(1)
+	defer w.edges.Add(1)
+	return w.File.Read(p)
+}
+
+// drain waits for the reading to end (ended), or closes the pipe once a
+// Read has waited drainTime with nothing to read. A reader that is behind,
+// still handling what it read, isn't cut off: what the agent wrote before
+// it exited is still in the pipe, a result maybe among it.
+func (w *watched) drain(ended <-chan struct{}) {
+	for {
+		armed := w.edges.Load()
+		select {
+		case <-ended:
+			return
+		case <-time.After(drainTime):
+		}
+		if armed%2 == 1 && w.edges.Load() == armed {
+			_ = w.Close()
+			return
+		}
+	}
+}

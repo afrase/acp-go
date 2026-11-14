@@ -40,6 +40,11 @@ schema it follows.
   EPERM), and when the agent doesn't lead its group (a `Pgid` you set),
   Close kills the agent itself rather than nothing.
 
+- What an agent `Start` ran wrote before it exited is all read, however
+  slow the client's handlers are: its stdout is given up on only once a
+  read has waited a second with nothing to read, not a second after the
+  exit. Its process group is killed as soon as it exits.
+
 ## v0.3.0 (2026-11-14)
 
 ACP schema 1.31.0 (protocol version 1).
