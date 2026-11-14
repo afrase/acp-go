@@ -6,10 +6,13 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/afrase/acp-go/internal/leaktest"
 	acp "github.com/afrase/acp-go/unstable"
 )
 
@@ -67,5 +70,55 @@ func TestEveryMethodIsRouted(t *testing.T) {
 				t.Errorf("%T.%s called %q, which reached %q", conn, m.Name, err, data.Method)
 			}
 		}
+	}
+}
+
+// Every notification of each connection reaches the other side's method of
+// the same name. (One sent under a wrong method would be dropped as
+// unknown, so TestEveryMethodIsRouted can't see it.)
+func TestEveryNotificationIsRouted(t *testing.T) {
+	leaktest.Check(t)
+	got := make(chan string, 1)
+	toAgentR, toAgentW := io.Pipe()
+	toClientR, toClientW := io.Pipe()
+	agentConn := acp.NewAgentConn(toClientR, toAgentW, func(*acp.AgentConn) acp.Client { return acp.RecordingClient{Got: got} })
+	clientConn := acp.NewClientConn(toAgentR, toClientW, func(*acp.ClientConn) acp.Agent { return acp.RecordingAgent{Got: got} })
+	t.Cleanup(func() {
+		_ = agentConn.Close()
+		_ = clientConn.Close()
+	})
+	ctx := ctxFor(t)
+	sent := 0
+	for _, conn := range []any{agentConn, clientConn} {
+		v := reflect.ValueOf(conn)
+		for i := range v.NumMethod() {
+			m := v.Type().Method(i)
+			ft := m.Type
+			if ft.NumIn() != 3 || ft.NumOut() != 1 || ft.In(1) != reflect.TypeFor[context.Context]() || ft.In(2).Kind() != reflect.Pointer {
+				continue // requests, Call, Notify, Close and the like
+			}
+			n := reflect.New(ft.In(2).Elem())
+			if seed, ok := seeds[ft.In(2).Elem().Name()]; ok {
+				if err := json.Unmarshal([]byte(seed), n.Interface()); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if err, _ := reflect.TypeAssert[error](v.Method(i).Call([]reflect.Value{reflect.ValueOf(ctx), n})[0]); err != nil {
+				t.Errorf("%T.%s: %v", conn, m.Name, err)
+				continue
+			}
+			sent++
+			select {
+			case name := <-got:
+				if name != m.Name {
+					t.Errorf("%T.%s reached %s", conn, m.Name, name)
+				}
+			case <-time.After(5 * time.Second):
+				t.Errorf("%T.%s reached nothing", conn, m.Name)
+			}
+		}
+	}
+	if sent < 3 {
+		t.Errorf("only %d notifications sent", sent)
 	}
 }

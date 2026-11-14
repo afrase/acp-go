@@ -1,5 +1,7 @@
 // Command acpgen writes this module's Go code from ACP's JSON schema: the
-// types (types_gen.go) and the methods (methods_gen.go) of a package.
+// types (types_gen.go) and the methods (methods_gen.go) of a package, and
+// for its tests, an Agent and a Client that record the notifications they
+// get (methods_gen_test.go).
 //
 //	acpgen -schema schema.json -meta meta.json -pkg acp -out .
 //
@@ -103,6 +105,12 @@ func run(schemaFile, metaFile, pkg, out, copyFrom string) error {
 	fmt.Fprintf(&calls, "// SchemaVersion is the release of ACP's schema this package follows.\nconst SchemaVersion = %q\n\n", version)
 	genMethods(&calls, m, ms)
 	if err := write(filepath.Join(out, "methods_gen.go"), calls.Bytes()); err != nil {
+		return err
+	}
+	var recorders bytes.Buffer
+	header(&recorders, from, version, pkg, `"context"`)
+	genRecorders(&recorders, ms)
+	if err := write(filepath.Join(out, "methods_gen_test.go"), recorders.Bytes()); err != nil {
 		return err
 	}
 	if copyFrom != "" {

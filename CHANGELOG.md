@@ -6,6 +6,9 @@ schema it follows.
 
 ## Unreleased
 
+- Tests: every notification is checked to reach the other side's method of
+  its name, through a `RecordingAgent` and `RecordingClient` that acpgen
+  writes for the tests (`methods_gen_test.go`).
 - Fuzzing: `FuzzStream` fails on a handler panic (the connection recovers
   it, so it used to pass), and `unstable` is fuzzed too: `make fuzz` runs
   its targets, its copies read the root package's corpus, and
