@@ -6,6 +6,10 @@ schema it follows.
 
 ## Unreleased
 
+- Fuzzing: `FuzzStream` fails on a handler panic (the connection recovers
+  it, so it used to pass), and `unstable` is fuzzed too: `make fuzz` runs
+  its targets, its copies read the root package's corpus, and
+  `FuzzDecodeUnstable` covers its own types. `make cover` covers it.
 - **Behaviour change:** required properties are checked at every level of
   every message read: requests, notifications, responses, and the
   objects, list items and union variants inside them. A property that is

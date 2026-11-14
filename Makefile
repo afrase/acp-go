@@ -44,17 +44,21 @@ generated:
 
 check: lint pinned generated test
 
-# Runs each fuzz target for FUZZTIME; new inputs go to Go's cache (copy
-# the interesting ones into testdata/fuzz to keep them).
+# Runs each fuzz target, in both packages, for FUZZTIME; new inputs go to
+# Go's cache (copy the interesting ones into testdata/fuzz to keep them:
+# unstable's copies of the targets read the root package's corpus too).
 fuzz:
 	go test -run '^$$' -fuzz '^FuzzStream$$' -fuzztime $(FUZZTIME) .
 	go test -run '^$$' -fuzz '^FuzzDecode$$' -fuzztime $(FUZZTIME) .
+	go test -run '^$$' -fuzz '^FuzzStream$$' -fuzztime $(FUZZTIME) ./unstable
+	go test -run '^$$' -fuzz '^FuzzDecode$$' -fuzztime $(FUZZTIME) ./unstable
+	go test -run '^$$' -fuzz '^FuzzDecodeUnstable$$' -fuzztime $(FUZZTIME) ./unstable
 
 bench:
 	go test -run '^$$' -bench . -benchtime 2s .
 
 cover:
-	go test -coverprofile=coverage.out . ./steering
+	go test -coverprofile=coverage.out . ./unstable ./steering
 	go tool cover -func=coverage.out | tail -1
 
 # Against the official TypeScript SDK; needs Node.js 24 or later and the
