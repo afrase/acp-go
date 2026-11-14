@@ -20,6 +20,8 @@
 //   - fields the schema marks x-deserialize-default-on-error (or
 //     x-deserialize-skip-invalid-items) decode leniently: a bad value is
 //     dropped instead of failing the whole message;
+//   - an object without a property it requires (or with it null, where the
+//     schema doesn't allow null) fails to decode, at any depth;
 //   - a union with a tag property (sessionUpdate, type, ...) is a struct
 //     with the tag, one field per variant (a pointer, or a bool for a
 //     variant with no fields), and Other, which keeps an unknown variant
