@@ -6,6 +6,10 @@ schema it follows.
 
 ## Unreleased
 
+- An optional list that is empty but not nil is sent as `[]` (`omitzero`),
+  so an update such as `ToolCallUpdate` can replace its content or
+  locations with nothing, and a decoded `[]` is passed on. A nil list is
+  still left out.
 - `<`, `>` and `&` are sent as they are at every depth. Required lists,
   untagged and value unions and `Nullable` were encoded with
   `json.Marshal`, which escaped them.

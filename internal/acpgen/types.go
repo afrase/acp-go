@@ -60,6 +60,10 @@ func jsonTag(f *field) string {
 		return f.json
 	case f.nullable:
 		return f.json + ",omitzero"
+	case strings.HasPrefix(f.typ, "[]"):
+		// Only nil is left out: an empty list is sent, as in an update
+		// whose [] replaces a list with nothing.
+		return f.json + ",omitzero"
 	}
 	return f.json + ",omitempty"
 }

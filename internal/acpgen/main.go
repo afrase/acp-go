@@ -13,9 +13,10 @@
 //
 // How the schema becomes Go:
 //
-//   - an object is a struct; an optional field is left out when empty, and
-//     held by pointer when it is a struct or a number (whose zero means
-//     something); a required list left nil is sent as [];
+//   - an object is a struct; an optional field is left out when empty (a
+//     list only when nil: [] is sent), and held by pointer when it is a
+//     struct or a number (whose zero means something); a required list
+//     left nil is sent as [];
 //   - fields the schema marks x-deserialize-default-on-error (or
 //     x-deserialize-skip-invalid-items) decode leniently: a bad value is
 //     dropped instead of failing the whole message;
