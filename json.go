@@ -25,7 +25,7 @@ func (n Nullable[T]) MarshalJSON() ([]byte, error) {
 	if n.Value == nil {
 		return []byte("null"), nil
 	}
-	return json.Marshal(n.Value)
+	return marshal(n.Value)
 }
 
 // UnmarshalJSON decodes a present value or null.
@@ -122,6 +122,162 @@ func skipInvalid[T any](raw json.RawMessage, dst *[]T) {
 		}
 	}
 	*dst = out
+}
+
+// skipInvalidNullable is skipInvalid for a Nullable list: null is present
+// without a value, and anything but an array or null leaves dst as it is.
+//
+//nolint:unused // only the unstable schema has such a list
+func skipInvalidNullable[T any](raw json.RawMessage, dst *Nullable[[]T]) {
+	if bytes.Equal(bytes.TrimSpace(raw), []byte("null")) {
+		*dst = Nullable[[]T]{Present: true}
+		return
+	}
+	var list []T
+	if skipInvalid(raw, &list); list != nil {
+		*dst = Nullable[[]T]{Value: &list, Present: true}
+	}
+}
+
+// dropKey is the JSON object obj without key, its other keys in order: obj
+// as it is when it isn't an object.
+//
+//nolint:unused // only the unstable schema has a union in a union
+func dropKey(obj json.RawMessage, key string) json.RawMessage {
+	if obj == nil {
+		return nil
+	}
+	dec := json.NewDecoder(bytes.NewReader(obj))
+	if t, err := dec.Token(); err != nil || t != json.Delim('{') {
+		return obj
+	}
+	out := []byte{'{'}
+	for dec.More() {
+		t, err := dec.Token()
+		if err != nil {
+			return obj
+		}
+		k, _ := t.(string)
+		var v json.RawMessage
+		if err := dec.Decode(&v); err != nil {
+			return obj
+		}
+		if k == key {
+			continue
+		}
+		if len(out) > 1 {
+			out = append(out, ',')
+		}
+		out = append(append(appendString(out, k), ':'), v...)
+	}
+	return append(out, '}')
+}
+
+// requireKeys returns an error if the JSON object b lacks a property its
+// type requires: nonNull ones may not be null either, mayBeNull ones may.
+// b has decoded, so it is valid JSON; null, for the whole object, is left
+// to whatever holds it.
+func requireKeys(b []byte, typ string, nonNull, mayBeNull []string) error {
+	var found, null uint64 // bit i: the ith of nonNull then mayBeNull
+	n := len(nonNull) + len(mayBeNull)
+	i := skipSpace(b, 0)
+	if i == len(b) || b[i] != '{' {
+		return nil
+	}
+	for i++; ; {
+		i = skipSpace(b, i)
+		if i >= len(b) || b[i] == '}' {
+			break
+		}
+		if b[i] == ',' {
+			i++
+			continue
+		}
+		end := endOfString(b, i)
+		key := b[i+1 : end-1]
+		if bytes.IndexByte(key, '\\') >= 0 {
+			var k string
+			_ = json.Unmarshal(b[i:end], &k)
+			key = []byte(k)
+		}
+		i = skipSpace(b, end) + 1 // the colon
+		i = skipSpace(b, i)
+		isNull := i < len(b) && b[i] == 'n'
+		i = endOfValue(b, i)
+		for k := range n {
+			// string(key) == s doesn't allocate
+			if k < len(nonNull) && nonNull[k] == string(key) || k >= len(nonNull) && mayBeNull[k-len(nonNull)] == string(key) {
+				found |= 1 << k
+				if isNull {
+					null |= 1 << k
+				}
+			}
+		}
+	}
+	for k, key := range nonNull {
+		switch {
+		case found&(1<<k) == 0:
+			return fmt.Errorf("acp: a %s without %q", typ, key)
+		case null&(1<<k) != 0:
+			return fmt.Errorf("acp: a %s with %q null", typ, key)
+		}
+	}
+	for k, key := range mayBeNull {
+		if found&(1<<(k+len(nonNull))) == 0 {
+			return fmt.Errorf("acp: a %s without %q", typ, key)
+		}
+	}
+	return nil
+}
+
+func skipSpace(b []byte, i int) int {
+	for i < len(b) && (b[i] == ' ' || b[i] == '\t' || b[i] == '\n' || b[i] == '\r') {
+		i++
+	}
+	return i
+}
+
+// endOfString is the index just past the JSON string at b[i].
+func endOfString(b []byte, i int) int {
+	for j := i + 1; j < len(b); j++ {
+		switch b[j] {
+		case '\\':
+			j++
+		case '"':
+			return j + 1
+		}
+	}
+	return len(b)
+}
+
+// endOfValue is the index just past the JSON value at b[i].
+func endOfValue(b []byte, i int) int {
+	if i >= len(b) {
+		return i
+	}
+	switch b[i] {
+	case '"':
+		return endOfString(b, i)
+	case '{', '[':
+		depth := 0
+		for j := i; j < len(b); j++ {
+			switch b[j] {
+			case '"':
+				j = endOfString(b, j) - 1
+			case '{', '[':
+				depth++
+			case '}', ']':
+				if depth--; depth == 0 {
+					return j + 1
+				}
+			}
+		}
+		return len(b)
+	}
+	for i < len(b) && b[i] != ',' && b[i] != '}' && b[i] != ']' && b[i] != ' ' && b[i] != '\t' && b[i] != '\n' && b[i] != '\r' {
+		i++
+	}
+	return i
 }
 
 // marshalUnion encodes a union's tag and the fields beside it (head), and

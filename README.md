@@ -127,8 +127,9 @@ func main() {
 ```
 
 [`examples/echo`](examples/echo/main.go) is a complete agent that Zed or any
-other ACP client can run. Both examples above also run as tests
-([`Example_client`, `Example_agent`](https://pkg.go.dev/github.com/afrase/acp-go#pkg-examples)).
+other ACP client can run. A test builds both examples above.
+[`Example_client` and `Example_agent`](https://pkg.go.dev/github.com/afrase/acp-go#pkg-examples)
+run a client and an agent like them, in one process.
 
 ## The unstable protocol
 
@@ -153,8 +154,11 @@ both. Its unstable parts can change in any minor release (see
   sent on unchanged.
 - **Lenient decoding**, as the schema asks. A bad optional field (marked
   `x-deserialize-default-on-error`) decodes as absent. Bad items in some
-  lists are dropped. The rest of the message still decodes. A request
-  without a required property gets an Invalid params error.
+  lists are dropped. The rest of the message still decodes. A message
+  without a required property, at any depth (null counts as without, where
+  the schema doesn't allow it), is refused: a request gets an Invalid
+  params error, a notification is dropped, and a response is its call's
+  error.
 - **`Nullable`** marks a field where null is different from absent. For
   example, an update that sets the title to null clears the title.
 - **Form fields keep their order** (`ElicitationProperties`).
@@ -179,10 +183,10 @@ both. Its unstable parts can change in any minor release (see
 | JSON-RPC batches | Refused with Invalid request. ACP v1 does not mention batches, and the TypeScript SDK refuses them in v1 too. |
 | A line that is not JSON (some agents log to stdout) | Answered with a Parse error (null id), as JSON-RPC says. Logged by size only. The connection continues. |
 | A call whose context ends | Returns at once and withdraws the request with `$/cancel_request`. A late answer is dropped. To stop a prompt, use `Cancel` (session/cancel) instead, as ACP says. The turn then ends with stop reason `cancelled`. |
-| Absent and null | The same, as ACP says, except for `Nullable` fields. |
+| Absent and null | The same, as ACP says, except for `Nullable` fields and required properties. |
 | An agent that exits | Its remaining output is read for up to one second, in case a child process still holds its stdout open. Then its process group is killed. An agent that closes its stdout first has one second to exit, or, under `Shutdown`, until the context ends. |
 | A number in an elicitation's answer | A JSON number without a fraction or exponent decodes as `Integer`. |
-| Required properties | An incoming request without one is refused, as the TypeScript and Rust SDKs do. Outgoing messages always have them: a nil required list is sent as `[]`. |
+| Required properties | Checked at every level of every incoming message, as the TypeScript and Rust SDKs do; a JSON-RPC error object is the one exception (its answer would otherwise be lost). Outgoing messages always have them: a nil required list is sent as `[]`. |
 
 </details>
 

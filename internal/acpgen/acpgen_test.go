@@ -71,9 +71,24 @@ func TestKinds(t *testing.T) {
 	if d := m.defs["ErrorCode"]; d.under != "int32" || len(d.consts) < 8 || !d.open {
 		t.Errorf("ErrorCode: %+v", d)
 	}
+	// Nullable where the schema says null clears, in its words.
+	for def, props := range map[string][]string{
+		"SessionInfoUpdate": {"title", "updatedAt"},
+		"SubagentUpdate":    {"title", "description", "capabilities", "state", "cwd", "additionalDirectories", "_meta"},
+		"SessionMessage":    {"senderSessionId", "recipientSessionId", "senderMessageId", "recipientMessageId", "content", "_meta"},
+	} {
+		for _, p := range props {
+			if f := fieldOf(m.defs[def], p); f == nil || !f.nullable {
+				t.Errorf("%s.%s isn't Nullable: %+v", def, p, f)
+			}
+		}
+	}
 	f := fieldOf(m.defs["SessionInfoUpdate"], "title")
 	if f == nil || !f.nullable || f.typ != "Nullable[string]" {
 		t.Errorf("SessionInfoUpdate.title: %+v", f)
+	}
+	if f := fieldOf(m.defs["ToolCallUpdate"], "name"); f == nil || f.nullable {
+		t.Errorf("ToolCallUpdate.name's null leaves it as it is: %+v", f)
 	}
 	if f := fieldOf(m.defs["TerminalExitStatus"], "exitCode"); f == nil || !f.ptr {
 		t.Errorf("an optional number is held by pointer: %+v", f)
@@ -151,6 +166,29 @@ func TestTheGeneratedCodeIsCurrent(t *testing.T) {
 			if err != nil || !bytes.Equal(got, want) {
 				t.Errorf("%s/%s isn't what acpgen makes: run make generate", pkg.dir, f.Name())
 			}
+		}
+	}
+}
+
+// A tagged union whose variants, tag, head fields or Other would be the
+// same Go field is refused by acpgen, not left for the compiler.
+func TestTaggedClashes(t *testing.T) {
+	variant := func(tag string) string {
+		return `{"type":"object","properties":{"type":{"type":"string","const":"` + tag + `"}},"required":["type"]}`
+	}
+	for name, union := range map[string]string{
+		"Other":         `{"anyOf":[` + variant("text") + `,` + variant("other") + `]}`,
+		"the tag":       `{"anyOf":[` + variant("text") + `,` + variant("type") + `]}`,
+		"same Go name":  `{"anyOf":[` + variant("foo_bar") + `,` + variant("fooBar") + `]}`,
+		"a head field":  `{"properties":{"text":{"type":"string"}},"anyOf":[` + variant("text") + `]}`,
+		"Other, a head": `{"properties":{"other":{"type":"string"}},"anyOf":[` + variant("text") + `]}`,
+	} {
+		s, err := loadSchema([]byte(`{"$defs":{"U":` + union + `}}`))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := newModel(s, "acp"); err == nil || !strings.Contains(err.Error(), "clashes") {
+			t.Errorf("%s: %v, want a clash", name, err)
 		}
 	}
 }

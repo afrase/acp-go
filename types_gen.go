@@ -101,7 +101,7 @@ func (x *AgentCapabilities) UnmarshalJSON(b []byte) error {
 // Optional annotations for the client. The client can use annotations to inform how objects are used or displayed
 type Annotations struct {
 	// Intended recipients for this content, such as the user or assistant.
-	Audience []Role `json:"audience,omitempty"`
+	Audience []Role `json:"audience,omitzero"`
 	// Timestamp indicating when the underlying resource was last modified.
 	LastModified string `json:"lastModified,omitempty"`
 	// Relative importance of this content when clients choose what to surface.
@@ -159,7 +159,7 @@ type AudioContent struct {
 func (x *AudioContent) UnmarshalJSON(b []byte) error {
 	type plain AudioContent
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "AudioContent", []string{"data", "mimeType"}, nil)
 	}
 	*x = AudioContent{}
 	var v struct {
@@ -173,7 +173,7 @@ func (x *AudioContent) UnmarshalJSON(b []byte) error {
 	}
 	lenient(v.Annotations, &x.Annotations)
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "AudioContent", []string{"data", "mimeType"}, nil)
 }
 
 // Authentication capabilities supported by the client.
@@ -270,6 +270,7 @@ func (x AuthMethod) MarshalJSON() ([]byte, error) {
 		return x.Other, nil
 	}
 	if x.Agent != nil {
+		x.Type = "" // the variant without a tag goes without one
 		return marshalUnion(plain(x), x.Agent)
 	}
 	return marshalUnion(plain(x), nil)
@@ -285,8 +286,8 @@ func (x *AuthMethod) UnmarshalJSON(b []byte) error {
 	case "terminal":
 		x.Terminal = new(AuthMethodTerminal)
 		return json.Unmarshal(b, x.Terminal)
-	case "":
-		x.Agent = new(AuthMethodAgent)
+	case "", "agent":
+		x.Type, x.Agent = "", new(AuthMethodAgent)
 		return json.Unmarshal(b, x.Agent)
 	}
 	x.Other = append(json.RawMessage(nil), b...)
@@ -296,6 +297,9 @@ func (x *AuthMethod) UnmarshalJSON(b []byte) error {
 // decodeTag decodes the tag and the fields beside it.
 func (x *AuthMethod) decodeTag(b []byte) error {
 	type plain AuthMethod
+	if jsonKind(b) != "object" {
+		return kindError("AuthMethod", b)
+	}
 	*x = AuthMethod{}
 	return json.Unmarshal(b, (*plain)(x))
 }
@@ -322,7 +326,7 @@ type AuthMethodAgent struct {
 func (x *AuthMethodAgent) UnmarshalJSON(b []byte) error {
 	type plain AuthMethodAgent
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "AuthMethodAgent", []string{"id", "name"}, nil)
 	}
 	*x = AuthMethodAgent{}
 	var v struct {
@@ -336,7 +340,7 @@ func (x *AuthMethodAgent) UnmarshalJSON(b []byte) error {
 	}
 	lenient(v.Description, &x.Description)
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "AuthMethodAgent", []string{"id", "name"}, nil)
 }
 
 // Typed identifier used for auth method values on the wire.
@@ -357,7 +361,7 @@ type AuthMethodTerminal struct {
 	// Optional human-readable description of this authentication method.
 	Description string `json:"description,omitempty"`
 	// Additional arguments to append to the configured agent invocation for terminal auth.
-	Args []string `json:"args,omitempty"`
+	Args []string `json:"args,omitzero"`
 	// Additional environment variables to set on the configured agent invocation for terminal auth.
 	// These values override same-named variables in the base launch configuration.
 	Env map[string]string `json:"env,omitempty"`
@@ -373,7 +377,7 @@ type AuthMethodTerminal struct {
 func (x *AuthMethodTerminal) UnmarshalJSON(b []byte) error {
 	type plain AuthMethodTerminal
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "AuthMethodTerminal", []string{"id", "name"}, nil)
 	}
 	*x = AuthMethodTerminal{}
 	var v struct {
@@ -387,7 +391,7 @@ func (x *AuthMethodTerminal) UnmarshalJSON(b []byte) error {
 	}
 	lenient(v.Description, &x.Description)
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "AuthMethodTerminal", []string{"id", "name"}, nil)
 }
 
 // Request parameters for the authenticate method.
@@ -409,7 +413,7 @@ type AuthenticateRequest struct {
 func (x *AuthenticateRequest) UnmarshalJSON(b []byte) error {
 	type plain AuthenticateRequest
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "AuthenticateRequest", []string{"methodId"}, nil)
 	}
 	*x = AuthenticateRequest{}
 	var v struct {
@@ -421,7 +425,7 @@ func (x *AuthenticateRequest) UnmarshalJSON(b []byte) error {
 		return err
 	}
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "AuthenticateRequest", []string{"methodId"}, nil)
 }
 
 // Response to the `authenticate` method.
@@ -473,7 +477,7 @@ type AvailableCommand struct {
 func (x *AvailableCommand) UnmarshalJSON(b []byte) error {
 	type plain AvailableCommand
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "AvailableCommand", []string{"name", "description"}, nil)
 	}
 	*x = AvailableCommand{}
 	var v struct {
@@ -487,7 +491,7 @@ func (x *AvailableCommand) UnmarshalJSON(b []byte) error {
 	}
 	lenient(v.Input, &x.Input)
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "AvailableCommand", []string{"name", "description"}, nil)
 }
 
 // The input specification for a command.
@@ -504,7 +508,7 @@ type AvailableCommandInput struct {
 func (x AvailableCommandInput) MarshalJSON() ([]byte, error) {
 	switch {
 	case x.Unstructured != nil:
-		return json.Marshal(x.Unstructured)
+		return marshal(x.Unstructured)
 	case x.Other != nil:
 		return x.Other, nil
 	}
@@ -514,6 +518,9 @@ func (x AvailableCommandInput) MarshalJSON() ([]byte, error) {
 // UnmarshalJSON decodes the variant whose required properties b has.
 func (x *AvailableCommandInput) UnmarshalJSON(b []byte) error {
 	*x = AvailableCommandInput{}
+	if jsonKind(b) != "object" {
+		return kindError("AvailableCommandInput", b)
+	}
 	var keys map[string]json.RawMessage
 	if err := json.Unmarshal(b, &keys); err != nil {
 		return err
@@ -545,7 +552,7 @@ func (x AvailableCommandsUpdate) MarshalJSON() ([]byte, error) {
 	if p.AvailableCommands == nil {
 		p.AvailableCommands = []AvailableCommand{}
 	}
-	return json.Marshal(p)
+	return marshal(p)
 }
 
 // UnmarshalJSON decodes AvailableCommandsUpdate, dropping an optional field's bad value (or an
@@ -553,7 +560,7 @@ func (x AvailableCommandsUpdate) MarshalJSON() ([]byte, error) {
 func (x *AvailableCommandsUpdate) UnmarshalJSON(b []byte) error {
 	type plain AvailableCommandsUpdate
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "AvailableCommandsUpdate", []string{"availableCommands"}, nil)
 	}
 	*x = AvailableCommandsUpdate{}
 	var v struct {
@@ -567,7 +574,7 @@ func (x *AvailableCommandsUpdate) UnmarshalJSON(b []byte) error {
 	}
 	skipInvalid(v.AvailableCommands, &x.AvailableCommands)
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "AvailableCommandsUpdate", []string{"availableCommands"}, nil)
 }
 
 // Binary resource contents.
@@ -590,7 +597,7 @@ type BlobResourceContents struct {
 func (x *BlobResourceContents) UnmarshalJSON(b []byte) error {
 	type plain BlobResourceContents
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "BlobResourceContents", []string{"blob", "uri"}, nil)
 	}
 	*x = BlobResourceContents{}
 	var v struct {
@@ -604,7 +611,7 @@ func (x *BlobResourceContents) UnmarshalJSON(b []byte) error {
 	}
 	lenient(v.MimeType, &x.MimeType)
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "BlobResourceContents", []string{"blob", "uri"}, nil)
 }
 
 // Capabilities for boolean session configuration options.
@@ -705,7 +712,7 @@ type CancelNotification struct {
 func (x *CancelNotification) UnmarshalJSON(b []byte) error {
 	type plain CancelNotification
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "CancelNotification", []string{"sessionId"}, nil)
 	}
 	*x = CancelNotification{}
 	var v struct {
@@ -717,7 +724,7 @@ func (x *CancelNotification) UnmarshalJSON(b []byte) error {
 		return err
 	}
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "CancelNotification", []string{"sessionId"}, nil)
 }
 
 // Notification to cancel an ongoing request.
@@ -740,7 +747,7 @@ type CancelRequestNotification struct {
 func (x *CancelRequestNotification) UnmarshalJSON(b []byte) error {
 	type plain CancelRequestNotification
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "CancelRequestNotification", nil, []string{"requestId"})
 	}
 	*x = CancelRequestNotification{}
 	var v struct {
@@ -752,7 +759,7 @@ func (x *CancelRequestNotification) UnmarshalJSON(b []byte) error {
 		return err
 	}
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "CancelRequestNotification", nil, []string{"requestId"})
 }
 
 // Capabilities supported by the client.
@@ -891,7 +898,7 @@ type CloseSessionRequest struct {
 func (x *CloseSessionRequest) UnmarshalJSON(b []byte) error {
 	type plain CloseSessionRequest
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "CloseSessionRequest", []string{"sessionId"}, nil)
 	}
 	*x = CloseSessionRequest{}
 	var v struct {
@@ -903,7 +910,7 @@ func (x *CloseSessionRequest) UnmarshalJSON(b []byte) error {
 		return err
 	}
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "CloseSessionRequest", []string{"sessionId"}, nil)
 }
 
 // Response from closing a session.
@@ -975,7 +982,7 @@ type CompactionSummaryChunk struct {
 func (x *CompactionSummaryChunk) UnmarshalJSON(b []byte) error {
 	type plain CompactionSummaryChunk
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "CompactionSummaryChunk", []string{"compactionId", "content"}, nil)
 	}
 	*x = CompactionSummaryChunk{}
 	var v struct {
@@ -987,7 +994,7 @@ func (x *CompactionSummaryChunk) UnmarshalJSON(b []byte) error {
 		return err
 	}
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "CompactionSummaryChunk", []string{"compactionId", "content"}, nil)
 }
 
 // A context compaction upsert. The first notification fixes the compaction's
@@ -1004,7 +1011,7 @@ type CompactionUpdate struct {
 	// Current lifecycle status.
 	Status CompactionStatus `json:"status"`
 	// Complete replacement user-displayable summary content for the compaction.
-	Summary []ContentBlock `json:"summary,omitempty"`
+	Summary []ContentBlock `json:"summary,omitzero"`
 	// Human-readable error details for the compaction.
 	Error string `json:"error,omitempty"`
 	// Extensible metadata patch for this compaction.
@@ -1016,7 +1023,7 @@ type CompactionUpdate struct {
 func (x *CompactionUpdate) UnmarshalJSON(b []byte) error {
 	type plain CompactionUpdate
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "CompactionUpdate", []string{"compactionId", "status"}, nil)
 	}
 	*x = CompactionUpdate{}
 	var v struct {
@@ -1032,7 +1039,7 @@ func (x *CompactionUpdate) UnmarshalJSON(b []byte) error {
 	skipInvalid(v.Summary, &x.Summary)
 	lenient(v.Error, &x.Error)
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "CompactionUpdate", []string{"compactionId", "status"}, nil)
 }
 
 // Notification sent by the agent when a URL-based elicitation is complete.
@@ -1051,7 +1058,7 @@ type CompleteElicitationNotification struct {
 func (x *CompleteElicitationNotification) UnmarshalJSON(b []byte) error {
 	type plain CompleteElicitationNotification
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "CompleteElicitationNotification", []string{"elicitationId"}, nil)
 	}
 	*x = CompleteElicitationNotification{}
 	var v struct {
@@ -1063,7 +1070,7 @@ func (x *CompleteElicitationNotification) UnmarshalJSON(b []byte) error {
 		return err
 	}
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "CompleteElicitationNotification", []string{"elicitationId"}, nil)
 }
 
 // Session configuration options have been updated.
@@ -1084,7 +1091,7 @@ func (x ConfigOptionUpdate) MarshalJSON() ([]byte, error) {
 	if p.ConfigOptions == nil {
 		p.ConfigOptions = []SessionConfigOption{}
 	}
-	return json.Marshal(p)
+	return marshal(p)
 }
 
 // UnmarshalJSON decodes ConfigOptionUpdate, dropping an optional field's bad value (or an
@@ -1092,7 +1099,7 @@ func (x ConfigOptionUpdate) MarshalJSON() ([]byte, error) {
 func (x *ConfigOptionUpdate) UnmarshalJSON(b []byte) error {
 	type plain ConfigOptionUpdate
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "ConfigOptionUpdate", []string{"configOptions"}, nil)
 	}
 	*x = ConfigOptionUpdate{}
 	var v struct {
@@ -1106,7 +1113,7 @@ func (x *ConfigOptionUpdate) UnmarshalJSON(b []byte) error {
 	}
 	skipInvalid(v.ConfigOptions, &x.ConfigOptions)
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "ConfigOptionUpdate", []string{"configOptions"}, nil)
 }
 
 // Standard content block (text, images, resources).
@@ -1125,7 +1132,7 @@ type Content struct {
 func (x *Content) UnmarshalJSON(b []byte) error {
 	type plain Content
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "Content", []string{"content"}, nil)
 	}
 	*x = Content{}
 	var v struct {
@@ -1137,7 +1144,7 @@ func (x *Content) UnmarshalJSON(b []byte) error {
 		return err
 	}
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "Content", []string{"content"}, nil)
 }
 
 // Content blocks represent displayable information in the Agent Client Protocol.
@@ -1279,6 +1286,9 @@ func (x *ContentBlock) UnmarshalJSON(b []byte) error {
 // decodeTag decodes the tag and the fields beside it.
 func (x *ContentBlock) decodeTag(b []byte) error {
 	type plain ContentBlock
+	if jsonKind(b) != "object" {
+		return kindError("ContentBlock", b)
+	}
 	*x = ContentBlock{}
 	return json.Unmarshal(b, (*plain)(x))
 }
@@ -1304,7 +1314,7 @@ type ContentChunk struct {
 func (x *ContentChunk) UnmarshalJSON(b []byte) error {
 	type plain ContentChunk
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "ContentChunk", []string{"content"}, nil)
 	}
 	*x = ContentChunk{}
 	var v struct {
@@ -1318,7 +1328,7 @@ func (x *ContentChunk) UnmarshalJSON(b []byte) error {
 	}
 	lenient(v.MessageID, &x.MessageID)
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "ContentChunk", []string{"content"}, nil)
 }
 
 // Cost information for a session.
@@ -1340,7 +1350,7 @@ type Cost struct {
 func (x *Cost) UnmarshalJSON(b []byte) error {
 	type plain Cost
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "Cost", []string{"amount", "currency"}, nil)
 	}
 	*x = Cost{}
 	var v struct {
@@ -1352,7 +1362,7 @@ func (x *Cost) UnmarshalJSON(b []byte) error {
 		return err
 	}
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "Cost", []string{"amount", "currency"}, nil)
 }
 
 // Request from the agent to elicit structured user input.
@@ -1441,9 +1451,12 @@ func (x *CreateElicitationRequest) UnmarshalJSON(b []byte) error {
 // decodeTag decodes the tag and the fields beside it.
 func (x *CreateElicitationRequest) decodeTag(b []byte) error {
 	type plain CreateElicitationRequest
+	if jsonKind(b) != "object" {
+		return kindError("CreateElicitationRequest", b)
+	}
 	*x = CreateElicitationRequest{}
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "CreateElicitationRequest", []string{"message"}, nil)
 	}
 	*x = CreateElicitationRequest{}
 	var v struct {
@@ -1455,7 +1468,7 @@ func (x *CreateElicitationRequest) decodeTag(b []byte) error {
 		return err
 	}
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "CreateElicitationRequest", []string{"message"}, nil)
 }
 
 // Response from the client to an elicitation request.
@@ -1545,6 +1558,9 @@ func (x *CreateElicitationResponse) UnmarshalJSON(b []byte) error {
 // decodeTag decodes the tag and the fields beside it.
 func (x *CreateElicitationResponse) decodeTag(b []byte) error {
 	type plain CreateElicitationResponse
+	if jsonKind(b) != "object" {
+		return kindError("CreateElicitationResponse", b)
+	}
 	*x = CreateElicitationResponse{}
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
 		return nil
@@ -1569,9 +1585,9 @@ type CreateTerminalRequest struct {
 	// The command to execute.
 	Command string `json:"command"`
 	// Array of command arguments.
-	Args []string `json:"args,omitempty"`
+	Args []string `json:"args,omitzero"`
 	// Environment variables for the command.
-	Env []EnvVariable `json:"env,omitempty"`
+	Env []EnvVariable `json:"env,omitzero"`
 	// Working directory for the command. Must be an absolute path.
 	Cwd string `json:"cwd,omitempty"`
 	// Maximum number of output bytes to retain.
@@ -1595,7 +1611,7 @@ type CreateTerminalRequest struct {
 func (x *CreateTerminalRequest) UnmarshalJSON(b []byte) error {
 	type plain CreateTerminalRequest
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "CreateTerminalRequest", []string{"sessionId", "command"}, nil)
 	}
 	*x = CreateTerminalRequest{}
 	var v struct {
@@ -1607,7 +1623,7 @@ func (x *CreateTerminalRequest) UnmarshalJSON(b []byte) error {
 		return err
 	}
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "CreateTerminalRequest", []string{"sessionId", "command"}, nil)
 }
 
 // Response containing the ID of the created terminal.
@@ -1626,7 +1642,7 @@ type CreateTerminalResponse struct {
 func (x *CreateTerminalResponse) UnmarshalJSON(b []byte) error {
 	type plain CreateTerminalResponse
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "CreateTerminalResponse", []string{"terminalId"}, nil)
 	}
 	*x = CreateTerminalResponse{}
 	var v struct {
@@ -1638,7 +1654,7 @@ func (x *CreateTerminalResponse) UnmarshalJSON(b []byte) error {
 		return err
 	}
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "CreateTerminalResponse", []string{"terminalId"}, nil)
 }
 
 // The current mode of the session has changed
@@ -1661,7 +1677,7 @@ type CurrentModeUpdate struct {
 func (x *CurrentModeUpdate) UnmarshalJSON(b []byte) error {
 	type plain CurrentModeUpdate
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "CurrentModeUpdate", []string{"currentModeId"}, nil)
 	}
 	*x = CurrentModeUpdate{}
 	var v struct {
@@ -1673,7 +1689,7 @@ func (x *CurrentModeUpdate) UnmarshalJSON(b []byte) error {
 		return err
 	}
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "CurrentModeUpdate", []string{"currentModeId"}, nil)
 }
 
 // Request parameters for deleting an existing session from `session/list`.
@@ -1694,7 +1710,7 @@ type DeleteSessionRequest struct {
 func (x *DeleteSessionRequest) UnmarshalJSON(b []byte) error {
 	type plain DeleteSessionRequest
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "DeleteSessionRequest", []string{"sessionId"}, nil)
 	}
 	*x = DeleteSessionRequest{}
 	var v struct {
@@ -1706,7 +1722,7 @@ func (x *DeleteSessionRequest) UnmarshalJSON(b []byte) error {
 		return err
 	}
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "DeleteSessionRequest", []string{"sessionId"}, nil)
 }
 
 // Response from deleting a session.
@@ -1764,7 +1780,7 @@ type Diff struct {
 func (x *Diff) UnmarshalJSON(b []byte) error {
 	type plain Diff
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "Diff", []string{"path", "newText"}, nil)
 	}
 	*x = Diff{}
 	var v struct {
@@ -1778,7 +1794,7 @@ func (x *Diff) UnmarshalJSON(b []byte) error {
 	}
 	lenient(v.OldText, &x.OldText)
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "Diff", []string{"path", "newText"}, nil)
 }
 
 // The user accepted the elicitation and provided content.
@@ -1849,15 +1865,15 @@ type ElicitationContentValue struct {
 func (x ElicitationContentValue) MarshalJSON() ([]byte, error) {
 	switch {
 	case x.String != nil:
-		return json.Marshal(x.String)
+		return marshal(x.String)
 	case x.Integer != nil:
-		return json.Marshal(x.Integer)
+		return marshal(x.Integer)
 	case x.Number != nil:
-		return json.Marshal(x.Number)
+		return marshal(x.Number)
 	case x.Boolean != nil:
-		return json.Marshal(x.Boolean)
+		return marshal(x.Boolean)
 	case x.StringArray != nil:
-		return json.Marshal(x.StringArray)
+		return marshal(x.StringArray)
 	}
 	return []byte("null"), nil
 }
@@ -1939,7 +1955,7 @@ type ElicitationFormMode struct {
 func (x *ElicitationFormMode) UnmarshalJSON(b []byte) error {
 	type plain ElicitationFormMode
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "ElicitationFormMode", []string{"requestedSchema"}, nil)
 	}
 	*x = ElicitationFormMode{}
 	var v struct {
@@ -1951,7 +1967,7 @@ func (x *ElicitationFormMode) UnmarshalJSON(b []byte) error {
 		return err
 	}
 	lenient(v.ToolCallID, &x.ToolCallID)
-	return nil
+	return requireKeys(b, "ElicitationFormMode", []string{"requestedSchema"}, nil)
 }
 
 // Unique identifier for an elicitation.
@@ -2075,6 +2091,9 @@ func (x *ElicitationPropertySchema) UnmarshalJSON(b []byte) error {
 // decodeTag decodes the tag and the fields beside it.
 func (x *ElicitationPropertySchema) decodeTag(b []byte) error {
 	type plain ElicitationPropertySchema
+	if jsonKind(b) != "object" {
+		return kindError("ElicitationPropertySchema", b)
+	}
 	*x = ElicitationPropertySchema{}
 	return json.Unmarshal(b, (*plain)(x))
 }
@@ -2084,6 +2103,15 @@ func (x *ElicitationPropertySchema) decodeTag(b []byte) error {
 type ElicitationRequestScope struct {
 	// The request this elicitation is tied to.
 	RequestID RequestID `json:"requestId"`
+}
+
+// UnmarshalJSON decodes ElicitationRequestScope, which must have the properties it requires.
+func (x *ElicitationRequestScope) UnmarshalJSON(b []byte) error {
+	type plain ElicitationRequestScope
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		return err
+	}
+	return requireKeys(b, "ElicitationRequestScope", nil, []string{"requestId"})
 }
 
 // Type-safe elicitation schema for requesting structured user input.
@@ -2102,7 +2130,7 @@ type ElicitationSchema struct {
 	// List of required property names.
 	//
 	// Optional. Omitted and `null` are equivalent and mean no property names are required.
-	Required []string `json:"required,omitempty"`
+	Required []string `json:"required,omitzero"`
 	// Optional description of what this schema represents.
 	//
 	// Optional. Omitted and `null` are equivalent and mean no schema description is provided.
@@ -2169,7 +2197,7 @@ type ElicitationSessionScope struct {
 func (x *ElicitationSessionScope) UnmarshalJSON(b []byte) error {
 	type plain ElicitationSessionScope
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "ElicitationSessionScope", []string{"sessionId"}, nil)
 	}
 	*x = ElicitationSessionScope{}
 	var v struct {
@@ -2181,7 +2209,7 @@ func (x *ElicitationSessionScope) UnmarshalJSON(b []byte) error {
 		return err
 	}
 	lenient(v.ToolCallID, &x.ToolCallID)
-	return nil
+	return requireKeys(b, "ElicitationSessionScope", []string{"sessionId"}, nil)
 }
 
 // URL-based elicitation capabilities.
@@ -2237,7 +2265,7 @@ type ElicitationURLMode struct {
 func (x *ElicitationURLMode) UnmarshalJSON(b []byte) error {
 	type plain ElicitationURLMode
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "ElicitationURLMode", []string{"elicitationId", "url"}, nil)
 	}
 	*x = ElicitationURLMode{}
 	var v struct {
@@ -2249,7 +2277,7 @@ func (x *ElicitationURLMode) UnmarshalJSON(b []byte) error {
 		return err
 	}
 	lenient(v.ToolCallID, &x.ToolCallID)
-	return nil
+	return requireKeys(b, "ElicitationURLMode", []string{"elicitationId", "url"}, nil)
 }
 
 // The contents of a resource, embedded into a prompt or tool call result.
@@ -2270,7 +2298,7 @@ type EmbeddedResource struct {
 func (x *EmbeddedResource) UnmarshalJSON(b []byte) error {
 	type plain EmbeddedResource
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "EmbeddedResource", []string{"resource"}, nil)
 	}
 	*x = EmbeddedResource{}
 	var v struct {
@@ -2284,7 +2312,7 @@ func (x *EmbeddedResource) UnmarshalJSON(b []byte) error {
 	}
 	lenient(v.Annotations, &x.Annotations)
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "EmbeddedResource", []string{"resource"}, nil)
 }
 
 // Resource content that can be embedded in a message.
@@ -2303,9 +2331,9 @@ type EmbeddedResourceResource struct {
 func (x EmbeddedResourceResource) MarshalJSON() ([]byte, error) {
 	switch {
 	case x.TextResourceContents != nil:
-		return json.Marshal(x.TextResourceContents)
+		return marshal(x.TextResourceContents)
 	case x.BlobResourceContents != nil:
-		return json.Marshal(x.BlobResourceContents)
+		return marshal(x.BlobResourceContents)
 	case x.Other != nil:
 		return x.Other, nil
 	}
@@ -2315,6 +2343,9 @@ func (x EmbeddedResourceResource) MarshalJSON() ([]byte, error) {
 // UnmarshalJSON decodes the variant whose required properties b has.
 func (x *EmbeddedResourceResource) UnmarshalJSON(b []byte) error {
 	*x = EmbeddedResourceResource{}
+	if jsonKind(b) != "object" {
+		return kindError("EmbeddedResourceResource", b)
+	}
 	var keys map[string]json.RawMessage
 	if err := json.Unmarshal(b, &keys); err != nil {
 		return err
@@ -2353,7 +2384,7 @@ type EnumOption struct {
 func (x *EnumOption) UnmarshalJSON(b []byte) error {
 	type plain EnumOption
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "EnumOption", []string{"const", "title"}, nil)
 	}
 	*x = EnumOption{}
 	var v struct {
@@ -2367,7 +2398,7 @@ func (x *EnumOption) UnmarshalJSON(b []byte) error {
 	}
 	lenient(v.Description, &x.Description)
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "EnumOption", []string{"const", "title"}, nil)
 }
 
 // An environment variable to set when launching an MCP server.
@@ -2388,7 +2419,7 @@ type EnvVariable struct {
 func (x *EnvVariable) UnmarshalJSON(b []byte) error {
 	type plain EnvVariable
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "EnvVariable", []string{"name", "value"}, nil)
 	}
 	*x = EnvVariable{}
 	var v struct {
@@ -2400,7 +2431,7 @@ func (x *EnvVariable) UnmarshalJSON(b []byte) error {
 		return err
 	}
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "EnvVariable", []string{"name", "value"}, nil)
 }
 
 // JSON-RPC error object.
@@ -2558,7 +2589,7 @@ type HTTPHeader struct {
 func (x *HTTPHeader) UnmarshalJSON(b []byte) error {
 	type plain HTTPHeader
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "HTTPHeader", []string{"name", "value"}, nil)
 	}
 	*x = HTTPHeader{}
 	var v struct {
@@ -2570,7 +2601,7 @@ func (x *HTTPHeader) UnmarshalJSON(b []byte) error {
 		return err
 	}
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "HTTPHeader", []string{"name", "value"}, nil)
 }
 
 // An image provided to or from an LLM.
@@ -2595,7 +2626,7 @@ type ImageContent struct {
 func (x *ImageContent) UnmarshalJSON(b []byte) error {
 	type plain ImageContent
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "ImageContent", []string{"data", "mimeType"}, nil)
 	}
 	*x = ImageContent{}
 	var v struct {
@@ -2611,7 +2642,7 @@ func (x *ImageContent) UnmarshalJSON(b []byte) error {
 	lenient(v.Annotations, &x.Annotations)
 	lenient(v.URI, &x.URI)
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "ImageContent", []string{"data", "mimeType"}, nil)
 }
 
 // Metadata about the implementation of the client or agent.
@@ -2641,7 +2672,7 @@ type Implementation struct {
 func (x *Implementation) UnmarshalJSON(b []byte) error {
 	type plain Implementation
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "Implementation", []string{"name", "version"}, nil)
 	}
 	*x = Implementation{}
 	var v struct {
@@ -2655,7 +2686,7 @@ func (x *Implementation) UnmarshalJSON(b []byte) error {
 	}
 	lenient(v.Title, &x.Title)
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "Implementation", []string{"name", "version"}, nil)
 }
 
 // Request parameters for the initialize method.
@@ -2686,7 +2717,7 @@ type InitializeRequest struct {
 func (x *InitializeRequest) UnmarshalJSON(b []byte) error {
 	type plain InitializeRequest
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "InitializeRequest", []string{"protocolVersion"}, nil)
 	}
 	*x = InitializeRequest{}
 	var v struct {
@@ -2702,7 +2733,7 @@ func (x *InitializeRequest) UnmarshalJSON(b []byte) error {
 	lenient(v.ClientCapabilities, &x.ClientCapabilities)
 	lenient(v.ClientInfo, &x.ClientInfo)
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "InitializeRequest", []string{"protocolVersion"}, nil)
 }
 
 // Response to the `initialize` method.
@@ -2721,7 +2752,7 @@ type InitializeResponse struct {
 	// Capabilities supported by the agent.
 	AgentCapabilities *AgentCapabilities `json:"agentCapabilities,omitempty"`
 	// Authentication methods supported by the agent.
-	AuthMethods []AuthMethod `json:"authMethods,omitempty"`
+	AuthMethods []AuthMethod `json:"authMethods,omitzero"`
 	// Information about the Agent name and version sent to the Client.
 	//
 	// Note: in future versions of the protocol, this will be required.
@@ -2738,7 +2769,7 @@ type InitializeResponse struct {
 func (x *InitializeResponse) UnmarshalJSON(b []byte) error {
 	type plain InitializeResponse
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "InitializeResponse", []string{"protocolVersion"}, nil)
 	}
 	*x = InitializeResponse{}
 	var v struct {
@@ -2756,7 +2787,7 @@ func (x *InitializeResponse) UnmarshalJSON(b []byte) error {
 	skipInvalid(v.AuthMethods, &x.AuthMethods)
 	lenient(v.AgentInfo, &x.AgentInfo)
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "InitializeResponse", []string{"protocolVersion"}, nil)
 }
 
 // Schema for integer properties in an elicitation form.
@@ -2832,7 +2863,7 @@ type KillTerminalRequest struct {
 func (x *KillTerminalRequest) UnmarshalJSON(b []byte) error {
 	type plain KillTerminalRequest
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "KillTerminalRequest", []string{"sessionId", "terminalId"}, nil)
 	}
 	*x = KillTerminalRequest{}
 	var v struct {
@@ -2844,7 +2875,7 @@ func (x *KillTerminalRequest) UnmarshalJSON(b []byte) error {
 		return err
 	}
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "KillTerminalRequest", []string{"sessionId", "terminalId"}, nil)
 }
 
 // Response to `terminal/kill` method
@@ -2932,7 +2963,7 @@ func (x ListSessionsResponse) MarshalJSON() ([]byte, error) {
 	if p.Sessions == nil {
 		p.Sessions = []SessionInfo{}
 	}
-	return json.Marshal(p)
+	return marshal(p)
 }
 
 // UnmarshalJSON decodes ListSessionsResponse, dropping an optional field's bad value (or an
@@ -2940,7 +2971,7 @@ func (x ListSessionsResponse) MarshalJSON() ([]byte, error) {
 func (x *ListSessionsResponse) UnmarshalJSON(b []byte) error {
 	type plain ListSessionsResponse
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "ListSessionsResponse", []string{"sessions"}, nil)
 	}
 	*x = ListSessionsResponse{}
 	var v struct {
@@ -2956,7 +2987,7 @@ func (x *ListSessionsResponse) UnmarshalJSON(b []byte) error {
 	skipInvalid(v.Sessions, &x.Sessions)
 	lenient(v.NextCursor, &x.NextCursor)
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "ListSessionsResponse", []string{"sessions"}, nil)
 }
 
 // Request parameters for loading an existing session.
@@ -2977,7 +3008,7 @@ type LoadSessionRequest struct {
 	// this is the complete resulting additional-root list for the loaded
 	// session. It may differ from any previously used or reported list as long as
 	// the request `cwd` matches the session's `cwd`.
-	AdditionalDirectories []string `json:"additionalDirectories,omitempty"`
+	AdditionalDirectories []string `json:"additionalDirectories,omitzero"`
 	// The ID of the session to load.
 	SessionID SessionID `json:"sessionId"`
 	// System-level instructions for the loaded session.
@@ -3002,7 +3033,7 @@ func (x LoadSessionRequest) MarshalJSON() ([]byte, error) {
 	if p.MCPServers == nil {
 		p.MCPServers = []MCPServer{}
 	}
-	return json.Marshal(p)
+	return marshal(p)
 }
 
 // UnmarshalJSON decodes LoadSessionRequest, dropping an optional field's bad value (or an
@@ -3010,7 +3041,7 @@ func (x LoadSessionRequest) MarshalJSON() ([]byte, error) {
 func (x *LoadSessionRequest) UnmarshalJSON(b []byte) error {
 	type plain LoadSessionRequest
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "LoadSessionRequest", []string{"mcpServers", "cwd", "sessionId"}, nil)
 	}
 	*x = LoadSessionRequest{}
 	var v struct {
@@ -3022,7 +3053,7 @@ func (x *LoadSessionRequest) UnmarshalJSON(b []byte) error {
 		return err
 	}
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "LoadSessionRequest", []string{"mcpServers", "cwd", "sessionId"}, nil)
 }
 
 // Response from loading an existing session.
@@ -3034,7 +3065,7 @@ type LoadSessionResponse struct {
 	// [Session Modes]: https://agentclientprotocol.com/protocol/v1/session-modes
 	Modes *SessionModeState `json:"modes,omitempty"`
 	// Initial session configuration options if supported by the Agent.
-	ConfigOptions []SessionConfigOption `json:"configOptions,omitempty"`
+	ConfigOptions []SessionConfigOption `json:"configOptions,omitzero"`
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
@@ -3264,6 +3295,7 @@ func (x MCPServer) MarshalJSON() ([]byte, error) {
 		return x.Other, nil
 	}
 	if x.Stdio != nil {
+		x.Type = "" // the variant without a tag goes without one
 		return marshalUnion(plain(x), x.Stdio)
 	}
 	return marshalUnion(plain(x), nil)
@@ -3282,8 +3314,8 @@ func (x *MCPServer) UnmarshalJSON(b []byte) error {
 	case "sse":
 		x.SSE = new(MCPServerSSE)
 		return json.Unmarshal(b, x.SSE)
-	case "":
-		x.Stdio = new(MCPServerStdio)
+	case "", "stdio":
+		x.Type, x.Stdio = "", new(MCPServerStdio)
 		return json.Unmarshal(b, x.Stdio)
 	}
 	x.Other = append(json.RawMessage(nil), b...)
@@ -3293,6 +3325,9 @@ func (x *MCPServer) UnmarshalJSON(b []byte) error {
 // decodeTag decodes the tag and the fields beside it.
 func (x *MCPServer) decodeTag(b []byte) error {
 	type plain MCPServer
+	if jsonKind(b) != "object" {
+		return kindError("MCPServer", b)
+	}
 	*x = MCPServer{}
 	return json.Unmarshal(b, (*plain)(x))
 }
@@ -3319,7 +3354,7 @@ func (x MCPServerHTTP) MarshalJSON() ([]byte, error) {
 	if p.Headers == nil {
 		p.Headers = []HTTPHeader{}
 	}
-	return json.Marshal(p)
+	return marshal(p)
 }
 
 // UnmarshalJSON decodes MCPServerHTTP, dropping an optional field's bad value (or an
@@ -3327,7 +3362,7 @@ func (x MCPServerHTTP) MarshalJSON() ([]byte, error) {
 func (x *MCPServerHTTP) UnmarshalJSON(b []byte) error {
 	type plain MCPServerHTTP
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "MCPServerHTTP", []string{"name", "url", "headers"}, nil)
 	}
 	*x = MCPServerHTTP{}
 	var v struct {
@@ -3339,7 +3374,7 @@ func (x *MCPServerHTTP) UnmarshalJSON(b []byte) error {
 		return err
 	}
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "MCPServerHTTP", []string{"name", "url", "headers"}, nil)
 }
 
 // SSE transport configuration for MCP.
@@ -3364,7 +3399,7 @@ func (x MCPServerSSE) MarshalJSON() ([]byte, error) {
 	if p.Headers == nil {
 		p.Headers = []HTTPHeader{}
 	}
-	return json.Marshal(p)
+	return marshal(p)
 }
 
 // UnmarshalJSON decodes MCPServerSSE, dropping an optional field's bad value (or an
@@ -3372,7 +3407,7 @@ func (x MCPServerSSE) MarshalJSON() ([]byte, error) {
 func (x *MCPServerSSE) UnmarshalJSON(b []byte) error {
 	type plain MCPServerSSE
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "MCPServerSSE", []string{"name", "url", "headers"}, nil)
 	}
 	*x = MCPServerSSE{}
 	var v struct {
@@ -3384,7 +3419,7 @@ func (x *MCPServerSSE) UnmarshalJSON(b []byte) error {
 		return err
 	}
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "MCPServerSSE", []string{"name", "url", "headers"}, nil)
 }
 
 // Stdio transport configuration for MCP.
@@ -3414,7 +3449,7 @@ func (x MCPServerStdio) MarshalJSON() ([]byte, error) {
 	if p.Env == nil {
 		p.Env = []EnvVariable{}
 	}
-	return json.Marshal(p)
+	return marshal(p)
 }
 
 // UnmarshalJSON decodes MCPServerStdio, dropping an optional field's bad value (or an
@@ -3422,7 +3457,7 @@ func (x MCPServerStdio) MarshalJSON() ([]byte, error) {
 func (x *MCPServerStdio) UnmarshalJSON(b []byte) error {
 	type plain MCPServerStdio
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "MCPServerStdio", []string{"name", "command", "args", "env"}, nil)
 	}
 	*x = MCPServerStdio{}
 	var v struct {
@@ -3434,7 +3469,7 @@ func (x *MCPServerStdio) UnmarshalJSON(b []byte) error {
 		return err
 	}
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "MCPServerStdio", []string{"name", "command", "args", "env"}, nil)
 }
 
 // Unique identifier for a message within a session.
@@ -3489,6 +3524,7 @@ func (x MultiSelectItems) MarshalJSON() ([]byte, error) {
 		return x.Other, nil
 	}
 	if x.Titled != nil {
+		x.Type = "" // the variant without a tag goes without one
 		return marshalUnion(plain(x), x.Titled)
 	}
 	return marshalUnion(plain(x), nil)
@@ -3504,8 +3540,8 @@ func (x *MultiSelectItems) UnmarshalJSON(b []byte) error {
 	case "string":
 		x.String = new(StringMultiSelectItems)
 		return json.Unmarshal(b, x.String)
-	case "":
-		x.Titled = new(TitledMultiSelectItems)
+	case "", "titled":
+		x.Type, x.Titled = "", new(TitledMultiSelectItems)
 		return json.Unmarshal(b, x.Titled)
 	}
 	x.Other = append(json.RawMessage(nil), b...)
@@ -3515,6 +3551,9 @@ func (x *MultiSelectItems) UnmarshalJSON(b []byte) error {
 // decodeTag decodes the tag and the fields beside it.
 func (x *MultiSelectItems) decodeTag(b []byte) error {
 	type plain MultiSelectItems
+	if jsonKind(b) != "object" {
+		return kindError("MultiSelectItems", b)
+	}
 	*x = MultiSelectItems{}
 	return json.Unmarshal(b, (*plain)(x))
 }
@@ -3542,7 +3581,7 @@ type MultiSelectPropertySchema struct {
 	// Default selected values.
 	//
 	// Optional. Omitted and `null` are equivalent and mean no default selections are provided.
-	Default []string `json:"default,omitempty"`
+	Default []string `json:"default,omitzero"`
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
@@ -3555,7 +3594,7 @@ type MultiSelectPropertySchema struct {
 func (x *MultiSelectPropertySchema) UnmarshalJSON(b []byte) error {
 	type plain MultiSelectPropertySchema
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "MultiSelectPropertySchema", []string{"items"}, nil)
 	}
 	*x = MultiSelectPropertySchema{}
 	var v struct {
@@ -3573,7 +3612,7 @@ func (x *MultiSelectPropertySchema) UnmarshalJSON(b []byte) error {
 	lenient(v.Description, &x.Description)
 	skipInvalid(v.Default, &x.Default)
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "MultiSelectPropertySchema", []string{"items"}, nil)
 }
 
 // Request parameters for creating a new session.
@@ -3589,7 +3628,7 @@ type NewSessionRequest struct {
 	// These expand the session's filesystem scope without changing `cwd`, which
 	// remains the base for relative paths. When omitted or empty, no
 	// additional roots are activated for the new session.
-	AdditionalDirectories []string `json:"additionalDirectories,omitempty"`
+	AdditionalDirectories []string `json:"additionalDirectories,omitzero"`
 	// List of MCP (Model Context Protocol) servers the agent should connect to.
 	MCPServers []MCPServer `json:"mcpServers"`
 	// System-level instructions for the new session.
@@ -3612,7 +3651,7 @@ func (x NewSessionRequest) MarshalJSON() ([]byte, error) {
 	if p.MCPServers == nil {
 		p.MCPServers = []MCPServer{}
 	}
-	return json.Marshal(p)
+	return marshal(p)
 }
 
 // UnmarshalJSON decodes NewSessionRequest, dropping an optional field's bad value (or an
@@ -3620,7 +3659,7 @@ func (x NewSessionRequest) MarshalJSON() ([]byte, error) {
 func (x *NewSessionRequest) UnmarshalJSON(b []byte) error {
 	type plain NewSessionRequest
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "NewSessionRequest", []string{"cwd", "mcpServers"}, nil)
 	}
 	*x = NewSessionRequest{}
 	var v struct {
@@ -3632,7 +3671,7 @@ func (x *NewSessionRequest) UnmarshalJSON(b []byte) error {
 		return err
 	}
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "NewSessionRequest", []string{"cwd", "mcpServers"}, nil)
 }
 
 // Response from creating a new session.
@@ -3652,7 +3691,7 @@ type NewSessionResponse struct {
 	// [Session Modes]: https://agentclientprotocol.com/protocol/v1/session-modes
 	Modes *SessionModeState `json:"modes,omitempty"`
 	// Initial session configuration options if supported by the Agent.
-	ConfigOptions []SessionConfigOption `json:"configOptions,omitempty"`
+	ConfigOptions []SessionConfigOption `json:"configOptions,omitzero"`
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
@@ -3665,7 +3704,7 @@ type NewSessionResponse struct {
 func (x *NewSessionResponse) UnmarshalJSON(b []byte) error {
 	type plain NewSessionResponse
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "NewSessionResponse", []string{"sessionId"}, nil)
 	}
 	*x = NewSessionResponse{}
 	var v struct {
@@ -3681,7 +3720,7 @@ func (x *NewSessionResponse) UnmarshalJSON(b []byte) error {
 	lenient(v.Modes, &x.Modes)
 	skipInvalid(v.ConfigOptions, &x.ConfigOptions)
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "NewSessionResponse", []string{"sessionId"}, nil)
 }
 
 // Fire-and-forget information for the user.
@@ -3715,7 +3754,7 @@ type Notice struct {
 func (x *Notice) UnmarshalJSON(b []byte) error {
 	type plain Notice
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "Notice", []string{"severity", "title"}, nil)
 	}
 	*x = Notice{}
 	var v struct {
@@ -3729,7 +3768,7 @@ func (x *Notice) UnmarshalJSON(b []byte) error {
 	}
 	lenient(v.Description, &x.Description)
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "Notice", []string{"severity", "title"}, nil)
 }
 
 // Client support for presenting live notices to the user.
@@ -3824,7 +3863,7 @@ type PermissionOption struct {
 func (x *PermissionOption) UnmarshalJSON(b []byte) error {
 	type plain PermissionOption
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "PermissionOption", []string{"optionId", "name", "kind"}, nil)
 	}
 	*x = PermissionOption{}
 	var v struct {
@@ -3836,7 +3875,7 @@ func (x *PermissionOption) UnmarshalJSON(b []byte) error {
 		return err
 	}
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "PermissionOption", []string{"optionId", "name", "kind"}, nil)
 }
 
 // Unique identifier for a permission option.
@@ -3888,7 +3927,7 @@ func (x Plan) MarshalJSON() ([]byte, error) {
 	if p.Entries == nil {
 		p.Entries = []PlanEntry{}
 	}
-	return json.Marshal(p)
+	return marshal(p)
 }
 
 // UnmarshalJSON decodes Plan, dropping an optional field's bad value (or an
@@ -3896,7 +3935,7 @@ func (x Plan) MarshalJSON() ([]byte, error) {
 func (x *Plan) UnmarshalJSON(b []byte) error {
 	type plain Plan
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "Plan", []string{"entries"}, nil)
 	}
 	*x = Plan{}
 	var v struct {
@@ -3910,7 +3949,7 @@ func (x *Plan) UnmarshalJSON(b []byte) error {
 	}
 	skipInvalid(v.Entries, &x.Entries)
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "Plan", []string{"entries"}, nil)
 }
 
 // A single entry in the execution plan.
@@ -3940,7 +3979,7 @@ type PlanEntry struct {
 func (x *PlanEntry) UnmarshalJSON(b []byte) error {
 	type plain PlanEntry
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "PlanEntry", []string{"content", "priority", "status"}, nil)
 	}
 	*x = PlanEntry{}
 	var v struct {
@@ -3952,7 +3991,7 @@ func (x *PlanEntry) UnmarshalJSON(b []byte) error {
 		return err
 	}
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "PlanEntry", []string{"content", "priority", "status"}, nil)
 }
 
 // Priority levels for plan entries.
@@ -4087,7 +4126,7 @@ func (x PromptRequest) MarshalJSON() ([]byte, error) {
 	if p.Prompt == nil {
 		p.Prompt = []ContentBlock{}
 	}
-	return json.Marshal(p)
+	return marshal(p)
 }
 
 // UnmarshalJSON decodes PromptRequest, dropping an optional field's bad value (or an
@@ -4095,7 +4134,7 @@ func (x PromptRequest) MarshalJSON() ([]byte, error) {
 func (x *PromptRequest) UnmarshalJSON(b []byte) error {
 	type plain PromptRequest
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "PromptRequest", []string{"sessionId", "prompt"}, nil)
 	}
 	*x = PromptRequest{}
 	var v struct {
@@ -4107,7 +4146,7 @@ func (x *PromptRequest) UnmarshalJSON(b []byte) error {
 		return err
 	}
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "PromptRequest", []string{"sessionId", "prompt"}, nil)
 }
 
 // Response from processing a user prompt.
@@ -4130,7 +4169,7 @@ type PromptResponse struct {
 func (x *PromptResponse) UnmarshalJSON(b []byte) error {
 	type plain PromptResponse
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "PromptResponse", []string{"stopReason"}, nil)
 	}
 	*x = PromptResponse{}
 	var v struct {
@@ -4142,7 +4181,7 @@ func (x *PromptResponse) UnmarshalJSON(b []byte) error {
 		return err
 	}
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "PromptResponse", []string{"stopReason"}, nil)
 }
 
 // Protocol version identifier.
@@ -4175,7 +4214,7 @@ type ReadTextFileRequest struct {
 func (x *ReadTextFileRequest) UnmarshalJSON(b []byte) error {
 	type plain ReadTextFileRequest
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "ReadTextFileRequest", []string{"sessionId", "path"}, nil)
 	}
 	*x = ReadTextFileRequest{}
 	var v struct {
@@ -4187,7 +4226,7 @@ func (x *ReadTextFileRequest) UnmarshalJSON(b []byte) error {
 		return err
 	}
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "ReadTextFileRequest", []string{"sessionId", "path"}, nil)
 }
 
 // Response containing the contents of a text file.
@@ -4206,7 +4245,7 @@ type ReadTextFileResponse struct {
 func (x *ReadTextFileResponse) UnmarshalJSON(b []byte) error {
 	type plain ReadTextFileResponse
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "ReadTextFileResponse", []string{"content"}, nil)
 	}
 	*x = ReadTextFileResponse{}
 	var v struct {
@@ -4218,7 +4257,7 @@ func (x *ReadTextFileResponse) UnmarshalJSON(b []byte) error {
 		return err
 	}
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "ReadTextFileResponse", []string{"content"}, nil)
 }
 
 // Request to release a terminal and free its resources.
@@ -4239,7 +4278,7 @@ type ReleaseTerminalRequest struct {
 func (x *ReleaseTerminalRequest) UnmarshalJSON(b []byte) error {
 	type plain ReleaseTerminalRequest
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "ReleaseTerminalRequest", []string{"sessionId", "terminalId"}, nil)
 	}
 	*x = ReleaseTerminalRequest{}
 	var v struct {
@@ -4251,7 +4290,7 @@ func (x *ReleaseTerminalRequest) UnmarshalJSON(b []byte) error {
 		return err
 	}
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "ReleaseTerminalRequest", []string{"sessionId", "terminalId"}, nil)
 }
 
 // Response to terminal/release method
@@ -4374,6 +4413,9 @@ func (x *RequestPermissionOutcome) UnmarshalJSON(b []byte) error {
 // decodeTag decodes the tag and the fields beside it.
 func (x *RequestPermissionOutcome) decodeTag(b []byte) error {
 	type plain RequestPermissionOutcome
+	if jsonKind(b) != "object" {
+		return kindError("RequestPermissionOutcome", b)
+	}
 	*x = RequestPermissionOutcome{}
 	return json.Unmarshal(b, (*plain)(x))
 }
@@ -4406,7 +4448,7 @@ func (x RequestPermissionRequest) MarshalJSON() ([]byte, error) {
 	if p.Options == nil {
 		p.Options = []PermissionOption{}
 	}
-	return json.Marshal(p)
+	return marshal(p)
 }
 
 // UnmarshalJSON decodes RequestPermissionRequest, dropping an optional field's bad value (or an
@@ -4414,7 +4456,7 @@ func (x RequestPermissionRequest) MarshalJSON() ([]byte, error) {
 func (x *RequestPermissionRequest) UnmarshalJSON(b []byte) error {
 	type plain RequestPermissionRequest
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "RequestPermissionRequest", []string{"sessionId", "toolCall", "options"}, nil)
 	}
 	*x = RequestPermissionRequest{}
 	var v struct {
@@ -4426,7 +4468,7 @@ func (x *RequestPermissionRequest) UnmarshalJSON(b []byte) error {
 		return err
 	}
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "RequestPermissionRequest", []string{"sessionId", "toolCall", "options"}, nil)
 }
 
 // Response to a permission request.
@@ -4445,7 +4487,7 @@ type RequestPermissionResponse struct {
 func (x *RequestPermissionResponse) UnmarshalJSON(b []byte) error {
 	type plain RequestPermissionResponse
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "RequestPermissionResponse", []string{"outcome"}, nil)
 	}
 	*x = RequestPermissionResponse{}
 	var v struct {
@@ -4457,7 +4499,7 @@ func (x *RequestPermissionResponse) UnmarshalJSON(b []byte) error {
 		return err
 	}
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "RequestPermissionResponse", []string{"outcome"}, nil)
 }
 
 // A resource that the server is capable of reading, included in a prompt or tool call result.
@@ -4488,7 +4530,7 @@ type ResourceLink struct {
 func (x *ResourceLink) UnmarshalJSON(b []byte) error {
 	type plain ResourceLink
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "ResourceLink", []string{"name", "uri"}, nil)
 	}
 	*x = ResourceLink{}
 	var v struct {
@@ -4510,7 +4552,7 @@ func (x *ResourceLink) UnmarshalJSON(b []byte) error {
 	lenient(v.Size, &x.Size)
 	lenient(v.Title, &x.Title)
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "ResourceLink", []string{"name", "uri"}, nil)
 }
 
 // Request parameters for resuming an existing session.
@@ -4530,9 +4572,9 @@ type ResumeSessionRequest struct {
 	// this is the complete resulting additional-root list for the resumed
 	// session. It may differ from any previously used or reported list as long as
 	// the request `cwd` matches the session's `cwd`.
-	AdditionalDirectories []string `json:"additionalDirectories,omitempty"`
+	AdditionalDirectories []string `json:"additionalDirectories,omitzero"`
 	// List of MCP servers to connect to for this session.
-	MCPServers []MCPServer `json:"mcpServers,omitempty"`
+	MCPServers []MCPServer `json:"mcpServers,omitzero"`
 	// System-level instructions for the resumed session.
 	//
 	// Optional. Omitted and `null` are equivalent. The Agent may then keep a
@@ -4553,7 +4595,7 @@ type ResumeSessionRequest struct {
 func (x *ResumeSessionRequest) UnmarshalJSON(b []byte) error {
 	type plain ResumeSessionRequest
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "ResumeSessionRequest", []string{"sessionId", "cwd"}, nil)
 	}
 	*x = ResumeSessionRequest{}
 	var v struct {
@@ -4565,7 +4607,7 @@ func (x *ResumeSessionRequest) UnmarshalJSON(b []byte) error {
 		return err
 	}
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "ResumeSessionRequest", []string{"sessionId", "cwd"}, nil)
 }
 
 // Response from resuming an existing session.
@@ -4577,7 +4619,7 @@ type ResumeSessionResponse struct {
 	// [Session Modes]: https://agentclientprotocol.com/protocol/v1/session-modes
 	Modes *SessionModeState `json:"modes,omitempty"`
 	// Initial session configuration options if supported by the Agent.
-	ConfigOptions []SessionConfigOption `json:"configOptions,omitempty"`
+	ConfigOptions []SessionConfigOption `json:"configOptions,omitzero"`
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
@@ -4636,7 +4678,7 @@ type SelectedPermissionOutcome struct {
 func (x *SelectedPermissionOutcome) UnmarshalJSON(b []byte) error {
 	type plain SelectedPermissionOutcome
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "SelectedPermissionOutcome", []string{"optionId"}, nil)
 	}
 	*x = SelectedPermissionOutcome{}
 	var v struct {
@@ -4648,7 +4690,7 @@ func (x *SelectedPermissionOutcome) UnmarshalJSON(b []byte) error {
 		return err
 	}
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "SelectedPermissionOutcome", []string{"optionId"}, nil)
 }
 
 // Capabilities for additional session directories support.
@@ -4808,6 +4850,15 @@ type SessionConfigBoolean struct {
 	CurrentValue bool `json:"currentValue"`
 }
 
+// UnmarshalJSON decodes SessionConfigBoolean, which must have the properties it requires.
+func (x *SessionConfigBoolean) UnmarshalJSON(b []byte) error {
+	type plain SessionConfigBoolean
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		return err
+	}
+	return requireKeys(b, "SessionConfigBoolean", []string{"currentValue"}, nil)
+}
+
 // Unique identifier for a session configuration option value group.
 type SessionConfigGroupID string
 
@@ -4902,9 +4953,12 @@ func (x *SessionConfigOption) UnmarshalJSON(b []byte) error {
 // decodeTag decodes the tag and the fields beside it.
 func (x *SessionConfigOption) decodeTag(b []byte) error {
 	type plain SessionConfigOption
+	if jsonKind(b) != "object" {
+		return kindError("SessionConfigOption", b)
+	}
 	*x = SessionConfigOption{}
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "SessionConfigOption", []string{"id", "name"}, nil)
 	}
 	*x = SessionConfigOption{}
 	var v struct {
@@ -4920,7 +4974,7 @@ func (x *SessionConfigOption) decodeTag(b []byte) error {
 	lenient(v.Description, &x.Description)
 	lenient(v.Category, &x.Category)
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "SessionConfigOption", []string{"id", "name"}, nil)
 }
 
 // Semantic category for a session configuration option.
@@ -4992,6 +5046,15 @@ type SessionConfigSelect struct {
 	Options SessionConfigSelectOptions `json:"options"`
 }
 
+// UnmarshalJSON decodes SessionConfigSelect, which must have the properties it requires.
+func (x *SessionConfigSelect) UnmarshalJSON(b []byte) error {
+	type plain SessionConfigSelect
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		return err
+	}
+	return requireKeys(b, "SessionConfigSelect", []string{"currentValue", "options"}, nil)
+}
+
 // A group of possible values for a session configuration option.
 type SessionConfigSelectGroup struct {
 	// Unique identifier for this group.
@@ -5014,7 +5077,7 @@ func (x SessionConfigSelectGroup) MarshalJSON() ([]byte, error) {
 	if p.Options == nil {
 		p.Options = []SessionConfigSelectOption{}
 	}
-	return json.Marshal(p)
+	return marshal(p)
 }
 
 // UnmarshalJSON decodes SessionConfigSelectGroup, dropping an optional field's bad value (or an
@@ -5022,7 +5085,7 @@ func (x SessionConfigSelectGroup) MarshalJSON() ([]byte, error) {
 func (x *SessionConfigSelectGroup) UnmarshalJSON(b []byte) error {
 	type plain SessionConfigSelectGroup
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "SessionConfigSelectGroup", []string{"group", "name", "options"}, nil)
 	}
 	*x = SessionConfigSelectGroup{}
 	var v struct {
@@ -5036,7 +5099,7 @@ func (x *SessionConfigSelectGroup) UnmarshalJSON(b []byte) error {
 	}
 	skipInvalid(v.Options, &x.Options)
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "SessionConfigSelectGroup", []string{"group", "name", "options"}, nil)
 }
 
 // A possible value for a session configuration option.
@@ -5059,7 +5122,7 @@ type SessionConfigSelectOption struct {
 func (x *SessionConfigSelectOption) UnmarshalJSON(b []byte) error {
 	type plain SessionConfigSelectOption
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "SessionConfigSelectOption", []string{"value", "name"}, nil)
 	}
 	*x = SessionConfigSelectOption{}
 	var v struct {
@@ -5073,7 +5136,7 @@ func (x *SessionConfigSelectOption) UnmarshalJSON(b []byte) error {
 	}
 	lenient(v.Description, &x.Description)
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "SessionConfigSelectOption", []string{"value", "name"}, nil)
 }
 
 // Possible values for a session configuration option.
@@ -5088,9 +5151,9 @@ type SessionConfigSelectOptions struct {
 func (x SessionConfigSelectOptions) MarshalJSON() ([]byte, error) {
 	switch {
 	case x.Ungrouped != nil:
-		return json.Marshal(x.Ungrouped)
+		return marshal(x.Ungrouped)
 	case x.Grouped != nil:
-		return json.Marshal(x.Grouped)
+		return marshal(x.Grouped)
 	}
 	return []byte("[]"), nil
 }
@@ -5166,7 +5229,7 @@ type SessionInfo struct {
 	// When present, this is the complete ordered additional-root list reported
 	// by the Agent. Omitted and empty values are equivalent: the response
 	// reports no additional roots.
-	AdditionalDirectories []string `json:"additionalDirectories,omitempty"`
+	AdditionalDirectories []string `json:"additionalDirectories,omitzero"`
 	// Human-readable title for the session
 	Title string `json:"title,omitempty"`
 	// ISO 8601 timestamp of last activity
@@ -5183,7 +5246,7 @@ type SessionInfo struct {
 func (x *SessionInfo) UnmarshalJSON(b []byte) error {
 	type plain SessionInfo
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "SessionInfo", []string{"sessionId", "cwd"}, nil)
 	}
 	*x = SessionInfo{}
 	var v struct {
@@ -5201,7 +5264,7 @@ func (x *SessionInfo) UnmarshalJSON(b []byte) error {
 	lenient(v.Title, &x.Title)
 	lenient(v.UpdatedAt, &x.UpdatedAt)
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "SessionInfo", []string{"sessionId", "cwd"}, nil)
 }
 
 // Update to session metadata. All fields are optional to support partial updates.
@@ -5299,7 +5362,7 @@ type SessionMode struct {
 func (x *SessionMode) UnmarshalJSON(b []byte) error {
 	type plain SessionMode
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "SessionMode", []string{"id", "name"}, nil)
 	}
 	*x = SessionMode{}
 	var v struct {
@@ -5313,7 +5376,7 @@ func (x *SessionMode) UnmarshalJSON(b []byte) error {
 	}
 	lenient(v.Description, &x.Description)
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "SessionMode", []string{"id", "name"}, nil)
 }
 
 // Unique identifier for a Session Mode.
@@ -5339,7 +5402,7 @@ func (x SessionModeState) MarshalJSON() ([]byte, error) {
 	if p.AvailableModes == nil {
 		p.AvailableModes = []SessionMode{}
 	}
-	return json.Marshal(p)
+	return marshal(p)
 }
 
 // UnmarshalJSON decodes SessionModeState, dropping an optional field's bad value (or an
@@ -5347,7 +5410,7 @@ func (x SessionModeState) MarshalJSON() ([]byte, error) {
 func (x *SessionModeState) UnmarshalJSON(b []byte) error {
 	type plain SessionModeState
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "SessionModeState", []string{"currentModeId", "availableModes"}, nil)
 	}
 	*x = SessionModeState{}
 	var v struct {
@@ -5361,7 +5424,7 @@ func (x *SessionModeState) UnmarshalJSON(b []byte) error {
 	}
 	skipInvalid(v.AvailableModes, &x.AvailableModes)
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "SessionModeState", []string{"currentModeId", "availableModes"}, nil)
 }
 
 // Notification containing a session update from the agent.
@@ -5388,7 +5451,7 @@ type SessionNotification struct {
 func (x *SessionNotification) UnmarshalJSON(b []byte) error {
 	type plain SessionNotification
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "SessionNotification", []string{"sessionId", "update"}, nil)
 	}
 	*x = SessionNotification{}
 	var v struct {
@@ -5400,7 +5463,7 @@ func (x *SessionNotification) UnmarshalJSON(b []byte) error {
 		return err
 	}
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "SessionNotification", []string{"sessionId", "update"}, nil)
 }
 
 // Capabilities for the `session/resume` method.
@@ -5797,6 +5860,9 @@ func (x *SessionUpdate) UnmarshalJSON(b []byte) error {
 // decodeTag decodes the tag and the fields beside it.
 func (x *SessionUpdate) decodeTag(b []byte) error {
 	type plain SessionUpdate
+	if jsonKind(b) != "object" {
+		return kindError("SessionUpdate", b)
+	}
 	*x = SessionUpdate{}
 	return json.Unmarshal(b, (*plain)(x))
 }
@@ -5861,6 +5927,7 @@ func (x SetSessionConfigOptionRequest) MarshalJSON() ([]byte, error) {
 		return x.Other, nil
 	}
 	if x.ValueID != nil {
+		x.Type = "" // the variant without a tag goes without one
 		return marshalUnion(plain(x), x.ValueID)
 	}
 	return marshalUnion(plain(x), nil)
@@ -5890,9 +5957,12 @@ func (x *SetSessionConfigOptionRequest) UnmarshalJSON(b []byte) error {
 // decodeTag decodes the tag and the fields beside it.
 func (x *SetSessionConfigOptionRequest) decodeTag(b []byte) error {
 	type plain SetSessionConfigOptionRequest
+	if jsonKind(b) != "object" {
+		return kindError("SetSessionConfigOptionRequest", b)
+	}
 	*x = SetSessionConfigOptionRequest{}
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "SetSessionConfigOptionRequest", []string{"sessionId", "configId"}, nil)
 	}
 	*x = SetSessionConfigOptionRequest{}
 	var v struct {
@@ -5904,7 +5974,7 @@ func (x *SetSessionConfigOptionRequest) decodeTag(b []byte) error {
 		return err
 	}
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "SetSessionConfigOptionRequest", []string{"sessionId", "configId"}, nil)
 }
 
 // SetSessionConfigOptionRequestBoolean is the "boolean" variant of [SetSessionConfigOptionRequest].
@@ -5913,10 +5983,28 @@ type SetSessionConfigOptionRequestBoolean struct {
 	Value bool `json:"value"`
 }
 
+// UnmarshalJSON decodes SetSessionConfigOptionRequestBoolean, which must have the properties it requires.
+func (x *SetSessionConfigOptionRequestBoolean) UnmarshalJSON(b []byte) error {
+	type plain SetSessionConfigOptionRequestBoolean
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		return err
+	}
+	return requireKeys(b, "SetSessionConfigOptionRequestBoolean", []string{"value"}, nil)
+}
+
 // SetSessionConfigOptionRequestValueID is the untagged ValueID variant of [SetSessionConfigOptionRequest].
 type SetSessionConfigOptionRequestValueID struct {
 	// The value ID.
 	Value SessionConfigValueID `json:"value"`
+}
+
+// UnmarshalJSON decodes SetSessionConfigOptionRequestValueID, which must have the properties it requires.
+func (x *SetSessionConfigOptionRequestValueID) UnmarshalJSON(b []byte) error {
+	type plain SetSessionConfigOptionRequestValueID
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		return err
+	}
+	return requireKeys(b, "SetSessionConfigOptionRequestValueID", []string{"value"}, nil)
 }
 
 // Response to `session/set_config_option` method.
@@ -5937,7 +6025,7 @@ func (x SetSessionConfigOptionResponse) MarshalJSON() ([]byte, error) {
 	if p.ConfigOptions == nil {
 		p.ConfigOptions = []SessionConfigOption{}
 	}
-	return json.Marshal(p)
+	return marshal(p)
 }
 
 // UnmarshalJSON decodes SetSessionConfigOptionResponse, dropping an optional field's bad value (or an
@@ -5945,7 +6033,7 @@ func (x SetSessionConfigOptionResponse) MarshalJSON() ([]byte, error) {
 func (x *SetSessionConfigOptionResponse) UnmarshalJSON(b []byte) error {
 	type plain SetSessionConfigOptionResponse
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "SetSessionConfigOptionResponse", []string{"configOptions"}, nil)
 	}
 	*x = SetSessionConfigOptionResponse{}
 	var v struct {
@@ -5959,7 +6047,7 @@ func (x *SetSessionConfigOptionResponse) UnmarshalJSON(b []byte) error {
 	}
 	skipInvalid(v.ConfigOptions, &x.ConfigOptions)
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "SetSessionConfigOptionResponse", []string{"configOptions"}, nil)
 }
 
 // Request parameters for setting a session mode.
@@ -5980,7 +6068,7 @@ type SetSessionModeRequest struct {
 func (x *SetSessionModeRequest) UnmarshalJSON(b []byte) error {
 	type plain SetSessionModeRequest
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "SetSessionModeRequest", []string{"sessionId", "modeId"}, nil)
 	}
 	*x = SetSessionModeRequest{}
 	var v struct {
@@ -5992,7 +6080,7 @@ func (x *SetSessionModeRequest) UnmarshalJSON(b []byte) error {
 		return err
 	}
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "SetSessionModeRequest", []string{"sessionId", "modeId"}, nil)
 }
 
 // Response to `session/set_mode` method.
@@ -6086,7 +6174,7 @@ func (x StringMultiSelectItems) MarshalJSON() ([]byte, error) {
 	if p.Enum == nil {
 		p.Enum = []string{}
 	}
-	return json.Marshal(p)
+	return marshal(p)
 }
 
 // UnmarshalJSON decodes StringMultiSelectItems, dropping an optional field's bad value (or an
@@ -6094,7 +6182,7 @@ func (x StringMultiSelectItems) MarshalJSON() ([]byte, error) {
 func (x *StringMultiSelectItems) UnmarshalJSON(b []byte) error {
 	type plain StringMultiSelectItems
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "StringMultiSelectItems", []string{"enum"}, nil)
 	}
 	*x = StringMultiSelectItems{}
 	var v struct {
@@ -6106,7 +6194,7 @@ func (x *StringMultiSelectItems) UnmarshalJSON(b []byte) error {
 		return err
 	}
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "StringMultiSelectItems", []string{"enum"}, nil)
 }
 
 // Schema for string properties in an elicitation form.
@@ -6145,11 +6233,11 @@ type StringPropertySchema struct {
 	// Enum values for untitled single-select enums.
 	// Optional. Omitted and `null` are equivalent and mean no untitled single-select choices are
 	// declared by `enum`.
-	Enum []string `json:"enum,omitempty"`
+	Enum []string `json:"enum,omitzero"`
 	// Titled enum options for titled single-select enums.
 	// Optional. Omitted and `null` are equivalent and mean no titled single-select choices are
 	// declared by `oneOf`.
-	OneOf []EnumOption `json:"oneOf,omitempty"`
+	OneOf []EnumOption `json:"oneOf,omitzero"`
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
@@ -6219,7 +6307,7 @@ func (x SystemPrompt) MarshalJSON() ([]byte, error) {
 	if p.Content == nil {
 		p.Content = []ContentBlock{}
 	}
-	return json.Marshal(p)
+	return marshal(p)
 }
 
 // UnmarshalJSON decodes SystemPrompt, dropping an optional field's bad value (or an
@@ -6227,7 +6315,7 @@ func (x SystemPrompt) MarshalJSON() ([]byte, error) {
 func (x *SystemPrompt) UnmarshalJSON(b []byte) error {
 	type plain SystemPrompt
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "SystemPrompt", []string{"mode", "content"}, nil)
 	}
 	*x = SystemPrompt{}
 	var v struct {
@@ -6239,7 +6327,7 @@ func (x *SystemPrompt) UnmarshalJSON(b []byte) error {
 		return err
 	}
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "SystemPrompt", []string{"mode", "content"}, nil)
 }
 
 // How the Agent combines a client-provided system prompt with its own instructions.
@@ -6291,7 +6379,7 @@ type Terminal struct {
 func (x *Terminal) UnmarshalJSON(b []byte) error {
 	type plain Terminal
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "Terminal", []string{"terminalId"}, nil)
 	}
 	*x = Terminal{}
 	var v struct {
@@ -6303,7 +6391,7 @@ func (x *Terminal) UnmarshalJSON(b []byte) error {
 		return err
 	}
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "Terminal", []string{"terminalId"}, nil)
 }
 
 // Exit status of a terminal command.
@@ -6364,7 +6452,7 @@ type TerminalOutputRequest struct {
 func (x *TerminalOutputRequest) UnmarshalJSON(b []byte) error {
 	type plain TerminalOutputRequest
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "TerminalOutputRequest", []string{"sessionId", "terminalId"}, nil)
 	}
 	*x = TerminalOutputRequest{}
 	var v struct {
@@ -6376,7 +6464,7 @@ func (x *TerminalOutputRequest) UnmarshalJSON(b []byte) error {
 		return err
 	}
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "TerminalOutputRequest", []string{"sessionId", "terminalId"}, nil)
 }
 
 // Response containing the terminal output and exit status.
@@ -6399,7 +6487,7 @@ type TerminalOutputResponse struct {
 func (x *TerminalOutputResponse) UnmarshalJSON(b []byte) error {
 	type plain TerminalOutputResponse
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "TerminalOutputResponse", []string{"output", "truncated"}, nil)
 	}
 	*x = TerminalOutputResponse{}
 	var v struct {
@@ -6413,7 +6501,7 @@ func (x *TerminalOutputResponse) UnmarshalJSON(b []byte) error {
 	}
 	lenient(v.ExitStatus, &x.ExitStatus)
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "TerminalOutputResponse", []string{"output", "truncated"}, nil)
 }
 
 // Text provided to or from an LLM.
@@ -6434,7 +6522,7 @@ type TextContent struct {
 func (x *TextContent) UnmarshalJSON(b []byte) error {
 	type plain TextContent
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "TextContent", []string{"text"}, nil)
 	}
 	*x = TextContent{}
 	var v struct {
@@ -6448,7 +6536,7 @@ func (x *TextContent) UnmarshalJSON(b []byte) error {
 	}
 	lenient(v.Annotations, &x.Annotations)
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "TextContent", []string{"text"}, nil)
 }
 
 // Text-based resource contents.
@@ -6471,7 +6559,7 @@ type TextResourceContents struct {
 func (x *TextResourceContents) UnmarshalJSON(b []byte) error {
 	type plain TextResourceContents
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "TextResourceContents", []string{"text", "uri"}, nil)
 	}
 	*x = TextResourceContents{}
 	var v struct {
@@ -6485,7 +6573,7 @@ func (x *TextResourceContents) UnmarshalJSON(b []byte) error {
 	}
 	lenient(v.MimeType, &x.MimeType)
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "TextResourceContents", []string{"text", "uri"}, nil)
 }
 
 // Items definition for titled multi-select enum properties.
@@ -6506,7 +6594,7 @@ func (x TitledMultiSelectItems) MarshalJSON() ([]byte, error) {
 	if p.AnyOf == nil {
 		p.AnyOf = []EnumOption{}
 	}
-	return json.Marshal(p)
+	return marshal(p)
 }
 
 // UnmarshalJSON decodes TitledMultiSelectItems, dropping an optional field's bad value (or an
@@ -6514,7 +6602,7 @@ func (x TitledMultiSelectItems) MarshalJSON() ([]byte, error) {
 func (x *TitledMultiSelectItems) UnmarshalJSON(b []byte) error {
 	type plain TitledMultiSelectItems
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "TitledMultiSelectItems", []string{"anyOf"}, nil)
 	}
 	*x = TitledMultiSelectItems{}
 	var v struct {
@@ -6526,7 +6614,7 @@ func (x *TitledMultiSelectItems) UnmarshalJSON(b []byte) error {
 		return err
 	}
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "TitledMultiSelectItems", []string{"anyOf"}, nil)
 }
 
 // Represents a tool call that the language model has requested.
@@ -6553,10 +6641,10 @@ type ToolCall struct {
 	// Current execution status of the tool call.
 	Status ToolCallStatus `json:"status,omitempty"`
 	// Content produced by the tool call.
-	Content []ToolCallContent `json:"content,omitempty"`
+	Content []ToolCallContent `json:"content,omitzero"`
 	// File locations affected by this tool call.
 	// Enables "follow-along" features in clients.
-	Locations []ToolCallLocation `json:"locations,omitempty"`
+	Locations []ToolCallLocation `json:"locations,omitzero"`
 	// Raw input parameters sent to the tool.
 	RawInput json.RawMessage `json:"rawInput,omitempty"`
 	// Raw output returned by the tool.
@@ -6573,7 +6661,7 @@ type ToolCall struct {
 func (x *ToolCall) UnmarshalJSON(b []byte) error {
 	type plain ToolCall
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "ToolCall", []string{"toolCallId", "title"}, nil)
 	}
 	*x = ToolCall{}
 	var v struct {
@@ -6599,7 +6687,7 @@ func (x *ToolCall) UnmarshalJSON(b []byte) error {
 	lenient(v.RawInput, &x.RawInput)
 	lenient(v.RawOutput, &x.RawOutput)
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "ToolCall", []string{"toolCallId", "title"}, nil)
 }
 
 // Content produced by a tool call.
@@ -6703,6 +6791,9 @@ func (x *ToolCallContent) UnmarshalJSON(b []byte) error {
 // decodeTag decodes the tag and the fields beside it.
 func (x *ToolCallContent) decodeTag(b []byte) error {
 	type plain ToolCallContent
+	if jsonKind(b) != "object" {
+		return kindError("ToolCallContent", b)
+	}
 	*x = ToolCallContent{}
 	return json.Unmarshal(b, (*plain)(x))
 }
@@ -6735,7 +6826,7 @@ type ToolCallLocation struct {
 func (x *ToolCallLocation) UnmarshalJSON(b []byte) error {
 	type plain ToolCallLocation
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "ToolCallLocation", []string{"path"}, nil)
 	}
 	*x = ToolCallLocation{}
 	var v struct {
@@ -6749,7 +6840,7 @@ func (x *ToolCallLocation) UnmarshalJSON(b []byte) error {
 	}
 	lenient(v.Line, &x.Line)
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "ToolCallLocation", []string{"path"}, nil)
 }
 
 // Execution status of a tool call.
@@ -6797,9 +6888,9 @@ type ToolCallUpdate struct {
 	// the existing name is left unchanged.
 	Name string `json:"name,omitempty"`
 	// Replace the content collection.
-	Content []ToolCallContent `json:"content,omitempty"`
+	Content []ToolCallContent `json:"content,omitzero"`
 	// Replace the locations collection.
-	Locations []ToolCallLocation `json:"locations,omitempty"`
+	Locations []ToolCallLocation `json:"locations,omitzero"`
 	// Update the raw input.
 	RawInput json.RawMessage `json:"rawInput,omitempty"`
 	// Update the raw output.
@@ -6816,7 +6907,7 @@ type ToolCallUpdate struct {
 func (x *ToolCallUpdate) UnmarshalJSON(b []byte) error {
 	type plain ToolCallUpdate
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "ToolCallUpdate", []string{"toolCallId"}, nil)
 	}
 	*x = ToolCallUpdate{}
 	var v struct {
@@ -6844,7 +6935,7 @@ func (x *ToolCallUpdate) UnmarshalJSON(b []byte) error {
 	lenient(v.RawInput, &x.RawInput)
 	lenient(v.RawOutput, &x.RawOutput)
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "ToolCallUpdate", []string{"toolCallId"}, nil)
 }
 
 // Categories of tools that can be invoked.
@@ -6897,7 +6988,7 @@ type UnstructuredCommandInput struct {
 func (x *UnstructuredCommandInput) UnmarshalJSON(b []byte) error {
 	type plain UnstructuredCommandInput
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "UnstructuredCommandInput", []string{"hint"}, nil)
 	}
 	*x = UnstructuredCommandInput{}
 	var v struct {
@@ -6909,7 +7000,7 @@ func (x *UnstructuredCommandInput) UnmarshalJSON(b []byte) error {
 		return err
 	}
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "UnstructuredCommandInput", []string{"hint"}, nil)
 }
 
 // Context window and cost update for a session.
@@ -6932,7 +7023,7 @@ type UsageUpdate struct {
 func (x *UsageUpdate) UnmarshalJSON(b []byte) error {
 	type plain UsageUpdate
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "UsageUpdate", []string{"used", "size"}, nil)
 	}
 	*x = UsageUpdate{}
 	var v struct {
@@ -6946,7 +7037,7 @@ func (x *UsageUpdate) UnmarshalJSON(b []byte) error {
 	}
 	lenient(v.Cost, &x.Cost)
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "UsageUpdate", []string{"used", "size"}, nil)
 }
 
 // Request to wait for a terminal command to exit.
@@ -6967,7 +7058,7 @@ type WaitForTerminalExitRequest struct {
 func (x *WaitForTerminalExitRequest) UnmarshalJSON(b []byte) error {
 	type plain WaitForTerminalExitRequest
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "WaitForTerminalExitRequest", []string{"sessionId", "terminalId"}, nil)
 	}
 	*x = WaitForTerminalExitRequest{}
 	var v struct {
@@ -6979,7 +7070,7 @@ func (x *WaitForTerminalExitRequest) UnmarshalJSON(b []byte) error {
 		return err
 	}
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "WaitForTerminalExitRequest", []string{"sessionId", "terminalId"}, nil)
 }
 
 // Response containing the exit status of a terminal command.
@@ -7041,7 +7132,7 @@ type WriteTextFileRequest struct {
 func (x *WriteTextFileRequest) UnmarshalJSON(b []byte) error {
 	type plain WriteTextFileRequest
 	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+		return requireKeys(b, "WriteTextFileRequest", []string{"sessionId", "path", "content"}, nil)
 	}
 	*x = WriteTextFileRequest{}
 	var v struct {
@@ -7053,7 +7144,7 @@ func (x *WriteTextFileRequest) UnmarshalJSON(b []byte) error {
 		return err
 	}
 	lenient(v.Meta, &x.Meta)
-	return nil
+	return requireKeys(b, "WriteTextFileRequest", []string{"sessionId", "path", "content"}, nil)
 }
 
 // Response to `fs/write_text_file`
