@@ -155,3 +155,28 @@ func TestAnInitialOptionOfAnUnknownType(t *testing.T) {
 		t.Errorf("%+v (%v)", o, err)
 	}
 }
+
+// FuzzDecodeUnstable is FuzzDecode for the types only the unstable schema
+// has (FuzzDecode, copied from the root package, decodes the stable ones).
+func FuzzDecodeUnstable(f *testing.F) {
+	for _, s := range []string{
+		`{"sessionId":"s","update":{"sessionUpdate":"subagent_update","sessionId":"c","title":null,"cwd":"/a","state":{"state":"idle","stopReason":"error","message":"m"}}}`,
+		`{"sessionId":"s","update":{"sessionUpdate":"subagent_update","sessionId":"c","state":{"state":"idle","stopReason":"_future","x":1}}}`,
+		`{"sessionId":"s","update":{"sessionUpdate":"session_message","messageId":"m","content":[{"type":"text","text":"hi"},42],"_meta":null}}`,
+		`{"sessionId":"s","update":{"sessionUpdate":"plan_update","plan":{"entries":[{"content":"c","priority":"high","status":"pending"}]}}}`,
+		`{"sessionId":"s","cwd":"/a","mcpServers":[{"type":"stdio","name":"n","command":"c","args":[],"env":[]}]}`,
+		`{"cwd":"/a","mcpServers":[],"configOptions":[{"configId":"c","type":"future","value":"v"},{"configId":"b","type":"boolean","value":true}]}`,
+		`{"serverId":"s","requestId":"r","method":"tools/call","params":{"n":9007199254740993}}`,
+	} {
+		f.Add([]byte(s))
+	}
+	f.Fuzz(func(t *testing.T, data []byte) {
+		roundTrip[acp.SessionNotification](t, data)
+		roundTrip[acp.SubagentUpdate](t, data)
+		roundTrip[acp.StateUpdate](t, data)
+		roundTrip[acp.SessionMessage](t, data)
+		roundTrip[acp.ForkSessionRequest](t, data)
+		roundTrip[acp.NewSessionRequest](t, data)
+		roundTrip[acp.MessageMCPRequest](t, data)
+	})
+}
