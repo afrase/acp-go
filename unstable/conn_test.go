@@ -237,11 +237,34 @@ func TestLimits(t *testing.T) {
 	if _, err := agentConn.NewSession(ctx, &acp.NewSessionRequest{Cwd: "/"}); err != nil {
 		t.Fatalf("the connection didn't go on: %v", err)
 	}
-	// The agent's update is over the read limit: the connection ends.
-	_, err = agentConn.Prompt(ctx, &acp.PromptRequest{SessionID: "s1", Prompt: []acp.ContentBlock{{Text: &acp.TextContent{Text: "go"}}}})
-	<-agentConn.Done()
-	if !errors.Is(err, acp.ErrClosed) || !errors.Is(agentConn.Err(), acp.ErrTooLarge) {
-		t.Errorf("a message over the read limit: %v; the connection ended with %v", err, agentConn.Err())
+	// The agent's update is over the read limit: it is dropped, and the
+	// connection goes on.
+	resp, err := agentConn.Prompt(ctx, &acp.PromptRequest{SessionID: "s1", Prompt: []acp.ContentBlock{{Text: &acp.TextContent{Text: "go"}}}})
+	if err != nil || resp.StopReason != acp.StopReasonEndTurn {
+		t.Errorf("a turn with an update over the read limit: %+v, %v", resp, err)
+	}
+	// The agent's answer is over the read limit: the call fails.
+	agent.ext = func(context.Context, string, json.RawMessage) (any, error) { return strings.Repeat("r", 5000), nil }
+	if err := agentConn.Call(ctx, "_big", nil, nil); !errors.Is(err, acp.ErrTooLarge) {
+		t.Errorf("an answer over the read limit: %v", err)
+	}
+	if _, err := agentConn.NewSession(ctx, &acp.NewSessionRequest{Cwd: "/"}); err != nil {
+		t.Fatalf("the connection didn't go on: %v", err)
+	}
+}
+
+// A request over the read limit is answered with an error by its id, and
+// the connection goes on.
+func TestARequestOverTheReadLimit(t *testing.T) {
+	r := rawClientWith(t, &testAgent{}, acp.WithReadLimit(1000))
+	r.send(`{"jsonrpc":"2.0","id":"big","method":"session/prompt","params":{"sessionId":"s1","prompt":[{"type":"text","text":"` + strings.Repeat("a", 200<<10) + `"}]}}`) // more than the reading buffer
+	if m := r.read(); code(m) != -32600 || m["id"] != "big" {
+		t.Errorf("a request over the read limit: %v", m)
+	}
+	r.send(`{"jsonrpc":"2.0","method":"session/cancel","params":{"sessionId":"s1","x":"` + strings.Repeat("a", 2000) + `"}}`) // dropped
+	r.send(`{"jsonrpc":"2.0","id":2,"method":"session/new","params":{"cwd":"/","mcpServers":[]}}`)
+	if m := r.read(); m["id"] != float64(2) || m["result"] == nil {
+		t.Errorf("the request after: %v", m)
 	}
 }
 

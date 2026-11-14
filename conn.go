@@ -90,8 +90,12 @@ func (c *conn) read() {
 	var err error
 	for {
 		var line []byte
-		line, err = c.readLine(br)
-		if len(line) > 0 {
+		var over bool
+		line, over, err = c.readLine(br)
+		switch {
+		case over:
+			c.tooLarge(line)
+		case len(line) > 0:
 			c.dispatch(line)
 		}
 		if err != nil {
@@ -110,22 +114,88 @@ func (c *conn) read() {
 	close(c.done)
 }
 
-// readLine reads one line, of any length unless a read limit is set.
-func (c *conn) readLine(br *bufio.Reader) ([]byte, error) {
-	var line []byte
+// readLine reads one line, of any length unless a read limit is set. A
+// line over the limit is read to its end, but only its head is kept (to
+// answer it by its id), and over is true.
+func (c *conn) readLine(br *bufio.Reader) (line []byte, over bool, err error) {
+	limit := c.opts.readLimit
 	for {
 		chunk, err := br.ReadSlice('\n')
-		if limit := c.opts.readLimit; limit > 0 && len(line)+len(bytes.TrimRight(chunk, "\r\n")) > limit {
-			return nil, fmt.Errorf("%w: a message over the read limit of %d bytes", ErrTooLarge, limit)
+		if !over && limit > 0 && len(line)+len(bytes.TrimRight(chunk, "\r\n")) > limit {
+			over = true
+			line = line[:min(len(line), headSize)]
 		}
-		if line == nil && err == nil {
-			return append([]byte(nil), chunk...), nil // the usual case: the line fit the buffer
+		switch {
+		case over:
+			line = append(line, chunk[:min(len(chunk), headSize-len(line))]...)
+		case line == nil && err == nil:
+			return append([]byte(nil), chunk...), false, nil // the usual case: the line fit the buffer
+		default:
+			line = append(line, chunk...)
 		}
-		line = append(line, chunk...)
 		if !errors.Is(err, bufio.ErrBufferFull) {
-			return line, err
+			return line, over, err
 		}
 	}
+}
+
+// headSize is how much of a line over the read limit is kept: enough for
+// the id and method that come before the params.
+const headSize = 4 << 10
+
+// tooLarge answers a message over the read limit by what its head says
+// it is, and the connection goes on: a request is answered with an
+// error, a response fails the call it answers with [ErrTooLarge], and a
+// notification is dropped.
+func (c *conn) tooLarge(head []byte) {
+	c.seq++
+	limit := c.opts.readLimit
+	id, method, isResponse := peek(head)
+	c.log.Warn("acp: a message over the read limit", "limit", limit, "rpc", method)
+	switch {
+	case isResponse && id != nil:
+		c.settle(id, response{err: fmt.Errorf("%w: a response over the read limit of %d bytes", ErrTooLarge, limit)})
+	case method != "" && id != nil && idKey(id) != "":
+		msg := encodeError(id, &Error{Code: ErrorCodeInvalidRequest, Message: fmt.Sprintf("Invalid request: over the read limit of %d bytes", limit)})
+		c.handlers.Go(func() { // the other side's call waits for it
+			_, _ = c.write(c.ctx, msg) // the connection may be ending
+		})
+	case method != "": // a notification: no one waits for it
+	default:
+		c.reply(&Error{Code: ErrorCodeInvalidRequest, Message: fmt.Sprintf("Invalid request: over the read limit of %d bytes", limit)})
+	}
+}
+
+// peek reads a message's id and method from its head, as far as the head
+// goes; response says it has a result or an error.
+func peek(head []byte) (id json.RawMessage, method string, response bool) {
+	dec := json.NewDecoder(bytes.NewReader(head))
+	if t, err := dec.Token(); err != nil || t != json.Delim('{') {
+		return nil, "", false
+	}
+	for dec.More() {
+		t, err := dec.Token()
+		key, ok := t.(string)
+		if err != nil || !ok {
+			break
+		}
+		var v json.RawMessage
+		switch key {
+		case "id":
+			err = dec.Decode(&id)
+		case "method":
+			err = dec.Decode(&method)
+		case "result", "error":
+			response = true
+			err = dec.Decode(&v) // the line's cut short in it, most likely
+		default:
+			err = dec.Decode(&v)
+		}
+		if err != nil {
+			break
+		}
+	}
+	return id, method, response
 }
 
 // maxJunkLogged is how many lines that aren't JSON-RPC are logged one by
