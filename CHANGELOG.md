@@ -6,6 +6,8 @@ schema it follows.
 
 ## Unreleased
 
+- A test builds the README's client and agent. The README said
+  `Example_client` ran its client, which it doesn't (it has no `Start`).
 - Tests: every notification is checked to reach the other side's method of
   its name, through a `RecordingAgent` and `RecordingClient` that acpgen
   writes for the tests (`methods_gen_test.go`).

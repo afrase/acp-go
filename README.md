@@ -127,8 +127,9 @@ func main() {
 ```
 
 [`examples/echo`](examples/echo/main.go) is a complete agent that Zed or any
-other ACP client can run. Both examples above also run as tests
-([`Example_client`, `Example_agent`](https://pkg.go.dev/github.com/afrase/acp-go#pkg-examples)).
+other ACP client can run. A test builds both examples above.
+[`Example_client` and `Example_agent`](https://pkg.go.dev/github.com/afrase/acp-go#pkg-examples)
+run a client and an agent like them, in one process.
 
 ## The unstable protocol
 
