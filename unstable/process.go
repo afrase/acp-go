@@ -18,10 +18,13 @@ import (
 // and Stdout must be unset; its Stderr is left as it is (nil discards the
 // agent's logs). On Unix the agent runs in a process group of its own, so
 // Close kills the processes it started too (an agent run through a
-// launcher, such as npx, is a child of the launcher). Start sets
-// cmd.SysProcAttr.Setpgid for that, unless Setsid is set (a session's
-// leader leads its own group); a Pgid you set puts the agent in that
-// group instead, and Close then kills the agent alone.
+// launcher, such as npx, is a child of the launcher), and a terminal's
+// Ctrl-C reaches the client alone. Start sets cmd.SysProcAttr.Setpgid
+// for that, unless Setsid is set (a session's leader leads its own
+// group); a Pgid you set puts the agent in that group instead, and Close
+// then kills the agent alone. On Windows the agent starts a console
+// process group of its own (CREATE_NEW_PROCESS_GROUP), for Ctrl+C, and
+// runs in a job object, so Close kills the processes it started too.
 //
 // The connection ends when the agent closes its stdout, or exits: what it
 // wrote before exiting is still read, however long the client takes to
@@ -59,12 +62,13 @@ func Start(cmd *exec.Cmd, newClient func(*AgentConn) Client, opts ...Option) (*A
 	}
 	_ = inR.Close() // the agent's ends
 	_ = outW.Close()
+	g := newGroup(cmd)
 
 	var once sync.Once
 	closeFn := func(cause error) error {
 		once.Do(func() { _ = inW.Close() })
 		if cause == nil {
-			_ = kill(cmd) // Close: now
+			_ = g.kill() // Close: now
 		}
 		return outR.Close()
 	}
@@ -79,7 +83,7 @@ func Start(cmd *exec.Cmd, newClient func(*AgentConn) Client, opts ...Option) (*A
 	go func() {
 		select {
 		case <-exited: // what it wrote last is still read, unless a process it left holds its stdout
-			_ = kill(cmd) // what it left running in its group, which may hold its stdout
+			_ = g.kill() // what it left running in its group, which may hold its stdout
 			out.drain(a.c.ctx.Done())
 		case <-a.c.ctx.Done(): // it closed its stdout, or a write failed: it gets drainTime, or Shutdown's time, to exit
 			var patience <-chan time.Time
@@ -95,8 +99,9 @@ func Start(cmd *exec.Cmd, newClient func(*AgentConn) Client, opts ...Option) (*A
 			case <-shutdown:
 			}
 		}
-		_ = kill(cmd) // what it left running, or itself
+		_ = g.kill() // what it left running, or itself
 		<-exited
+		g.release()
 		close(waited)
 	}()
 	a.c.wait = func() { <-waited }
