@@ -72,3 +72,17 @@ func TestUnstableUpdates(t *testing.T) {
 		}
 	}
 }
+
+// An MCP message's params are passed on as they came: a big integer keeps
+// every digit.
+func TestMCPParamsArePassedOnAsTheyCame(t *testing.T) {
+	in := `{"serverId":"s","requestId":"1","method":"tools/call","params":{"arguments":{"id":9007199254740993}}}`
+	var req acp.MessageMCPRequest
+	if err := json.Unmarshal([]byte(in), &req); err != nil {
+		t.Fatal(err)
+	}
+	out, err := json.Marshal(req)
+	if err != nil || string(out) != in {
+		t.Errorf("got %s (%v), want %s", out, err, in)
+	}
+}

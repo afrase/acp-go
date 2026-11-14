@@ -6,6 +6,10 @@ schema it follows.
 
 ## Unreleased
 
+- **Breaking (`unstable`):** `MessageMCPRequest.Params` and
+  `MessageMCPNotification.Params` are `json.RawMessage`, not
+  `map[string]any`, as the response's `Result` already was: the inner MCP
+  message is passed on as it came, big integers included.
 - An optional list that is empty but not nil is sent as `[]` (`omitzero`),
   so an update such as `ToolCallUpdate` can replace its content or
   locations with nothing, and a decoded `[]` is passed on. A nil list is

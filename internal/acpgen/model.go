@@ -355,6 +355,12 @@ func (m *model) fields(d *def, n *node, top bool) {
 			lenient: pn.Lenient, skipInvalid: pn.SkipInvalid}
 		key := d.schemaName + "." + k
 		base := m.goType(pn)
+		if k != "_meta" && pn.AnyProperties && pn.Properties.m == nil {
+			// An object of anything (an MCP message's params) is passed
+			// on as it came: a map would turn its big integers into
+			// float64s.
+			base = "json.RawMessage"
+		}
 		switch {
 		case m.ordered[key] != "":
 			f.typ = m.ordered[key]
