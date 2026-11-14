@@ -30,7 +30,8 @@ It needs Go 1.25 or later and uses only the standard library.
 - **Back-pressure, no queues.** Notifications are handled in order, as they
   are read. A slow client slows the agent down. Nothing is dropped, and a
   busy connection never closes.
-- **No message size limit**, unless you set one.
+- **No message size limit**, unless you set one. A message over it is
+  skipped and answered with an error, and the connection goes on.
 - **Contexts everywhere.** `$/cancel_request` works in both directions. A
   handler panic becomes an error. A connection that ends leaves no
   goroutines behind.

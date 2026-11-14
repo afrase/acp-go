@@ -31,6 +31,11 @@ schema it follows.
   the call it answers, with no reply, and a request is answered Invalid
   request with its id. Before, the call waited forever.
 
+- A message over the read limit no longer ends the connection: it is read
+  to its end and skipped. A request is answered Invalid request by its
+  id, a response fails its call with `ErrTooLarge`, and a notification is
+  dropped.
+
 ## v0.3.0 (2026-11-14)
 
 ACP schema 1.31.0 (protocol version 1).

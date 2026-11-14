@@ -23,8 +23,8 @@ func (e *Error) Error() string {
 var ErrClosed = errors.New("acp: connection closed")
 
 // ErrTooLarge is returned for a message over the write limit
-// ([WithWriteLimit]), which isn't sent; a message over the read limit
-// ([WithReadLimit]) ends the connection with it.
+// ([WithWriteLimit]), which isn't sent, and by a call whose answer is over
+// the read limit ([WithReadLimit]), which is skipped.
 var ErrTooLarge = errors.New("acp: message too large")
 
 // closedError is why a connection ended.
