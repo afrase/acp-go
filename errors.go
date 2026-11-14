@@ -58,6 +58,9 @@ func methodNotFound(method string) error {
 func errorFor(ctx context.Context, err error) *Error {
 	var e *Error
 	if errors.As(err, &e) {
+		if e == nil { // a nil *Error in a non-nil error: it has no text to send
+			return &Error{Code: ErrorCodeInternalError, Message: "Internal error: the handler returned a nil *acp.Error as its error"}
+		}
 		return e
 	}
 	if ctx.Err() != nil && errors.Is(err, context.Canceled) {

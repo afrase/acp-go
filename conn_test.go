@@ -243,6 +243,42 @@ func TestLimits(t *testing.T) {
 	}
 }
 
+// bigClient answers an extension's call with more than a write limit of
+// 200 lets through.
+type bigClient struct{ testClient }
+
+func (*bigClient) ExtMethod(context.Context, string, json.RawMessage) (any, error) {
+	return map[string]string{"text": strings.Repeat("b", 1000)}, nil
+}
+
+// A response over the write limit is answered with an error in its place:
+// the other side's call doesn't wait forever.
+func TestAResponseOverTheWriteLimit(t *testing.T) {
+	_, agentSide := connect(t, &bigClient{}, &testAgent{}, acp.WithWriteLimit(200))
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	var e *acp.Error
+	if err := agentSide.Call(ctx, "_big", nil, nil); !errors.As(err, &e) || e.Code != acp.ErrorCodeInternalError || !strings.Contains(e.Message, "write limit") {
+		t.Errorf("the call: %v", err)
+	}
+}
+
+// A handler that returns a nil *acp.Error as its error (a non-nil error)
+// is answered with an internal error, not a line that isn't JSON.
+func TestANilErrorFromAHandler(t *testing.T) {
+	nilError := func() *acp.Error { return nil }
+	agent := &testAgent{prompt: func(context.Context, *testAgent, *acp.PromptRequest) (*acp.PromptResponse, error) {
+		return &acp.PromptResponse{StopReason: acp.StopReasonEndTurn}, nilError()
+	}}
+	agentConn, _ := connect(t, &testClient{}, agent)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	var e *acp.Error
+	if _, err := agentConn.Prompt(ctx, &acp.PromptRequest{SessionID: "s1"}); !errors.As(err, &e) || e.Code != acp.ErrorCodeInternalError {
+		t.Errorf("the prompt: %v", err)
+	}
+}
+
 // The agent asks the client a question while the client calls the agent:
 // requests are each handled on their own goroutine, so neither waits for
 // the other.

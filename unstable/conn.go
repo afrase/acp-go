@@ -250,7 +250,12 @@ func (c *conn) serve(f frame) {
 			msg = encodeError(f.ID, errorFor(ctx, err))
 		}
 		c.logDone(ctx, "acp: request handled", f.Method, start, err)
-		if _, werr := c.write(c.ctx, msg); werr != nil && !errors.Is(werr, ErrClosed) {
+		_, werr := c.write(c.ctx, msg)
+		if errors.Is(werr, ErrTooLarge) { // the other side still gets an answer
+			_, werr = c.write(c.ctx, encodeError(f.ID, &Error{Code: ErrorCodeInternalError,
+				Message: fmt.Sprintf("Internal error: the response is over the write limit of %d bytes", c.opts.writeLimit)}))
+		}
+		if werr != nil && !errors.Is(werr, ErrClosed) {
 			c.log.Warn("acp: a response wasn't sent", "rpc", f.Method, "err", werr)
 		}
 	})
