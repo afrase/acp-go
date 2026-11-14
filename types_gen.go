@@ -504,7 +504,7 @@ type AvailableCommandInput struct {
 func (x AvailableCommandInput) MarshalJSON() ([]byte, error) {
 	switch {
 	case x.Unstructured != nil:
-		return json.Marshal(x.Unstructured)
+		return marshal(x.Unstructured)
 	case x.Other != nil:
 		return x.Other, nil
 	}
@@ -545,7 +545,7 @@ func (x AvailableCommandsUpdate) MarshalJSON() ([]byte, error) {
 	if p.AvailableCommands == nil {
 		p.AvailableCommands = []AvailableCommand{}
 	}
-	return json.Marshal(p)
+	return marshal(p)
 }
 
 // UnmarshalJSON decodes AvailableCommandsUpdate, dropping an optional field's bad value (or an
@@ -1084,7 +1084,7 @@ func (x ConfigOptionUpdate) MarshalJSON() ([]byte, error) {
 	if p.ConfigOptions == nil {
 		p.ConfigOptions = []SessionConfigOption{}
 	}
-	return json.Marshal(p)
+	return marshal(p)
 }
 
 // UnmarshalJSON decodes ConfigOptionUpdate, dropping an optional field's bad value (or an
@@ -1849,15 +1849,15 @@ type ElicitationContentValue struct {
 func (x ElicitationContentValue) MarshalJSON() ([]byte, error) {
 	switch {
 	case x.String != nil:
-		return json.Marshal(x.String)
+		return marshal(x.String)
 	case x.Integer != nil:
-		return json.Marshal(x.Integer)
+		return marshal(x.Integer)
 	case x.Number != nil:
-		return json.Marshal(x.Number)
+		return marshal(x.Number)
 	case x.Boolean != nil:
-		return json.Marshal(x.Boolean)
+		return marshal(x.Boolean)
 	case x.StringArray != nil:
-		return json.Marshal(x.StringArray)
+		return marshal(x.StringArray)
 	}
 	return []byte("null"), nil
 }
@@ -2303,9 +2303,9 @@ type EmbeddedResourceResource struct {
 func (x EmbeddedResourceResource) MarshalJSON() ([]byte, error) {
 	switch {
 	case x.TextResourceContents != nil:
-		return json.Marshal(x.TextResourceContents)
+		return marshal(x.TextResourceContents)
 	case x.BlobResourceContents != nil:
-		return json.Marshal(x.BlobResourceContents)
+		return marshal(x.BlobResourceContents)
 	case x.Other != nil:
 		return x.Other, nil
 	}
@@ -2932,7 +2932,7 @@ func (x ListSessionsResponse) MarshalJSON() ([]byte, error) {
 	if p.Sessions == nil {
 		p.Sessions = []SessionInfo{}
 	}
-	return json.Marshal(p)
+	return marshal(p)
 }
 
 // UnmarshalJSON decodes ListSessionsResponse, dropping an optional field's bad value (or an
@@ -3002,7 +3002,7 @@ func (x LoadSessionRequest) MarshalJSON() ([]byte, error) {
 	if p.MCPServers == nil {
 		p.MCPServers = []MCPServer{}
 	}
-	return json.Marshal(p)
+	return marshal(p)
 }
 
 // UnmarshalJSON decodes LoadSessionRequest, dropping an optional field's bad value (or an
@@ -3319,7 +3319,7 @@ func (x MCPServerHTTP) MarshalJSON() ([]byte, error) {
 	if p.Headers == nil {
 		p.Headers = []HTTPHeader{}
 	}
-	return json.Marshal(p)
+	return marshal(p)
 }
 
 // UnmarshalJSON decodes MCPServerHTTP, dropping an optional field's bad value (or an
@@ -3364,7 +3364,7 @@ func (x MCPServerSSE) MarshalJSON() ([]byte, error) {
 	if p.Headers == nil {
 		p.Headers = []HTTPHeader{}
 	}
-	return json.Marshal(p)
+	return marshal(p)
 }
 
 // UnmarshalJSON decodes MCPServerSSE, dropping an optional field's bad value (or an
@@ -3414,7 +3414,7 @@ func (x MCPServerStdio) MarshalJSON() ([]byte, error) {
 	if p.Env == nil {
 		p.Env = []EnvVariable{}
 	}
-	return json.Marshal(p)
+	return marshal(p)
 }
 
 // UnmarshalJSON decodes MCPServerStdio, dropping an optional field's bad value (or an
@@ -3612,7 +3612,7 @@ func (x NewSessionRequest) MarshalJSON() ([]byte, error) {
 	if p.MCPServers == nil {
 		p.MCPServers = []MCPServer{}
 	}
-	return json.Marshal(p)
+	return marshal(p)
 }
 
 // UnmarshalJSON decodes NewSessionRequest, dropping an optional field's bad value (or an
@@ -3888,7 +3888,7 @@ func (x Plan) MarshalJSON() ([]byte, error) {
 	if p.Entries == nil {
 		p.Entries = []PlanEntry{}
 	}
-	return json.Marshal(p)
+	return marshal(p)
 }
 
 // UnmarshalJSON decodes Plan, dropping an optional field's bad value (or an
@@ -4087,7 +4087,7 @@ func (x PromptRequest) MarshalJSON() ([]byte, error) {
 	if p.Prompt == nil {
 		p.Prompt = []ContentBlock{}
 	}
-	return json.Marshal(p)
+	return marshal(p)
 }
 
 // UnmarshalJSON decodes PromptRequest, dropping an optional field's bad value (or an
@@ -4406,7 +4406,7 @@ func (x RequestPermissionRequest) MarshalJSON() ([]byte, error) {
 	if p.Options == nil {
 		p.Options = []PermissionOption{}
 	}
-	return json.Marshal(p)
+	return marshal(p)
 }
 
 // UnmarshalJSON decodes RequestPermissionRequest, dropping an optional field's bad value (or an
@@ -5014,7 +5014,7 @@ func (x SessionConfigSelectGroup) MarshalJSON() ([]byte, error) {
 	if p.Options == nil {
 		p.Options = []SessionConfigSelectOption{}
 	}
-	return json.Marshal(p)
+	return marshal(p)
 }
 
 // UnmarshalJSON decodes SessionConfigSelectGroup, dropping an optional field's bad value (or an
@@ -5088,9 +5088,9 @@ type SessionConfigSelectOptions struct {
 func (x SessionConfigSelectOptions) MarshalJSON() ([]byte, error) {
 	switch {
 	case x.Ungrouped != nil:
-		return json.Marshal(x.Ungrouped)
+		return marshal(x.Ungrouped)
 	case x.Grouped != nil:
-		return json.Marshal(x.Grouped)
+		return marshal(x.Grouped)
 	}
 	return []byte("[]"), nil
 }
@@ -5339,7 +5339,7 @@ func (x SessionModeState) MarshalJSON() ([]byte, error) {
 	if p.AvailableModes == nil {
 		p.AvailableModes = []SessionMode{}
 	}
-	return json.Marshal(p)
+	return marshal(p)
 }
 
 // UnmarshalJSON decodes SessionModeState, dropping an optional field's bad value (or an
@@ -5937,7 +5937,7 @@ func (x SetSessionConfigOptionResponse) MarshalJSON() ([]byte, error) {
 	if p.ConfigOptions == nil {
 		p.ConfigOptions = []SessionConfigOption{}
 	}
-	return json.Marshal(p)
+	return marshal(p)
 }
 
 // UnmarshalJSON decodes SetSessionConfigOptionResponse, dropping an optional field's bad value (or an
@@ -6086,7 +6086,7 @@ func (x StringMultiSelectItems) MarshalJSON() ([]byte, error) {
 	if p.Enum == nil {
 		p.Enum = []string{}
 	}
-	return json.Marshal(p)
+	return marshal(p)
 }
 
 // UnmarshalJSON decodes StringMultiSelectItems, dropping an optional field's bad value (or an
@@ -6219,7 +6219,7 @@ func (x SystemPrompt) MarshalJSON() ([]byte, error) {
 	if p.Content == nil {
 		p.Content = []ContentBlock{}
 	}
-	return json.Marshal(p)
+	return marshal(p)
 }
 
 // UnmarshalJSON decodes SystemPrompt, dropping an optional field's bad value (or an
@@ -6506,7 +6506,7 @@ func (x TitledMultiSelectItems) MarshalJSON() ([]byte, error) {
 	if p.AnyOf == nil {
 		p.AnyOf = []EnumOption{}
 	}
-	return json.Marshal(p)
+	return marshal(p)
 }
 
 // UnmarshalJSON decodes TitledMultiSelectItems, dropping an optional field's bad value (or an
