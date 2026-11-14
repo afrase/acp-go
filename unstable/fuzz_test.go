@@ -7,6 +7,12 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"log/slog"
+	"os"
+	"path/filepath"
+	"strconv"
+	"strings"
+	"sync"
 	"testing"
 
 	acp "github.com/afrase/acp-go/unstable"
@@ -14,8 +20,10 @@ import (
 
 // FuzzStream feeds whatever a peer might write to each side of a
 // connection: it must neither panic nor hang, and must end when the input
-// does.
+// does. A panic while decoding or handling a message is recovered by the
+// connection, so it is found in the log.
 func FuzzStream(f *testing.F) {
+	addRootCorpus(f)
 	for _, s := range []string{
 		`{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":1}}` + "\n",
 		`{"jsonrpc":"2.0","id":"x","method":"session/prompt","params":{"sessionId":"s","prompt":[{"type":"text","text":"hi"}]}}` + "\n" +
@@ -30,22 +38,74 @@ func FuzzStream(f *testing.F) {
 	} {
 		f.Add([]byte(s))
 	}
-	f.Fuzz(func(_ *testing.T, data []byte) {
+	f.Fuzz(func(t *testing.T, data []byte) {
+		var log lockedBuffer
+		logger := acp.WithLogger(slog.New(slog.NewTextHandler(&log, &slog.HandlerOptions{Level: slog.LevelError})))
 		agentSide := acp.NewClientConn(bytes.NewReader(data), io.Discard, func(c *acp.ClientConn) acp.Agent {
 			return &testAgent{client: c, prompt: func(ctx context.Context, a *testAgent, _ *acp.PromptRequest) (*acp.PromptResponse, error) {
 				_ = a.say(ctx, "x")
 				return &acp.PromptResponse{StopReason: acp.StopReasonEndTurn}, nil
 			}}
-		})
-		clientSide := acp.NewAgentConn(bytes.NewReader(data), io.Discard, func(*acp.AgentConn) acp.Client { return &testClient{} })
+		}, logger)
+		// Not testClient, whose permission answer assumes there are options.
+		clientSide := acp.NewAgentConn(bytes.NewReader(data), io.Discard, func(*acp.AgentConn) acp.Client { return struct{ acp.UnimplementedClient }{} }, logger)
 		<-agentSide.Done()
 		<-clientSide.Done()
+		if strings.Contains(log.String(), "panicked") {
+			t.Fatalf("%q: %s", data, log.String())
+		}
 	})
+}
+
+// lockedBuffer is a log both sides of a connection write to.
+type lockedBuffer struct {
+	mu sync.Mutex
+	b  bytes.Buffer
+}
+
+func (l *lockedBuffer) Write(p []byte) (int, error) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return l.b.Write(p)
+}
+
+func (l *lockedBuffer) String() string {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return l.b.String()
+}
+
+// addRootCorpus adds the root package's corpus for f's target when this is
+// a copy of this file in another package (unstable): Go reads only a
+// package's own testdata/fuzz, and one corpus serves both.
+func addRootCorpus(f *testing.F) {
+	f.Helper()
+	if _, err := os.Stat(filepath.Join("testdata", "fuzz", f.Name())); err == nil {
+		return
+	}
+	files, err := filepath.Glob(filepath.Join("..", "testdata", "fuzz", f.Name(), "*"))
+	if err != nil {
+		f.Fatal(err)
+	}
+	for _, file := range files {
+		b, err := os.ReadFile(file)
+		if err != nil {
+			f.Fatal(err)
+		}
+		// "go test fuzz v1", then the one argument: []byte("...")
+		header, arg, _ := strings.Cut(strings.TrimSpace(string(b)), "\n")
+		data, err := strconv.Unquote(strings.TrimSuffix(strings.TrimPrefix(arg, "[]byte("), ")"))
+		if header != "go test fuzz v1" || err != nil {
+			f.Fatalf("%s isn't a corpus entry: %v", file, err)
+		}
+		f.Add([]byte(data))
+	}
 }
 
 // FuzzDecode decodes whatever a peer might send as ACP's main types: no
 // panic, and what decodes encodes to something that decodes to the same.
 func FuzzDecode(f *testing.F) {
+	addRootCorpus(f)
 	for _, s := range []string{
 		`{"sessionId":"s","update":{"sessionUpdate":"tool_call","toolCallId":"t","title":"x","content":[{"type":"diff","path":"/a","newText":"b","oldText":null}],"locations":[{"path":"/a","line":3}]}}`,
 		`{"sessionId":"s","update":{"sessionUpdate":"session_info_update","title":null,"updatedAt":"2026-01-01T00:00:00Z"}}`,

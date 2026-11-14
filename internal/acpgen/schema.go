@@ -25,6 +25,7 @@ type node struct {
 	AnyOf                []*node  `json:"anyOf"`
 	OneOf                []*node  `json:"oneOf"`
 	AdditionalProperties *node    `json:"-"`
+	AnyProperties        bool     `json:"-"` // additionalProperties: true
 	DocsIgnore           bool     `json:"x-docs-ignore"`
 	Lenient              bool     `json:"x-deserialize-default-on-error"`
 	SkipInvalid          bool     `json:"x-deserialize-skip-invalid-items"`
@@ -43,6 +44,7 @@ func (n *node) UnmarshalJSON(b []byte) error {
 		return err
 	}
 	// additionalProperties is a schema, or a boolean (true: any value).
+	n.AnyProperties = string(v.AdditionalProperties) == "true"
 	if len(v.AdditionalProperties) > 0 && v.AdditionalProperties[0] == '{' {
 		n.AdditionalProperties = new(node)
 		return json.Unmarshal(v.AdditionalProperties, n.AdditionalProperties)
