@@ -12,6 +12,7 @@ import (
 	"runtime/debug"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -56,6 +57,8 @@ type conn struct {
 	done     chan struct{}  // closed once the reading, the handlers and wait have ended
 	wait     func()         // run after the reading ends, before done closes (a process's Wait)
 	junk     int            // lines that weren't JSON-RPC (on the reading goroutine)
+	skipped  int            // of the answers reply had to send, those it didn't (on the reading goroutine)
+	replying atomic.Int32   // reply's answers being written
 	seq      uint64         // lines read (on the reading goroutine): a message's place in the order
 }
 
@@ -95,8 +98,8 @@ func (c *conn) read() {
 			break
 		}
 	}
-	if c.junk > maxJunkLogged {
-		c.log.Warn("acp: lines that weren't JSON-RPC", "lines", c.junk)
+	if c.junk > maxJunkLogged || c.skipped > 0 {
+		c.log.Warn("acp: lines that weren't JSON-RPC", "lines", c.junk, "unanswered", c.skipped)
 	}
 	c.fail(err)
 	c.handlers.Wait()
@@ -181,11 +184,25 @@ func (c *conn) junkLine(line []byte) {
 	}
 }
 
+// maxReplies is how many of reply's answers may wait to be written at
+// once. Past that, while the other side doesn't read, a bad line goes
+// unanswered: an agent that logs to stdout and doesn't read its input
+// would otherwise pile up a goroutine a line.
+const maxReplies = 8
+
 // reply sends an error for a message that can't be answered by a handler
 // (one with a bad shape), on a goroutine of its own: the reading goroutine
-// mustn't wait for the other side to read.
+// mustn't wait for the other side to read. Its id is null, so no call of
+// the other side waits for it, and it is skipped when maxReplies are
+// already waiting.
 func (c *conn) reply(e *Error) {
+	if c.replying.Add(1) > maxReplies {
+		c.replying.Add(-1)
+		c.skipped++
+		return
+	}
 	c.handlers.Go(func() {
+		defer c.replying.Add(-1)
 		_, _ = c.write(c.ctx, encodeError(nil, e)) // the connection may be ending
 	})
 }
