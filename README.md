@@ -22,7 +22,7 @@ It needs Go 1.25 or later and uses only the standard library.
 
 - **All of ACP v1**, generated from the
   [official schema](https://github.com/agentclientprotocol/agent-client-protocol)
-  (release 1.26.0). The schema's descriptions are the docs.
+  (release 1.31.0). The schema's descriptions are the docs.
 - **Unstable parts in their own package.**
   [`unstable`](https://pkg.go.dev/github.com/afrase/acp-go/unstable) holds
   session/fork, a turn's usage, subagents and the other draft features. Code
@@ -225,7 +225,7 @@ sides. Compared with coder's SDK (the most used) and caelis-labs' (the most
 complete):
 
 | | acp-go | [coder/acp-go-sdk](https://github.com/coder/acp-go-sdk) | [caelis-labs/acp-go-sdk](https://github.com/caelis-labs/acp-go-sdk) |
-| ACP schema | 1.26.0, stable and unstable | an older one (0.13.5, June 2026) | 1.26.0 stable; the v2 draft in `experimental/v2` |
+| ACP schema | 1.31.0, stable and unstable | an older one (0.13.5, June 2026) | 1.26.0 stable; the v2 draft in `experimental/v2` |
 | Unstable parts | a package of their own, with the same API | in the main package, named `Unstable…` | not there |
 | When the other side outpaces you | it waits (back-pressure) | the connection closes after 1,024 queued notifications | the connection fails at a queue limit (1,024 notifications or 32 MiB, configurable) |
 | Message size | no cap unless you set one | 10 MiB | 10 MiB by default, configurable |
