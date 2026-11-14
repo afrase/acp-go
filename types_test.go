@@ -244,3 +244,65 @@ func TestTheUntaggedVariantByItsTitle(t *testing.T) {
 		t.Errorf("sent as %s, want %s", got, want)
 	}
 }
+
+// A required property, at any depth, must be there and not null (unless
+// the schema lets it be null): in requests, notifications, union variants
+// and responses alike, as the TypeScript and Rust SDKs check.
+func TestRequiredPropertiesAtEveryLevel(t *testing.T) {
+	for _, tc := range []struct {
+		in   string
+		into any
+	}{
+		{`{"sessionId":"s","configId":"c","type":"boolean"}`, new(acp.SetSessionConfigOptionRequest)},
+		{`{"sessionId":null,"prompt":[]}`, new(acp.PromptRequest)},
+		{`{"sessionId":"s","prompt":[{"type":"text"}]}`, new(acp.PromptRequest)},
+		{`{"sessionId":"s","prompt":[null]}`, new(acp.PromptRequest)},
+		{`{}`, new(acp.SessionNotification)},
+		{`{"sessionId":"s","update":{"sessionUpdate":"agent_message_chunk"}}`, new(acp.SessionNotification)},
+		{`{}`, new(acp.NewSessionResponse)},
+		{`{}`, new(acp.CancelRequestNotification)},
+		{`{"sessionId":"s","prompt":[{"type":"resource","resource":null}]}`, new(acp.PromptRequest)},
+	} {
+		if err := json.Unmarshal([]byte(tc.in), tc.into); err == nil {
+			t.Errorf("%T %s decoded: %+v", tc.into, tc.in, tc.into)
+		}
+	}
+	for _, tc := range []struct {
+		in   string
+		into any
+	}{
+		{`{"requestId":null}`, new(acp.CancelRequestNotification)}, // a JSON-RPC id may be null
+		{` { "sessionId" : "s" , "prompt" : [ { "type" : "text" , "text" : "}{\"sessionId\"" } ] } `, new(acp.PromptRequest)},
+		{`{"sessionId":"s","prompt":[]}`, new(acp.PromptRequest)},
+		{`{"sessionId":"s","prompt":[],"x":{"a":[1,{"b":"]}"}],"c":null}}`, new(acp.PromptRequest)},
+	} {
+		if err := json.Unmarshal([]byte(tc.in), tc.into); err != nil {
+			t.Errorf("%T %s: %v", tc.into, tc.in, err)
+		}
+	}
+}
+
+// A message without its required properties doesn't reach its handler: a
+// request is answered Invalid params, a notification is dropped.
+func TestAMessageWithoutItsRequiredPropertiesIsRefused(t *testing.T) {
+	agent := &testAgent{}
+	r := rawClient(t, agent)
+	for _, line := range []string{
+		`{"jsonrpc":"2.0","id":1,"method":"session/prompt","params":{"sessionId":null,"prompt":[]}}`,
+		`{"jsonrpc":"2.0","id":2,"method":"session/prompt","params":{"sessionId":"s1","prompt":[{"type":"text"}]}}`,
+	} {
+		r.send(line)
+		if m := r.read(); code(m) != -32602 {
+			t.Errorf("%s: answered %v", line, m)
+		}
+	}
+	r.send(`{"jsonrpc":"2.0","method":"session/cancel","params":{}}`)
+	r.send(`{"jsonrpc":"2.0","method":"session/cancel","params":{"sessionId":"s1"}}`)
+	r.send(`{"jsonrpc":"2.0","id":3,"method":"session/new","params":{"cwd":"/","mcpServers":[]}}`)
+	r.read() // the notifications before it have been handled
+	agent.mu.Lock()
+	defer agent.mu.Unlock()
+	if len(agent.cancelled) != 1 || agent.cancelled[0] != "s1" {
+		t.Errorf("cancelled %q", agent.cancelled)
+	}
+}

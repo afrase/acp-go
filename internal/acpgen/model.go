@@ -57,6 +57,7 @@ type field struct {
 	nullable             bool // Nullable[T]: absent, null and a value differ
 	lenient              bool // a bad value decodes as absent
 	skipInvalid          bool // bad items of an array are dropped
+	mayBeNull            bool // required, but the schema allows null
 }
 
 // variant is one case of a union.
@@ -111,6 +112,10 @@ func newModel(s *schema, pkg string) (*model, error) {
 		}
 	}
 	for n, d := range m.defs {
+		// requireKeys keeps what it found of them in a uint64.
+		if c := len(slices.DeleteFunc(slices.Clone(d.fields), func(f *field) bool { return !f.required })); c > 64 {
+			return nil, fmt.Errorf("%s: %d required properties", n, c)
+		}
 		if prev := m.byGo[d.name]; prev != nil {
 			return nil, fmt.Errorf("%s and %s are both %s in Go", prev.schemaName, n, d.name)
 		}
@@ -359,12 +364,12 @@ func (m *model) fields(d *def, n *node, top bool) {
 		doc := pn.Description
 		if k == "_meta" && strings.HasPrefix(doc, "The _meta property is reserved by ACP") {
 			doc = metaDoc
-			if clearsOnNull(pn) {
+			if m.clearsOnNull(pn) {
 				doc = metaNullDoc
 			}
 		}
 		f := &field{json: k, name: goName(k), doc: doc, required: top && slices.Contains(n.Required, k),
-			lenient: pn.Lenient, skipInvalid: pn.SkipInvalid}
+			lenient: pn.Lenient, skipInvalid: pn.SkipInvalid, mayBeNull: m.allowsNull(pn)}
 		key := d.schemaName + "." + k
 		base := m.goType(pn)
 		if k != "_meta" && pn.AnyProperties && pn.Properties.m == nil {
@@ -376,7 +381,7 @@ func (m *model) fields(d *def, n *node, top bool) {
 		switch {
 		case m.ordered[key] != "":
 			f.typ = m.ordered[key]
-		case clearsOnNull(pn):
+		case m.clearsOnNull(pn):
 			f.typ, f.nullable = "Nullable["+base+"]", true
 		case !f.required && m.needsPtr(base):
 			f.typ, f.ptr = "*"+base, true
@@ -398,21 +403,26 @@ var nullClears = regexp.MustCompile(`(?is)\bnull\b.{0,12}\b(clears|removes)\b|se
 // clearsOnNull reports whether a property is a Nullable: one that may be
 // null, and whose null the schema says clears it. Its description is read,
 // not a list kept by hand, so a new one isn't missed.
-func clearsOnNull(n *node) bool {
-	return allowsNull(n) && nullClears.MatchString(n.Description)
+func (m *model) clearsOnNull(n *node) bool {
+	return m.allowsNull(n) && nullClears.MatchString(n.Description)
 }
 
-// allowsNull reports whether a property's schema allows null.
-func allowsNull(n *node) bool {
+// allowsNull reports whether a property's schema allows null, through
+// the definitions it refers to.
+func (m *model) allowsNull(n *node) bool { return m.nullable(n, map[*node]bool{}) }
+
+func (m *model) nullable(n *node, seen map[*node]bool) bool {
+	if n == nil || seen[n] {
+		return false
+	}
+	seen[n] = true
 	if n.Type.nullable() {
 		return true
 	}
-	for _, v := range variants(n) {
-		if v.Type.nullable() {
-			return true
-		}
+	if r := refName(n); r != "" {
+		return m.nullable(m.s.defs[r], seen)
 	}
-	return false
+	return slices.ContainsFunc(variants(n), func(v *node) bool { return m.nullable(v, seen) })
 }
 
 // goType is the Go type of a property's schema (a union with null is its

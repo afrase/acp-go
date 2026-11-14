@@ -80,13 +80,50 @@ func genStruct(b *bytes.Buffer, m *model, d *def) {
 	writeFields(b, m, d.fields)
 	b.WriteString("}\n\n")
 	genEmptyLists(b, d)
-	if lenientFields(d.fields) != nil {
+	done := requireCall(d)
+	switch {
+	case lenientFields(d.fields) != nil:
 		fmt.Fprintf(b, "// UnmarshalJSON decodes %s, dropping an optional field's bad value (or an\n// array's bad items) where the schema says to, rather than failing.\n", d.name)
 		fmt.Fprintf(b, "func (x *%s) UnmarshalJSON(b []byte) error {\n\ttype plain %s\n", d.name, d.name)
-		writeLenientDecode(b, d, "x", lenientFields(d.fields))
-		b.WriteString("\treturn nil\n}\n\n")
+		writeLenientDecode(b, d, "x", lenientFields(d.fields), done)
+		fmt.Fprintf(b, "\treturn %s\n}\n\n", done)
+	case done != "nil":
+		fmt.Fprintf(b, "// UnmarshalJSON decodes %s, which must have the properties it requires.\n", d.name)
+		fmt.Fprintf(b, "func (x *%s) UnmarshalJSON(b []byte) error {\n\ttype plain %s\n", d.name, d.name)
+		fmt.Fprintf(b, "\tif err := json.Unmarshal(b, (*plain)(x)); err != nil {\n\t\treturn err\n\t}\n\treturn %s\n}\n\n", done)
 	}
 }
+
+// requireCall is the call that checks a decoded object of d's has the
+// properties d requires (non-null, but for those the schema lets be
+// null), or "nil" when d requires none.
+func requireCall(d *def) string {
+	var nonNull, mayBeNull []string
+	for _, f := range d.fields {
+		switch {
+		case !f.required:
+		case f.mayBeNull:
+			mayBeNull = append(mayBeNull, f.json)
+		default:
+			nonNull = append(nonNull, f.json)
+		}
+	}
+	if (nonNull == nil && mayBeNull == nil) || noRequiredCheck[d.schemaName] {
+		return "nil"
+	}
+	list := func(keys []string) string {
+		if keys == nil {
+			return "nil"
+		}
+		return "[]string{" + quotedArgs(keys) + "}"
+	}
+	return fmt.Sprintf("requireKeys(b, %q, %s, %s)", d.name, list(nonNull), list(mayBeNull))
+}
+
+// noRequiredCheck are the types decoded without checking their required
+// properties: a JSON-RPC error's, which the connection reads with its
+// frame, where a refusal would lose the answer and leave its call waiting.
+var noRequiredCheck = map[string]bool{"Error": true}
 
 // genEmptyLists writes a MarshalJSON that sends a required list or map left
 // nil as an empty one, not null.
@@ -119,9 +156,10 @@ func lenientFields(fields []*field) []*field {
 }
 
 // writeLenientDecode decodes b into recv (of type plain's), the quick way
-// first and, if that fails, again field by field for the lenient ones.
-func writeLenientDecode(b *bytes.Buffer, d *def, recv string, lenient []*field) {
-	fmt.Fprintf(b, "\tif err := json.Unmarshal(b, (*plain)(%s)); err == nil {\n\t\treturn nil\n\t}\n", recv)
+// first and, if that fails, again field by field for the lenient ones;
+// done is what a decode that worked returns.
+func writeLenientDecode(b *bytes.Buffer, d *def, recv string, lenient []*field, done string) {
+	fmt.Fprintf(b, "\tif err := json.Unmarshal(b, (*plain)(%s)); err == nil {\n\t\treturn %s\n\t}\n", recv, done)
 	fmt.Fprintf(b, "\t*%s = %s{}\n\tvar v struct {\n\t\t*plain\n", recv, d.name)
 	for _, f := range lenient {
 		fmt.Fprintf(b, "\t\t%s json.RawMessage `json:%q`\n", f.name, f.json)
@@ -248,15 +286,21 @@ func genTaggedUnmarshal(b *bytes.Buffer, m *model, d *def) {
 	b.WriteString("\t}\n\tx.Other = append(json.RawMessage(nil), b...)\n\treturn nil\n}\n\n")
 
 	fmt.Fprintf(b, "// decodeTag decodes the tag and the fields beside it.\nfunc (x *%s) decodeTag(b []byte) error {\n\ttype plain %s\n", d.name, d.name)
+	// null (an item of a list) is no variant: refused, as a peer's SDK does
+	fmt.Fprintf(b, "\tif jsonKind(b) != \"object\" {\n\t\treturn kindError(%q, b)\n\t}\n", d.name)
 	lenient := lenientFields(d.fields)
 	if d.tagLenient { // a tag that isn't a string is absent
 		lenient = append(lenient, &field{name: d.tagField, json: d.tag, lenient: true})
 	}
-	if lenient != nil {
+	done := requireCall(d)
+	switch {
+	case lenient != nil:
 		fmt.Fprintf(b, "\t*x = %s{}\n", d.name)
-		writeLenientDecode(b, d, "x", lenient)
-		b.WriteString("\treturn nil\n}\n\n")
-	} else {
+		writeLenientDecode(b, d, "x", lenient, done)
+		fmt.Fprintf(b, "\treturn %s\n}\n\n", done)
+	case done != "nil":
+		fmt.Fprintf(b, "\t*x = %s{}\n\tif err := json.Unmarshal(b, (*plain)(x)); err != nil {\n\t\treturn err\n\t}\n\treturn %s\n}\n\n", d.name, done)
+	default:
 		fmt.Fprintf(b, "\t*x = %s{}\n\treturn json.Unmarshal(b, (*plain)(x))\n}\n\n", d.name)
 	}
 }
@@ -290,6 +334,7 @@ func genUntagged(b *bytes.Buffer, m *model, d *def) {
 	}
 	fmt.Fprintf(b, "\tcase x.Other != nil:\n\t\treturn x.Other, nil\n\t}\n\treturn nil, variantError(%q, 0)\n}\n\n", d.name)
 	fmt.Fprintf(b, "// UnmarshalJSON decodes the variant whose required properties b has.\nfunc (x *%s) UnmarshalJSON(b []byte) error {\n\t*x = %s{}\n", d.name, d.name)
+	fmt.Fprintf(b, "\tif jsonKind(b) != \"object\" {\n\t\treturn kindError(%q, b)\n\t}\n", d.name)
 	b.WriteString("\tvar keys map[string]json.RawMessage\n\tif err := json.Unmarshal(b, &keys); err != nil {\n\t\treturn err\n\t}\n\tswitch {\n")
 	vars := slices.Clone(d.vars)
 	slices.SortStableFunc(vars, func(a, b *variant) int { return len(b.required) - len(a.required) })

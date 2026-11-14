@@ -6,6 +6,15 @@ schema it follows.
 
 ## Unreleased
 
+- **Behaviour change:** required properties are checked at every level of
+  every message read: requests, notifications, responses, and the
+  objects, list items and union variants inside them. A property that is
+  null where the schema doesn't allow it counts as missing. A request
+  without them is answered Invalid params, a notification is dropped
+  (logged), and a response is its call's error. Before, only a request's
+  top-level properties were checked, and only for presence. A union in a
+  list that is null, not an object, is refused too, rather than kept as
+  `Other`. A JSON-RPC error object is not checked.
 - `unstable`: `IdleStateUpdate.None`, the idle state without a stop reason.
   It can now be sent (`StateUpdate{Idle: &IdleStateUpdate{None: true}}`),
   and an absent, null or malformed `stopReason` decodes as it, as the
