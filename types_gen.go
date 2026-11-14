@@ -270,6 +270,7 @@ func (x AuthMethod) MarshalJSON() ([]byte, error) {
 		return x.Other, nil
 	}
 	if x.Agent != nil {
+		x.Type = "" // the variant without a tag goes without one
 		return marshalUnion(plain(x), x.Agent)
 	}
 	return marshalUnion(plain(x), nil)
@@ -285,8 +286,8 @@ func (x *AuthMethod) UnmarshalJSON(b []byte) error {
 	case "terminal":
 		x.Terminal = new(AuthMethodTerminal)
 		return json.Unmarshal(b, x.Terminal)
-	case "":
-		x.Agent = new(AuthMethodAgent)
+	case "", "agent":
+		x.Type, x.Agent = "", new(AuthMethodAgent)
 		return json.Unmarshal(b, x.Agent)
 	}
 	x.Other = append(json.RawMessage(nil), b...)
@@ -3264,6 +3265,7 @@ func (x MCPServer) MarshalJSON() ([]byte, error) {
 		return x.Other, nil
 	}
 	if x.Stdio != nil {
+		x.Type = "" // the variant without a tag goes without one
 		return marshalUnion(plain(x), x.Stdio)
 	}
 	return marshalUnion(plain(x), nil)
@@ -3282,8 +3284,8 @@ func (x *MCPServer) UnmarshalJSON(b []byte) error {
 	case "sse":
 		x.SSE = new(MCPServerSSE)
 		return json.Unmarshal(b, x.SSE)
-	case "":
-		x.Stdio = new(MCPServerStdio)
+	case "", "stdio":
+		x.Type, x.Stdio = "", new(MCPServerStdio)
 		return json.Unmarshal(b, x.Stdio)
 	}
 	x.Other = append(json.RawMessage(nil), b...)
@@ -3489,6 +3491,7 @@ func (x MultiSelectItems) MarshalJSON() ([]byte, error) {
 		return x.Other, nil
 	}
 	if x.Titled != nil {
+		x.Type = "" // the variant without a tag goes without one
 		return marshalUnion(plain(x), x.Titled)
 	}
 	return marshalUnion(plain(x), nil)
@@ -3504,8 +3507,8 @@ func (x *MultiSelectItems) UnmarshalJSON(b []byte) error {
 	case "string":
 		x.String = new(StringMultiSelectItems)
 		return json.Unmarshal(b, x.String)
-	case "":
-		x.Titled = new(TitledMultiSelectItems)
+	case "", "titled":
+		x.Type, x.Titled = "", new(TitledMultiSelectItems)
 		return json.Unmarshal(b, x.Titled)
 	}
 	x.Other = append(json.RawMessage(nil), b...)
@@ -5861,6 +5864,7 @@ func (x SetSessionConfigOptionRequest) MarshalJSON() ([]byte, error) {
 		return x.Other, nil
 	}
 	if x.ValueID != nil {
+		x.Type = "" // the variant without a tag goes without one
 		return marshalUnion(plain(x), x.ValueID)
 	}
 	return marshalUnion(plain(x), nil)

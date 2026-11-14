@@ -109,3 +109,49 @@ func TestSessionMessageNulls(t *testing.T) {
 		t.Errorf("got %s (%v), want %s", out, err, want)
 	}
 }
+
+// An idle state without a stop reason can be sent, and one that is
+// absent, null or bad decodes as None, as the schema says.
+func TestIdleWithoutAStopReason(t *testing.T) {
+	out, err := json.Marshal(acp.StateUpdate{Idle: &acp.IdleStateUpdate{None: true}})
+	if err != nil || string(out) != `{"state":"idle"}` {
+		t.Errorf("sent as %s (%v)", out, err)
+	}
+	for _, in := range []string{`{"state":"idle"}`, `{"state":"idle","stopReason":null}`, `{"state":"idle","stopReason":42}`} {
+		var s acp.StateUpdate
+		if err := json.Unmarshal([]byte(in), &s); err != nil || s.Idle == nil || !s.Idle.None || s.Idle.Other != nil {
+			t.Errorf("%s: %+v (%v)", in, s.Idle, err)
+		}
+	}
+	var u acp.SubagentUpdate
+	if err := json.Unmarshal([]byte(`{"sessionId":"c","state":{"state":"idle","stopReason":42}}`), &u); err != nil ||
+		u.State.Value == nil || u.State.Value.Idle == nil || !u.State.Value.Idle.None {
+		t.Errorf("a subagent's bad stop reason: %+v (%v)", u.State, err)
+	}
+}
+
+// An idle state with a stop reason this package doesn't know is passed on
+// with its "state" once.
+func TestAnUnknownStopReasonIsPassedOn(t *testing.T) {
+	for _, in := range []string{
+		`{"state":"idle","stopReason":"paused","x":1}`,
+		`{"state":"idle","stopReason":"end_turn"}`,
+	} {
+		var s acp.StateUpdate
+		if err := json.Unmarshal([]byte(in), &s); err != nil {
+			t.Fatal(err)
+		}
+		if out, err := json.Marshal(s); err != nil || string(out) != in {
+			t.Errorf("%s: passed on as %s (%v)", in, out, err)
+		}
+	}
+}
+
+// An initial config option of an unknown type with a string value is a
+// value id, as the schema says (and as session/set_config_option's is).
+func TestAnInitialOptionOfAnUnknownType(t *testing.T) {
+	var o acp.InitialSessionConfigOption
+	if err := json.Unmarshal([]byte(`{"configId":"c","type":"future","value":"v"}`), &o); err != nil || o.ValueID == nil || o.ValueID.Value != "v" {
+		t.Errorf("%+v (%v)", o, err)
+	}
+}

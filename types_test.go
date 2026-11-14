@@ -228,3 +228,19 @@ func TestAnEmptyOptionalListIsSent(t *testing.T) {
 		t.Errorf("passed on as %s", got)
 	}
 }
+
+// The variant without a tag is also taken when the tag is its title (some
+// peers send an MCP server's "type":"stdio"), and is sent without one.
+func TestTheUntaggedVariantByItsTitle(t *testing.T) {
+	s := decode[acp.MCPServer](t, `{"type":"stdio","name":"fs","command":"/bin/fs","args":[],"env":[]}`)
+	if s.Stdio == nil || s.Stdio.Command != "/bin/fs" || s.Other != nil {
+		t.Errorf("stdio: %+v", s)
+	}
+	if a := decode[acp.AuthMethod](t, `{"type":"agent","id":"x","name":"n"}`); a.Agent == nil || a.Agent.ID != "x" {
+		t.Errorf("agent: %+v", a)
+	}
+	got := encode(t, acp.MCPServer{Type: "stdio", Stdio: &acp.MCPServerStdio{Name: "fs", Command: "/bin/fs"}})
+	if want := `{"name":"fs","command":"/bin/fs","args":[],"env":[]}`; got != want {
+		t.Errorf("sent as %s, want %s", got, want)
+	}
+}

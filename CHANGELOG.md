@@ -6,6 +6,18 @@ schema it follows.
 
 ## Unreleased
 
+- `unstable`: `IdleStateUpdate.None`, the idle state without a stop reason.
+  It can now be sent (`StateUpdate{Idle: &IdleStateUpdate{None: true}}`),
+  and an absent, null or malformed `stopReason` decodes as it, as the
+  schema says, instead of as `Other` or an error.
+- `unstable`: an idle state with an unknown stop reason is passed on with
+  its `"state"` key once; it was written twice.
+- A union's variant without a tag (an MCP server's `Stdio`, an auth
+  method's `Agent`, ...) also decodes when the tag is its title, such as
+  `"type":"stdio"`, and is always sent without a tag.
+- `unstable`: an `InitialSessionConfigOption` of an unknown type with a
+  string value decodes as `ValueID`, as the schema says (acpgen now reads
+  this from the schema, as it does for `SetSessionConfigOptionRequest`).
 - **Breaking (`unstable`):** every field whose null the schema says clears
   it is a `Nullable`. acpgen now reads this from the schema's
   descriptions instead of a list kept by hand, which had fallen behind:
