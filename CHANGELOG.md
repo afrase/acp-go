@@ -60,6 +60,11 @@ schema it follows.
   sends them.
 - CI checks that `schema/` is the pinned release (`make pinned`, in
   `make check` too).
+- Docs: a connection's factory must not call the other side (nothing is
+  read until it returns); a call from a notification handler fails at
+  once only when made with the handler's context; the README's client and
+  `examples/prompt` give `Shutdown` five seconds rather than a context
+  that never ends.
 - A request's handler has started before anything read after the request
   is handled: an agent's Cancel no longer runs before the Prompt of a
   session/prompt that came before it was called.

@@ -65,7 +65,12 @@ func run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	defer agent.Shutdown(ctx)
+	defer func() {
+		// The agent has five seconds to end its turns and exit.
+		sctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+		defer cancel()
+		_ = agent.Shutdown(sctx)
+	}()
 
 	if _, err := agent.Initialize(ctx, &acp.InitializeRequest{ProtocolVersion: acp.LatestProtocolVersion}); err != nil {
 		return err

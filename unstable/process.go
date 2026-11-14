@@ -14,7 +14,9 @@ import (
 // Start runs an agent's command and speaks ACP to it over its stdin and
 // stdout. It calls newClient with the connection once the agent has
 // started, before reading anything, so the client can keep it to call the
-// agent; what the agent sends goes to the client it returns. cmd's Stdin
+// agent later (not in newClient: nothing is read until it returns, so the
+// call would wait forever); what the agent sends goes to the client it
+// returns. cmd's Stdin
 // and Stdout must be unset; its Stderr is left as it is (nil discards the
 // agent's logs). On Unix the agent runs in a process group of its own, so
 // Close kills the processes it started too (an agent run through a

@@ -27,8 +27,10 @@ type AgentConn struct {
 
 // NewAgentConn speaks ACP to an agent over r (what the agent writes) and w
 // (what it reads). It calls newClient with the connection, before reading
-// anything, so the client can keep it to call the agent; what the agent
-// sends goes to the client it returns. Close closes r and w, those that
+// anything, so the client can keep it to call the agent later; what the
+// agent sends goes to the client it returns. newClient must not call the
+// agent itself: nothing is read until it returns, so such a call would
+// wait for its answer forever. Close closes r and w, those that
 // are io.Closers (a blocking pipe file as [NewClientConn] says); to run an
 // agent's command, use [Start].
 func NewAgentConn(r io.Reader, w io.Writer, newClient func(*AgentConn) Client, opts ...Option) *AgentConn {
