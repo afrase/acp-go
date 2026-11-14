@@ -14,9 +14,8 @@ import (
 // started, before reading anything, so the client can keep it to call the
 // agent later (not in newClient: nothing is read until it returns, so the
 // call would wait forever); what the agent sends goes to the client it
-// returns. cmd's Stdin
-// and Stdout must be unset; its Stderr is left as it is (nil discards the
-// agent's logs). On Unix the agent runs in a process group of its own, so
+// returns. cmd's Stdin and Stdout must be unset; its Stderr is left as it
+// is (nil discards the agent's logs). On Unix the agent runs in a process group of its own, so
 // Close kills the processes it started too (an agent run through a
 // launcher, such as npx, is a child of the launcher), and a terminal's
 // Ctrl-C reaches the client alone. Start sets cmd.SysProcAttr.Setpgid
@@ -29,11 +28,11 @@ import (
 // The connection ends when the agent closes its stdout, or exits: what it
 // wrote before exiting is still read, however long the client takes to
 // handle it; once a read has waited a second with nothing to read (a
-// process it left running may hold its stdout open), the reading ends. Done is closed once its process
-// has been waited for; cmd.ProcessState then says how it ended. (A process
-// that can't be killed, such as one running as another user, keeps Done
-// open until it exits.) If cmd's WaitDelay is zero, Start sets it to a
-// second.
+// process it left running may hold its stdout open), the reading ends.
+// Done is closed once its process has been waited for; cmd.ProcessState
+// then says how it ended. (A process that can't be killed, such as one
+// running as another user, keeps Done open until it exits.) If cmd's
+// WaitDelay is zero, Start sets it to a second.
 func Start(cmd *exec.Cmd, newClient func(*AgentConn) Client, opts ...Option) (*AgentConn, error) {
 	if cmd.Stdin != nil || cmd.Stdout != nil {
 		return nil, errors.New("acp: Start sets the command's stdin and stdout itself")
