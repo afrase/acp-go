@@ -152,17 +152,18 @@ func (c *conn) tooLarge(head []byte) {
 	limit := c.opts.readLimit
 	id, method, isResponse := peek(head)
 	c.log.Warn("acp: a message over the read limit", "limit", limit, "rpc", method)
+	e := &Error{Code: ErrorCodeInvalidRequest, Message: fmt.Sprintf("Invalid request: over the read limit of %d bytes", limit)}
 	switch {
 	case isResponse && id != nil:
 		c.settle(id, response{err: fmt.Errorf("%w: a response over the read limit of %d bytes", ErrTooLarge, limit)})
 	case method != "" && id != nil && idKey(id) != "":
-		msg := encodeError(id, &Error{Code: ErrorCodeInvalidRequest, Message: fmt.Sprintf("Invalid request: over the read limit of %d bytes", limit)})
+		msg := encodeError(id, e)
 		c.handlers.Go(func() { // the other side's call waits for it
 			_, _ = c.write(c.ctx, msg) // the connection may be ending
 		})
-	case method != "": // a notification: no one waits for it
+	case method != "" && id == nil: // a notification: no one waits for it
 	default:
-		c.reply(&Error{Code: ErrorCodeInvalidRequest, Message: fmt.Sprintf("Invalid request: over the read limit of %d bytes", limit)})
+		c.reply(e)
 	}
 }
 
@@ -254,7 +255,7 @@ func (c *conn) undecodable(line []byte, err error) {
 		c.junkLine(line)
 		return
 	}
-	c.log.Warn("acp: a message that doesn't decode", "bytes", len(line), "err", err)
+	c.log.Warn("acp: a message that doesn't decode", "bytes", len(line)) // its error may quote what it holds
 	if head.Method == nil {
 		c.settle(head.ID, response{err: &Error{Code: ErrorCodeInternalError, Message: "Internal error: the response doesn't decode: " + err.Error()}})
 		return
