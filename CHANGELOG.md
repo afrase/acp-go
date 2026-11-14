@@ -26,6 +26,11 @@ schema it follows.
   other side doesn't read: at most 8 answers wait, and later lines go
   unanswered (and are counted in the log).
 
+- A message whose id can be read but whose method or error can't (an
+  error code that isn't an integer) is taken by its id: a response fails
+  the call it answers, with no reply, and a request is answered Invalid
+  request with its id. Before, the call waited forever.
+
 ## v0.3.0 (2026-11-14)
 
 ACP schema 1.31.0 (protocol version 1).
