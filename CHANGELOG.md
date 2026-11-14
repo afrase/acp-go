@@ -36,6 +36,10 @@ schema it follows.
   id, a response fails its call with `ErrTooLarge`, and a notification is
   dropped.
 
+- `Start` on Unix: a command with `Setsid` starts (it was refused with
+  EPERM), and when the agent doesn't lead its group (a `Pgid` you set),
+  Close kills the agent itself rather than nothing.
+
 ## v0.3.0 (2026-11-14)
 
 ACP schema 1.31.0 (protocol version 1).

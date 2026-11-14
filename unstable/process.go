@@ -15,15 +15,20 @@ import (
 // started, before reading anything, so the client can keep it to call the
 // agent; what the agent sends goes to the client it returns. cmd's Stdin
 // and Stdout must be unset; its Stderr is left as it is (nil discards the
-// agent's logs). On Unix the agent runs in a process group of its own, so Close
-// kills the processes it started too (an agent run through a launcher,
-// such as npx, is a child of the launcher).
+// agent's logs). On Unix the agent runs in a process group of its own, so
+// Close kills the processes it started too (an agent run through a
+// launcher, such as npx, is a child of the launcher). Start sets
+// cmd.SysProcAttr.Setpgid for that, unless Setsid is set (a session's
+// leader leads its own group); a Pgid you set puts the agent in that
+// group instead, and Close then kills the agent alone.
 //
 // The connection ends when the agent closes its stdout, or exits: what it
 // wrote before exiting is still read, for up to a second (a process it
 // left running may hold its stdout open). Done is closed once its process
-// has been waited for; cmd.ProcessState then says how it ended. If cmd's
-// WaitDelay is zero, Start sets it to a second.
+// has been waited for; cmd.ProcessState then says how it ended. (A process
+// that can't be killed, such as one running as another user, keeps Done
+// open until it exits.) If cmd's WaitDelay is zero, Start sets it to a
+// second.
 func Start(cmd *exec.Cmd, newClient func(*AgentConn) Client, opts ...Option) (*AgentConn, error) {
 	if cmd.Stdin != nil || cmd.Stdout != nil {
 		return nil, errors.New("acp: Start sets the command's stdin and stdout itself")
