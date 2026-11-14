@@ -6,6 +6,9 @@ schema it follows.
 
 ## Unreleased
 
+- `Agent.ExtMethod` and `Agent.ExtNotification` are documented as taking
+  the client's messages; they had the schema's text, which says the agent
+  sends them.
 - CI checks that `schema/` is the pinned release (`make pinned`, in
   `make check` too).
 
