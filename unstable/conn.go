@@ -485,8 +485,21 @@ func (c *conn) write(ctx context.Context, msg []byte) (handed bool, err error) {
 }
 
 type writeReq struct {
-	msg  []byte
+	msg  []byte     // nil: close w's writing side (Shutdown)
 	done chan error // buffered: the writer never waits on it
+}
+
+// errInputClosed is what a write after closeInput returns: the other side
+// can't read it, but the connection goes on until it closes its end.
+var errInputClosed = &closedError{cause: errors.New("the other side's input was closed (Shutdown)")}
+
+// closeInput closes w's writing side once the messages handed over before
+// are written, never in the middle of one: CloseWrite when w has it (a
+// socket, whose reading then goes on), else Close. Later writes fail with
+// errInputClosed and leave the connection up.
+func (c *conn) closeInput(ctx context.Context) error {
+	_, err := c.write(ctx, nil)
+	return err
 }
 
 // doneChans are writeReq.done channels to reuse; one whose write a caller
@@ -497,9 +510,19 @@ var doneChans = sync.Pool{New: func() any { return make(chan error, 1) }}
 // connection ends.
 func (c *conn) writer() {
 	defer close(c.writerDone)
+	inputClosed := false
 	for {
 		select {
 		case w := <-c.writes:
+			switch {
+			case inputClosed:
+				w.done <- errInputClosed
+				continue
+			case w.msg == nil:
+				inputClosed = true
+				w.done <- closeWrite(c.w)
+				continue
+			}
 			if _, err := c.w.Write(w.msg); err != nil {
 				c.fail(fmt.Errorf("writing: %w", err))
 				w.done <- c.Err()
@@ -510,6 +533,18 @@ func (c *conn) writer() {
 			return
 		}
 	}
+}
+
+// closeWrite closes w's writing side: CloseWrite when it has it, else
+// Close, if it is an io.Closer.
+func closeWrite(w io.Writer) error {
+	switch w := w.(type) {
+	case interface{ CloseWrite() error }:
+		return w.CloseWrite()
+	case io.Closer:
+		return w.Close()
+	}
+	return nil
 }
 
 // fail ends the connection with cause, once: calls waiting fail, handlers'

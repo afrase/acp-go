@@ -12,6 +12,11 @@ schema it follows.
 - `SequenceFromContext`: where a message came among the other side's, so
   an agent can tell a Cancel that came after a Prompt still setting up.
 
+- `Shutdown` closes the agent's input through the writer, after the
+  message being written, and with `CloseWrite` on a socket. What is sent
+  after it fails with `ErrClosed` but no longer ends the connection, so
+  the agent's last updates and results still arrive.
+
 ## v0.3.0 (2026-11-14)
 
 ACP schema 1.31.0 (protocol version 1).

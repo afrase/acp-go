@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"net"
 	"runtime"
 	"strings"
 	"sync"
@@ -662,6 +663,80 @@ func TestShutdownLetsTheAgentEnd(t *testing.T) {
 		t.Fatal(err)
 	}
 	<-agentSide.Done()
+}
+
+// byeAgent is an agent that, once its input ends, sends one last update
+// and closes its output, as an agent ends its turns at Shutdown. It may
+// first ask a question.
+func byeAgent(t *testing.T, in io.Reader, out io.WriteCloser, ask bool) {
+	t.Helper()
+	if ask {
+		_, _ = io.WriteString(out, `{"jsonrpc":"2.0","id":1,"method":"session/request_permission","params":{"sessionId":"s1","toolCall":{"toolCallId":"t"},"options":[]}}`+"\n")
+	}
+	_, _ = io.Copy(io.Discard, in)     // until its input ends
+	time.Sleep(100 * time.Millisecond) // its turns ending; the question is answered meanwhile
+	_, _ = io.WriteString(out, `{"jsonrpc":"2.0","method":"session/update","params":{"sessionId":"s1","update":{"sessionUpdate":"agent_message_chunk","content":{"type":"text","text":"bye"}}}}`+"\n")
+	_ = out.Close()
+}
+
+// A question answered after Shutdown closed the agent's input doesn't end
+// the connection: the agent's last update still arrives.
+func TestShutdownWithAQuestionOpen(t *testing.T) {
+	leaktest.Check(t)
+	toAgentR, toAgentW := io.Pipe()
+	toClientR, toClientW := io.Pipe()
+	asked, release := make(chan struct{}), make(chan struct{})
+	client := &testClient{permission: func(context.Context, *acp.RequestPermissionRequest) (*acp.RequestPermissionResponse, error) {
+		close(asked)
+		<-release
+		return &acp.RequestPermissionResponse{Outcome: acp.RequestPermissionOutcome{Cancelled: true}}, nil
+	}}
+	conn := acp.NewAgentConn(toClientR, toAgentW, func(*acp.AgentConn) acp.Client { return client })
+	go byeAgent(t, toAgentR, toClientW, true)
+	<-asked
+	shut := make(chan error, 1)
+	go func() { shut <- conn.Shutdown(ctxFor(t)) }()
+	time.Sleep(20 * time.Millisecond) // Shutdown closes the input
+	close(release)                    // the answer is written after it
+	if err := <-shut; err != nil {
+		t.Fatal(err)
+	}
+	if got := client.texts(); len(got) != 1 || got[0] != "bye" {
+		t.Errorf("the agent's last updates: %v", got)
+	}
+	if err := conn.Err(); !errors.Is(err, io.EOF) {
+		t.Errorf("the connection ended with %v, not the agent's EOF", err)
+	}
+}
+
+// Over a socket, Shutdown closes the writing side alone: what the agent
+// sends at the end is still read.
+func TestShutdownOverASocket(t *testing.T) {
+	leaktest.Check(t)
+	l, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = l.Close() }()
+	go func() {
+		c, err := l.Accept()
+		if err != nil {
+			return
+		}
+		byeAgent(t, c, c, false)
+	}()
+	sock, err := net.Dial("tcp", l.Addr().String())
+	if err != nil {
+		t.Fatal(err)
+	}
+	client := &testClient{}
+	conn := acp.NewAgentConn(sock, sock, func(*acp.AgentConn) acp.Client { return client })
+	if err := conn.Shutdown(ctxFor(t)); err != nil {
+		t.Fatal(err)
+	}
+	if got := client.texts(); len(got) != 1 || got[0] != "bye" {
+		t.Errorf("the agent's last updates: %v", got)
+	}
 }
 
 func TestAHandlerKnowsItsRequestID(t *testing.T) {

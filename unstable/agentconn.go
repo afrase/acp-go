@@ -93,12 +93,18 @@ func (a *AgentConn) Close() error {
 // [Start] ran has until ctx ends to exit, rather than a second once its
 // stdout closed). If ctx ends first, it closes the connection as Close
 // does and returns ctx's error. Either way it returns once Done is
-// closed.
+// closed, so a ctx that never ends waits for the agent as long as it
+// takes.
+//
+// The input is closed once the message being written is, with CloseWrite
+// when the writer has it (a TCP or Unix socket, whose reading goes on),
+// else Close; a writer that is neither is left open, and Shutdown just
+// waits. What is sent after that (a handler's answer, a Cancel) fails with
+// an error errors.Is finds [ErrClosed] in, and the reading goes on: the
+// agent's last updates and results still arrive.
 func (a *AgentConn) Shutdown(ctx context.Context) error {
 	a.patience.Store(&ctx)
-	if cw, ok := a.c.w.(io.Closer); ok {
-		_ = cw.Close() // the agent sees its input end
-	}
+	_ = a.c.closeInput(ctx) // the agent sees its input end; an error is ctx's, or the connection ended
 	select {
 	case <-a.c.done:
 		return nil
