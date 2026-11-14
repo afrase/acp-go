@@ -22,6 +22,10 @@ schema it follows.
   internal error rather than a line that isn't JSON: the other side's
   call no longer waits forever.
 
+- Lines that aren't JSON-RPC no longer start a goroutine each while the
+  other side doesn't read: at most 8 answers wait, and later lines go
+  unanswered (and are counted in the log).
+
 ## v0.3.0 (2026-11-14)
 
 ACP schema 1.31.0 (protocol version 1).

@@ -878,6 +878,45 @@ func TestBadInputIsAnsweredAsJSONRPCSays(t *testing.T) {
 	}
 }
 
+// stuckWriter is an other side that doesn't read: a Write waits until
+// Close.
+type stuckWriter struct {
+	once   sync.Once
+	closed chan struct{}
+}
+
+func (w *stuckWriter) Write([]byte) (int, error) {
+	<-w.closed
+	return 0, io.ErrClosedPipe
+}
+
+func (w *stuckWriter) Close() error {
+	w.once.Do(func() { close(w.closed) })
+	return nil
+}
+
+// An agent that logs to stdout while it doesn't read its input: the
+// answers to its lines don't pile up a goroutine each.
+func TestBadLinesDontPileUp(t *testing.T) {
+	leaktest.Check(t)
+	before := runtime.NumGoroutine()
+	r, w := io.Pipe()
+	conn := acp.NewAgentConn(r, &stuckWriter{closed: make(chan struct{})}, func(*acp.AgentConn) acp.Client { return &testClient{} })
+	defer func() {
+		_ = conn.Close()
+		<-conn.Done()
+	}()
+	for range 1000 {
+		if _, err := io.WriteString(w, "some agent log line\n"); err != nil {
+			t.Fatal(err)
+		}
+	}
+	time.Sleep(50 * time.Millisecond) // the last lines handled
+	if n := runtime.NumGoroutine() - before; n > 20 {
+		t.Errorf("%d goroutines for 1000 bad lines", n)
+	}
+}
+
 func TestAWithdrawnRequestIsAnsweredRequestCancelled(t *testing.T) {
 	agent := &testAgent{prompt: func(ctx context.Context, _ *testAgent, _ *acp.PromptRequest) (*acp.PromptResponse, error) {
 		<-ctx.Done()
