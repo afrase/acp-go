@@ -3,6 +3,7 @@ package acp
 import (
 	"context"
 	"io"
+	"os"
 	"sync/atomic"
 )
 
@@ -26,8 +27,10 @@ type AgentConn struct {
 // (what it reads). It calls newClient with the connection, before reading
 // anything, so the client can keep it to call the agent; what the agent
 // sends goes to the client it returns. Close closes r and w, those that
-// are io.Closers; to run an agent's command, use [Start].
+// are io.Closers (a blocking pipe file as [NewClientConn] says); to run an
+// agent's command, use [Start].
 func NewAgentConn(r io.Reader, w io.Writer, newClient func(*AgentConn) Client, opts ...Option) *AgentConn {
+	r, w = streams(r, w)
 	a := &AgentConn{c: newConn(r, w, closeBoth(r, w), newOptions(opts))}
 	a.c.start(clientHandler(newClient(a)))
 	return a
@@ -111,6 +114,24 @@ func (a *AgentConn) Shutdown(ctx context.Context) error {
 		<-a.c.done
 		return ctx.Err()
 	}
+}
+
+// streams readies r and w for a connection: an *os.File among them whose
+// Read or Write under way Close couldn't end (a blocking pipe, such as an
+// agent's stdin often is) is swapped for one it can.
+func streams(r io.Reader, w io.Writer) (io.Reader, io.Writer) {
+	rf, rok := r.(*os.File)
+	wf, wok := w.(*os.File)
+	if rok {
+		r = interruptible(rf)
+	}
+	switch {
+	case wok && rok && wf == rf:
+		w = r.(io.Writer) //nolint:forcetypeassert // interruptible's is a ReadWriteCloser
+	case wok:
+		w = interruptible(wf)
+	}
+	return r, w
 }
 
 // closeBoth closes r and w, those that are io.Closers.
