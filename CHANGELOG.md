@@ -6,6 +6,9 @@ schema it follows.
 
 ## Unreleased
 
+- `<`, `>` and `&` are sent as they are at every depth. Required lists,
+  untagged and value unions and `Nullable` were encoded with
+  `json.Marshal`, which escaped them.
 - `Agent.ExtMethod` and `Agent.ExtNotification` are documented as taking
   the client's messages; they had the schema's text, which says the agent
   sends them.

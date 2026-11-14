@@ -101,7 +101,7 @@ func genEmptyLists(b *bytes.Buffer, d *def) {
 	for _, f := range lists {
 		fmt.Fprintf(b, "\tif p.%s == nil {\n\t\tp.%s = %s{}\n\t}\n", f.name, f.name, f.typ)
 	}
-	b.WriteString("\treturn json.Marshal(p)\n}\n\n")
+	b.WriteString("\treturn marshal(p)\n}\n\n")
 }
 
 func lenientFields(fields []*field) []*field {
@@ -245,7 +245,7 @@ func genUntagged(b *bytes.Buffer, m *model, d *def) {
 	b.WriteString("}\n\n")
 	fmt.Fprintf(b, "// MarshalJSON encodes the variant set.\nfunc (x %s) MarshalJSON() ([]byte, error) {\n\tswitch {\n", d.name)
 	for _, v := range d.vars {
-		fmt.Fprintf(b, "\tcase x.%s != nil:\n\t\treturn json.Marshal(x.%s)\n", v.name, v.name)
+		fmt.Fprintf(b, "\tcase x.%s != nil:\n\t\treturn marshal(x.%s)\n", v.name, v.name)
 	}
 	fmt.Fprintf(b, "\tcase x.Other != nil:\n\t\treturn x.Other, nil\n\t}\n\treturn nil, variantError(%q, 0)\n}\n\n", d.name)
 	fmt.Fprintf(b, "// UnmarshalJSON decodes the variant whose required properties b has.\nfunc (x *%s) UnmarshalJSON(b []byte) error {\n\t*x = %s{}\n", d.name, d.name)
@@ -267,7 +267,7 @@ func genValue(b *bytes.Buffer, m *model, d *def) {
 	b.WriteString("}\n\n")
 	fmt.Fprintf(b, "// MarshalJSON encodes the value set, or null.\nfunc (x %s) MarshalJSON() ([]byte, error) {\n\tswitch {\n", d.name)
 	for _, v := range d.vars {
-		fmt.Fprintf(b, "\tcase x.%s != nil:\n\t\treturn json.Marshal(x.%s)\n", v.name, v.name)
+		fmt.Fprintf(b, "\tcase x.%s != nil:\n\t\treturn marshal(x.%s)\n", v.name, v.name)
 	}
 	b.WriteString("\t}\n\treturn []byte(\"null\"), nil\n}\n\n")
 	fmt.Fprintf(b, "// UnmarshalJSON decodes b into the field for its JSON kind.\nfunc (x *%s) UnmarshalJSON(b []byte) error {\n\t*x = %s{}\n\tswitch jsonKind(b) {\n", d.name, d.name)
@@ -300,7 +300,7 @@ func genArrayUnion(b *bytes.Buffer, m *model, d *def) {
 	b.WriteString("}\n\n")
 	fmt.Fprintf(b, "// MarshalJSON encodes the list set (an empty list when none is).\nfunc (x %s) MarshalJSON() ([]byte, error) {\n\tswitch {\n", d.name)
 	for _, v := range d.vars {
-		fmt.Fprintf(b, "\tcase x.%s != nil:\n\t\treturn json.Marshal(x.%s)\n", v.name, v.name)
+		fmt.Fprintf(b, "\tcase x.%s != nil:\n\t\treturn marshal(x.%s)\n", v.name, v.name)
 	}
 	b.WriteString("\t}\n\treturn []byte(\"[]\"), nil\n}\n\n")
 	fmt.Fprintf(b, "// UnmarshalJSON decodes b as the list whose items have the first item's\n// required properties.\nfunc (x *%s) UnmarshalJSON(b []byte) error {\n\t*x = %s{}\n", d.name, d.name)

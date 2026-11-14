@@ -192,3 +192,25 @@ func TestErrorsCarryTheirCode(t *testing.T) {
 		t.Errorf("%v", err)
 	}
 }
+
+// What a connection sends isn't HTML-escaped at any depth: < > & go as
+// they are, in a required list, an untagged union or a Nullable too.
+func TestNothingIsHTMLEscaped(t *testing.T) {
+	text := acp.ContentBlock{Text: &acp.TextContent{Text: "<a & b>"}}
+	title := "<a & b>"
+	for _, v := range []any{
+		&acp.PromptRequest{SessionID: "s", Prompt: []acp.ContentBlock{text}},
+		acp.EmbeddedResourceResource{TextResourceContents: &acp.TextResourceContents{URI: "file:///a", Text: "<a & b>"}},
+		acp.SessionInfoUpdate{Title: acp.Nullable[string]{Value: &title, Present: true}},
+	} {
+		var b strings.Builder
+		enc := json.NewEncoder(&b)
+		enc.SetEscapeHTML(false) // as the connection's encoder
+		if err := enc.Encode(v); err != nil {
+			t.Fatal(err)
+		}
+		if !strings.Contains(b.String(), "<a & b>") {
+			t.Errorf("%T: %s", v, b.String())
+		}
+	}
+}

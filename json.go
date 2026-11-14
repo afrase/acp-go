@@ -25,7 +25,7 @@ func (n Nullable[T]) MarshalJSON() ([]byte, error) {
 	if n.Value == nil {
 		return []byte("null"), nil
 	}
-	return json.Marshal(n.Value)
+	return marshal(n.Value)
 }
 
 // UnmarshalJSON decodes a present value or null.
