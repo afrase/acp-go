@@ -242,30 +242,20 @@ type Agent interface {
 	// This method is only available if the agent advertises the `auth.status` capability.
 	// It MUST NOT change any agent state, and agents MUST NOT reject it with `auth_required`.
 	AuthStatus(ctx context.Context, req *AuthStatusRequest) (*AuthStatusResponse, error)
-	// Handles extension method requests from the agent.
-	//
-	// Allows the Agent to send an arbitrary request that is not part of the ACP spec.
-	// Extension methods provide a way to add custom functionality while maintaining
-	// protocol compatibility.
+	// ExtMethod answers the client's requests whose method starts with "_":
+	// methods outside ACP, which extensions add. Its result is encoded as
+	// the response.
 	//
 	// See protocol docs: [Extensibility]
 	//
-	// ExtMethod gets every request whose method starts with "_"; its result
-	// is encoded as the response.
-	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/draft/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	ExtMethod(ctx context.Context, method string, params json.RawMessage) (any, error)
-	// Handles extension notifications from the agent.
-	//
-	// Allows the Agent to send an arbitrary notification that is not part of the ACP spec.
-	// Extension notifications provide a way to send one-way messages for custom functionality
-	// while maintaining protocol compatibility.
+	// ExtNotification gets the client's notifications whose method starts
+	// with "_": notifications outside ACP, which extensions add.
 	//
 	// See protocol docs: [Extensibility]
 	//
-	// ExtNotification gets every notification whose method starts with "_".
-	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/draft/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	ExtNotification(ctx context.Context, method string, params json.RawMessage) error
 	mustEmbedUnimplementedAgent()
 }
@@ -1074,30 +1064,20 @@ type Client interface {
 	//
 	// Only sent by agents that advertise the `auth.status` capability.
 	AuthStatusUpdate(ctx context.Context, n *AuthStatusUpdateNotification) error
-	// Handles extension method requests from the agent.
-	//
-	// Allows the Agent to send an arbitrary request that is not part of the ACP spec.
-	// Extension methods provide a way to add custom functionality while maintaining
-	// protocol compatibility.
+	// ExtMethod answers the agent's requests whose method starts with "_":
+	// methods outside ACP, which extensions add. Its result is encoded as
+	// the response.
 	//
 	// See protocol docs: [Extensibility]
 	//
-	// ExtMethod gets every request whose method starts with "_"; its result
-	// is encoded as the response.
-	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/draft/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	ExtMethod(ctx context.Context, method string, params json.RawMessage) (any, error)
-	// Handles extension notifications from the agent.
-	//
-	// Allows the Agent to send an arbitrary notification that is not part of the ACP spec.
-	// Extension notifications provide a way to send one-way messages for custom functionality
-	// while maintaining protocol compatibility.
+	// ExtNotification gets the agent's notifications whose method starts
+	// with "_": notifications outside ACP, which extensions add.
 	//
 	// See protocol docs: [Extensibility]
 	//
-	// ExtNotification gets every notification whose method starts with "_".
-	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/draft/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	ExtNotification(ctx context.Context, method string, params json.RawMessage) error
 	mustEmbedUnimplementedClient()
 }

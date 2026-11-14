@@ -105,7 +105,6 @@ type side struct{ name, conn, doc, other string }
 // types, the dispatch of incoming messages to them, and the calls each
 // connection makes.
 func genMethods(b *bytes.Buffer, md *model, ms []method) {
-	docs := methodDocs(md.s)
 	for _, sd := range []side{
 		{"Agent", "AgentConn", agentDoc, "agent's"},
 		{"Client", "ClientConn", clientDoc, "client's"},
@@ -116,14 +115,14 @@ func genMethods(b *bytes.Buffer, md *model, ms []method) {
 				mine = append(mine, m)
 			}
 		}
-		genInterface(b, md, sd, mine, docs)
+		genInterface(b, md, sd, mine)
 		genUnimplemented(b, sd, mine)
 		genDispatch(b, sd, mine)
 		genCalls(b, sd, mine)
 	}
 }
 
-func genInterface(b *bytes.Buffer, md *model, sd side, mine []method, docs map[string]string) {
+func genInterface(b *bytes.Buffer, md *model, sd side, mine []method) {
 	b.WriteString(sd.doc)
 	fmt.Fprintf(b, "type %s interface {\n", sd.name)
 	for _, m := range mine {
@@ -134,9 +133,15 @@ func genInterface(b *bytes.Buffer, md *model, sd side, mine []method, docs map[s
 			fmt.Fprintf(b, "\t%s(ctx context.Context, req *%s) (*%s, error)\n", m.name, m.req, m.resp)
 		}
 	}
-	md.comment(b, "\t", docs["ExtMethodRequest"]+extMethodNote, "")
+	// The schema's docs for these are the client's (they say the agent
+	// sends them), so each side gets its own.
+	from := "agent"
+	if sd.name == "Agent" {
+		from = "client"
+	}
+	md.comment(b, "\t", fmt.Sprintf(extMethodDoc, from), "")
 	b.WriteString("\tExtMethod(ctx context.Context, method string, params json.RawMessage) (any, error)\n")
-	md.comment(b, "\t", docs["ExtNotification"]+extNotificationNote, "")
+	md.comment(b, "\t", fmt.Sprintf(extNotificationDoc, from), "")
 	b.WriteString("\tExtNotification(ctx context.Context, method string, params json.RawMessage) error\n")
 	fmt.Fprintf(b, "\tmustEmbedUnimplemented%s()\n}\n\n", sd.name)
 }
@@ -220,7 +225,10 @@ const clientDoc = `// Client is what a client does: the methods an agent calls a
 `
 
 const (
-	extMethodNote = "\n\nExtMethod gets every request whose method starts with \"_\"; its result\nis encoded as the response."
-	// The notes start on a paragraph of their own.
-	extNotificationNote = "\n\nExtNotification gets every notification whose method starts with \"_\"."
+	extMethodDoc = "ExtMethod answers the %s's requests whose method starts with \"_\":\n" +
+		"methods outside ACP, which extensions add. Its result is encoded as\n" +
+		"the response.\n\nSee protocol docs: [Extensibility](/protocol/v1/extensibility)"
+	extNotificationDoc = "ExtNotification gets the %s's notifications whose method starts\n" +
+		"with \"_\": notifications outside ACP, which extensions add.\n\n" +
+		"See protocol docs: [Extensibility](/protocol/v1/extensibility)"
 )
