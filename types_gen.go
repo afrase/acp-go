@@ -101,7 +101,7 @@ func (x *AgentCapabilities) UnmarshalJSON(b []byte) error {
 // Optional annotations for the client. The client can use annotations to inform how objects are used or displayed
 type Annotations struct {
 	// Intended recipients for this content, such as the user or assistant.
-	Audience []Role `json:"audience,omitempty"`
+	Audience []Role `json:"audience,omitzero"`
 	// Timestamp indicating when the underlying resource was last modified.
 	LastModified string `json:"lastModified,omitempty"`
 	// Relative importance of this content when clients choose what to surface.
@@ -357,7 +357,7 @@ type AuthMethodTerminal struct {
 	// Optional human-readable description of this authentication method.
 	Description string `json:"description,omitempty"`
 	// Additional arguments to append to the configured agent invocation for terminal auth.
-	Args []string `json:"args,omitempty"`
+	Args []string `json:"args,omitzero"`
 	// Additional environment variables to set on the configured agent invocation for terminal auth.
 	// These values override same-named variables in the base launch configuration.
 	Env map[string]string `json:"env,omitempty"`
@@ -1004,7 +1004,7 @@ type CompactionUpdate struct {
 	// Current lifecycle status.
 	Status CompactionStatus `json:"status"`
 	// Complete replacement user-displayable summary content for the compaction.
-	Summary []ContentBlock `json:"summary,omitempty"`
+	Summary []ContentBlock `json:"summary,omitzero"`
 	// Human-readable error details for the compaction.
 	Error string `json:"error,omitempty"`
 	// Extensible metadata patch for this compaction.
@@ -1569,9 +1569,9 @@ type CreateTerminalRequest struct {
 	// The command to execute.
 	Command string `json:"command"`
 	// Array of command arguments.
-	Args []string `json:"args,omitempty"`
+	Args []string `json:"args,omitzero"`
 	// Environment variables for the command.
-	Env []EnvVariable `json:"env,omitempty"`
+	Env []EnvVariable `json:"env,omitzero"`
 	// Working directory for the command. Must be an absolute path.
 	Cwd string `json:"cwd,omitempty"`
 	// Maximum number of output bytes to retain.
@@ -2102,7 +2102,7 @@ type ElicitationSchema struct {
 	// List of required property names.
 	//
 	// Optional. Omitted and `null` are equivalent and mean no property names are required.
-	Required []string `json:"required,omitempty"`
+	Required []string `json:"required,omitzero"`
 	// Optional description of what this schema represents.
 	//
 	// Optional. Omitted and `null` are equivalent and mean no schema description is provided.
@@ -2721,7 +2721,7 @@ type InitializeResponse struct {
 	// Capabilities supported by the agent.
 	AgentCapabilities *AgentCapabilities `json:"agentCapabilities,omitempty"`
 	// Authentication methods supported by the agent.
-	AuthMethods []AuthMethod `json:"authMethods,omitempty"`
+	AuthMethods []AuthMethod `json:"authMethods,omitzero"`
 	// Information about the Agent name and version sent to the Client.
 	//
 	// Note: in future versions of the protocol, this will be required.
@@ -2977,7 +2977,7 @@ type LoadSessionRequest struct {
 	// this is the complete resulting additional-root list for the loaded
 	// session. It may differ from any previously used or reported list as long as
 	// the request `cwd` matches the session's `cwd`.
-	AdditionalDirectories []string `json:"additionalDirectories,omitempty"`
+	AdditionalDirectories []string `json:"additionalDirectories,omitzero"`
 	// The ID of the session to load.
 	SessionID SessionID `json:"sessionId"`
 	// System-level instructions for the loaded session.
@@ -3034,7 +3034,7 @@ type LoadSessionResponse struct {
 	// [Session Modes]: https://agentclientprotocol.com/protocol/v1/session-modes
 	Modes *SessionModeState `json:"modes,omitempty"`
 	// Initial session configuration options if supported by the Agent.
-	ConfigOptions []SessionConfigOption `json:"configOptions,omitempty"`
+	ConfigOptions []SessionConfigOption `json:"configOptions,omitzero"`
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
@@ -3542,7 +3542,7 @@ type MultiSelectPropertySchema struct {
 	// Default selected values.
 	//
 	// Optional. Omitted and `null` are equivalent and mean no default selections are provided.
-	Default []string `json:"default,omitempty"`
+	Default []string `json:"default,omitzero"`
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
@@ -3589,7 +3589,7 @@ type NewSessionRequest struct {
 	// These expand the session's filesystem scope without changing `cwd`, which
 	// remains the base for relative paths. When omitted or empty, no
 	// additional roots are activated for the new session.
-	AdditionalDirectories []string `json:"additionalDirectories,omitempty"`
+	AdditionalDirectories []string `json:"additionalDirectories,omitzero"`
 	// List of MCP (Model Context Protocol) servers the agent should connect to.
 	MCPServers []MCPServer `json:"mcpServers"`
 	// System-level instructions for the new session.
@@ -3652,7 +3652,7 @@ type NewSessionResponse struct {
 	// [Session Modes]: https://agentclientprotocol.com/protocol/v1/session-modes
 	Modes *SessionModeState `json:"modes,omitempty"`
 	// Initial session configuration options if supported by the Agent.
-	ConfigOptions []SessionConfigOption `json:"configOptions,omitempty"`
+	ConfigOptions []SessionConfigOption `json:"configOptions,omitzero"`
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
@@ -4530,9 +4530,9 @@ type ResumeSessionRequest struct {
 	// this is the complete resulting additional-root list for the resumed
 	// session. It may differ from any previously used or reported list as long as
 	// the request `cwd` matches the session's `cwd`.
-	AdditionalDirectories []string `json:"additionalDirectories,omitempty"`
+	AdditionalDirectories []string `json:"additionalDirectories,omitzero"`
 	// List of MCP servers to connect to for this session.
-	MCPServers []MCPServer `json:"mcpServers,omitempty"`
+	MCPServers []MCPServer `json:"mcpServers,omitzero"`
 	// System-level instructions for the resumed session.
 	//
 	// Optional. Omitted and `null` are equivalent. The Agent may then keep a
@@ -4577,7 +4577,7 @@ type ResumeSessionResponse struct {
 	// [Session Modes]: https://agentclientprotocol.com/protocol/v1/session-modes
 	Modes *SessionModeState `json:"modes,omitempty"`
 	// Initial session configuration options if supported by the Agent.
-	ConfigOptions []SessionConfigOption `json:"configOptions,omitempty"`
+	ConfigOptions []SessionConfigOption `json:"configOptions,omitzero"`
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
@@ -5166,7 +5166,7 @@ type SessionInfo struct {
 	// When present, this is the complete ordered additional-root list reported
 	// by the Agent. Omitted and empty values are equivalent: the response
 	// reports no additional roots.
-	AdditionalDirectories []string `json:"additionalDirectories,omitempty"`
+	AdditionalDirectories []string `json:"additionalDirectories,omitzero"`
 	// Human-readable title for the session
 	Title string `json:"title,omitempty"`
 	// ISO 8601 timestamp of last activity
@@ -6145,11 +6145,11 @@ type StringPropertySchema struct {
 	// Enum values for untitled single-select enums.
 	// Optional. Omitted and `null` are equivalent and mean no untitled single-select choices are
 	// declared by `enum`.
-	Enum []string `json:"enum,omitempty"`
+	Enum []string `json:"enum,omitzero"`
 	// Titled enum options for titled single-select enums.
 	// Optional. Omitted and `null` are equivalent and mean no titled single-select choices are
 	// declared by `oneOf`.
-	OneOf []EnumOption `json:"oneOf,omitempty"`
+	OneOf []EnumOption `json:"oneOf,omitzero"`
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
@@ -6553,10 +6553,10 @@ type ToolCall struct {
 	// Current execution status of the tool call.
 	Status ToolCallStatus `json:"status,omitempty"`
 	// Content produced by the tool call.
-	Content []ToolCallContent `json:"content,omitempty"`
+	Content []ToolCallContent `json:"content,omitzero"`
 	// File locations affected by this tool call.
 	// Enables "follow-along" features in clients.
-	Locations []ToolCallLocation `json:"locations,omitempty"`
+	Locations []ToolCallLocation `json:"locations,omitzero"`
 	// Raw input parameters sent to the tool.
 	RawInput json.RawMessage `json:"rawInput,omitempty"`
 	// Raw output returned by the tool.
@@ -6797,9 +6797,9 @@ type ToolCallUpdate struct {
 	// the existing name is left unchanged.
 	Name string `json:"name,omitempty"`
 	// Replace the content collection.
-	Content []ToolCallContent `json:"content,omitempty"`
+	Content []ToolCallContent `json:"content,omitzero"`
 	// Replace the locations collection.
-	Locations []ToolCallLocation `json:"locations,omitempty"`
+	Locations []ToolCallLocation `json:"locations,omitzero"`
 	// Update the raw input.
 	RawInput json.RawMessage `json:"rawInput,omitempty"`
 	// Update the raw output.

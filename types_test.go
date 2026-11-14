@@ -212,3 +212,19 @@ func TestNothingIsHTMLEscaped(t *testing.T) {
 		}
 	}
 }
+
+// An optional list's [] is sent, and passed on: in an update it replaces
+// the list with nothing, where an absent one leaves it as it was.
+func TestAnEmptyOptionalListIsSent(t *testing.T) {
+	got := encode(t, acp.ToolCallUpdate{ToolCallID: "t", Content: []acp.ToolCallContent{}})
+	if want := `{"toolCallId":"t","content":[]}`; got != want {
+		t.Errorf("got %s, want %s", got, want)
+	}
+	if got := encode(t, acp.ToolCallUpdate{ToolCallID: "t"}); got != `{"toolCallId":"t"}` {
+		t.Errorf("a nil list: %s", got)
+	}
+	in := `{"sessionId":"s","update":{"sessionUpdate":"tool_call_update","toolCallId":"t","content":[],"locations":[]}}`
+	if got := encode(t, decode[acp.SessionNotification](t, in)); got != in {
+		t.Errorf("passed on as %s", got)
+	}
+}
