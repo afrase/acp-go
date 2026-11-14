@@ -4,6 +4,20 @@ This module follows semantic versioning; see the README's Versioning
 section for what that covers. Each release names the release of ACP's
 schema it follows.
 
+## v0.3.0 (2026-11-14)
+
+ACP schema 1.31.0 (protocol version 1).
+
+- The client system prompt is stable: `SystemPrompt` (append or override) on
+  new, load, resume and fork requests, and `SessionSystemPromptCapabilities`.
+- `unstable`: `ArchiveSession` and `UnarchiveSession`, `SessionStatus`,
+  `SetSessionTitle`, `SessionOptions` with initial config option values,
+  `AuthStatus` and the `AuthStatusUpdate` notification, the proxy's
+  initialize and successor messages, and `AuthAccount`'s description.
+- **Breaking (`unstable`):** `SessionMessageChunk` no longer has
+  `SenderSessionID` or `RecipientSessionID`; they stay on `SessionMessage`.
+- Doc links point at the protocol's v1 pages.
+
 ## v0.2.0 (2026-10-25)
 
 ACP schema 1.26.0 (protocol version 1).
