@@ -7494,30 +7494,30 @@ type SessionMessage struct {
 	// The sending session.
 	//
 	// Omitted leaves the stored value unchanged. `null` clears it. A value replaces it.
-	SenderSessionID SessionID `json:"senderSessionId,omitempty"`
+	SenderSessionID Nullable[SessionID] `json:"senderSessionId,omitzero"`
 	// The receiving session.
 	//
 	// Omitted leaves the stored value unchanged. `null` clears it. A value replaces it.
-	RecipientSessionID SessionID `json:"recipientSessionId,omitempty"`
+	RecipientSessionID Nullable[SessionID] `json:"recipientSessionId,omitzero"`
 	// On an incoming view, the `messageId` of the same message's outgoing view in the
 	// sender's transcript.
 	//
 	// Omitted leaves the stored value unchanged. `null` clears it. A value replaces it. It can arrive
 	// after the message starts streaming.
-	SenderMessageID MessageID `json:"senderMessageId,omitempty"`
+	SenderMessageID Nullable[MessageID] `json:"senderMessageId,omitzero"`
 	// On an outgoing view, the `messageId` of the same message's incoming view in the
 	// recipient's transcript.
 	//
 	// Omitted leaves the stored value unchanged. `null` clears it. A value replaces it. It can arrive
 	// after the message starts streaming.
-	RecipientMessageID MessageID `json:"recipientMessageId,omitempty"`
+	RecipientMessageID Nullable[MessageID] `json:"recipientMessageId,omitzero"`
 	// Omitted leaves content unchanged. `null` or `[]` clears it.
 	// A non-empty array replaces all content.
 	Content Nullable[[]ContentBlock] `json:"content,omitzero"`
 	// Omitted leaves metadata unchanged. `null` removes it.
 	//
 	// Implementations MUST NOT make assumptions about values in `_meta`.
-	Meta map[string]any `json:"_meta,omitempty"`
+	Meta Nullable[map[string]any] `json:"_meta,omitzero"`
 }
 
 // UnmarshalJSON decodes SessionMessage, dropping an optional field's bad value (or an
@@ -7545,7 +7545,7 @@ func (x *SessionMessage) UnmarshalJSON(b []byte) error {
 	lenient(v.RecipientSessionID, &x.RecipientSessionID)
 	lenient(v.SenderMessageID, &x.SenderMessageID)
 	lenient(v.RecipientMessageID, &x.RecipientMessageID)
-	lenient(v.Content, &x.Content)
+	skipInvalidNullable(v.Content, &x.Content)
 	lenient(v.Meta, &x.Meta)
 	return nil
 }
@@ -9363,7 +9363,7 @@ type SubagentUpdate struct {
 	// reported value. While unset, the child inherits its immediate parent's
 	// effective working directory. Clients use this value for the child's
 	// root set and as the default terminal working directory.
-	Cwd string `json:"cwd,omitempty"`
+	Cwd Nullable[string] `json:"cwd,omitzero"`
 	// Additional workspace roots for the child. Each path must be absolute.
 	//
 	// Optional and nullable. Omitted means unchanged. `null` clears the
@@ -9371,12 +9371,13 @@ type SubagentUpdate struct {
 	// effective additional directories, independently of `cwd`. A concrete
 	// array replaces the whole list. `[]` reports no additional directories.
 	// Clients use these values for the child's root set.
-	AdditionalDirectories []string `json:"additionalDirectories,omitzero"`
+	AdditionalDirectories Nullable[[]string] `json:"additionalDirectories,omitzero"`
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
-	// assumed about its keys. See [Extensibility].
+	// assumed about its keys. See [Extensibility]. In this update, absent
+	// leaves it as it was, and null removes it.
 	//
 	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
-	Meta map[string]any `json:"_meta,omitempty"`
+	Meta Nullable[map[string]any] `json:"_meta,omitzero"`
 }
 
 // UnmarshalJSON decodes SubagentUpdate, dropping an optional field's bad value (or an

@@ -124,6 +124,21 @@ func skipInvalid[T any](raw json.RawMessage, dst *[]T) {
 	*dst = out
 }
 
+// skipInvalidNullable is skipInvalid for a Nullable list: null is present
+// without a value, and anything but an array or null leaves dst as it is.
+//
+//nolint:unused // only the unstable schema has such a list
+func skipInvalidNullable[T any](raw json.RawMessage, dst *Nullable[[]T]) {
+	if bytes.Equal(bytes.TrimSpace(raw), []byte("null")) {
+		*dst = Nullable[[]T]{Present: true}
+		return
+	}
+	var list []T
+	if skipInvalid(raw, &list); list != nil {
+		*dst = Nullable[[]T]{Value: &list, Present: true}
+	}
+}
+
 // marshalUnion encodes a union's tag and the fields beside it (head), and
 // its variant's fields (payload, nil for none) as one object.
 func marshalUnion(head, payload any) ([]byte, error) {
