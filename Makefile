@@ -38,7 +38,7 @@ lint:
 # Fails if the generated code wasn't what the schema and acpgen make (it
 # is regenerated then).
 generated:
-	@state() { git status --porcelain -- '*_gen.go' unstable/; git diff -- '*_gen.go' unstable/; }; \
+	@state() { git status --porcelain -- '*_gen.go' '*_gen_test.go' unstable/; git diff -- '*_gen.go' '*_gen_test.go' unstable/; }; \
 	before=$$(state | shasum); $(MAKE) -s generate; after=$$(state | shasum); \
 	if [ "$$before" != "$$after" ]; then echo "the generated code was out of date: run make generate"; exit 1; fi
 

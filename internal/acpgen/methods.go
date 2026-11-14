@@ -200,6 +200,22 @@ func genCalls(b *bytes.Buffer, sd side, mine []method) {
 	}
 }
 
+// genRecorders writes, for the tests, a RecordingAgent and a
+// RecordingClient: each sends the name of every notification method called
+// on it, so a test can see a notification reach the method of its name.
+// They are exported from a _test.go file of the package, for its external
+// tests.
+func genRecorders(b *bytes.Buffer, ms []method) {
+	for _, sd := range []string{"Agent", "Client"} {
+		fmt.Fprintf(b, "// Recording%s is %s that sends the name of each notification\n// method called to Got.\ntype Recording%s struct {\n\tUnimplemented%s\n\tGot chan<- string\n}\n\n", sd, map[string]string{"Agent": "an Agent", "Client": "a Client"}[sd], sd, sd)
+		for _, m := range ms {
+			if m.notification() && strings.EqualFold(m.side, sd) {
+				fmt.Fprintf(b, "// %s records the call.\nfunc (r Recording%s) %s(context.Context, *%s) error {\n\tr.Got <- %q\n\treturn nil\n}\n\n", m.name, sd, m.name, m.req, m.name)
+			}
+		}
+	}
+}
+
 const agentDoc = `// Agent is what an agent does: the methods a client calls and the
 // notifications it sends. Its methods run as the client's messages arrive:
 // each request on a goroutine of its own, each notification in turn on
