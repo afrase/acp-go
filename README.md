@@ -187,7 +187,7 @@ both. Its unstable parts can change in any minor release (see
 | A line that is not JSON (some agents log to stdout) | Answered with a Parse error (null id), as JSON-RPC says. While the other side does not read, at most 8 such answers wait, and later lines go unanswered. Logged by size only. The connection continues. |
 | A call whose context ends | Returns at once and withdraws the request with `$/cancel_request`. A late answer is dropped. To stop a prompt, use `Cancel` (session/cancel) instead, as ACP says. The turn then ends with stop reason `cancelled`. |
 | Absent and null | The same, as ACP says, except for `Nullable` fields. |
-| An agent that exits | Its remaining output is read for up to one second, in case a child process still holds its stdout open. Then its process group is killed. An agent that closes its stdout first has one second to exit, or, under `Shutdown`, until the context ends. |
+| An agent that exits | Its process group is killed, and its remaining output is all read, however slow the client is to handle it. A process outside the group that still holds its stdout is given up on once a read has waited a second with nothing to read. An agent that closes its stdout first has one second to exit, or, under `Shutdown`, until the context ends. |
 | A number in an elicitation's answer | A JSON number without a fraction or exponent decodes as `Integer`. |
 | Required properties | An incoming request without one is refused, as the TypeScript and Rust SDKs do. Outgoing messages always have them: a nil required list is sent as `[]`. |
 

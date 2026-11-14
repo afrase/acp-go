@@ -4,9 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"io/fs"
 	"os"
 	"os/exec"
+	"strings"
 	"testing"
 	"time"
 
@@ -44,6 +46,11 @@ func serveTestAgent() {
 		case "_test/exit":
 			_ = a.say(ctx, "bye")
 			os.Exit(3) //nolint:revive // the agent dies, as the test asks
+		case "_test/flood": // more than the pipe holds, then gone
+			for range floodLines {
+				_ = a.say(ctx, strings.Repeat("f", 16<<10))
+			}
+			os.Exit(0) //nolint:revive // the agent dies, as the test asks
 		}
 		return nil, errors.New("no such test method")
 	}
@@ -122,6 +129,29 @@ func TestAnAgentThatExits(t *testing.T) {
 	}
 	if got := client.texts(); len(got) != 1 || got[0] != "bye" {
 		t.Errorf("updates %v", got)
+	}
+}
+
+const floodLines = 30
+
+// An agent writes more than the pipe holds and exits, while the client is
+// slow to handle it: all of it is read, though the drain time passes
+// before the last of it is.
+func TestWhatAnExitedAgentWroteIsReadThroughASlowClient(t *testing.T) {
+	restore := acp.SetDrainTime(50 * time.Millisecond)
+	defer restore()
+	client := &testClient{update: func(context.Context, *acp.SessionNotification) error {
+		time.Sleep(20 * time.Millisecond)
+		return nil
+	}}
+	conn, _ := startTestAgent(t, client)
+	_ = conn.Call(ctxFor(t), "_test/flood", nil, nil) // the agent exits without an answer
+	<-conn.Done()
+	if n := len(client.texts()); n != floodLines {
+		t.Errorf("read %d of the %d updates; the connection ended with %v", n, floodLines, conn.Err())
+	}
+	if !errors.Is(conn.Err(), io.EOF) {
+		t.Errorf("the connection ended with %v, not EOF", conn.Err())
 	}
 }
 
