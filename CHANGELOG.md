@@ -17,6 +17,11 @@ schema it follows.
   after it fails with `ErrClosed` but no longer ends the connection, so
   the agent's last updates and results still arrive.
 
+- A response over the write limit is sent as an internal error in its
+  place, and a handler's nil `*acp.Error` (in a non-nil error) as an
+  internal error rather than a line that isn't JSON: the other side's
+  call no longer waits forever.
+
 ## v0.3.0 (2026-11-14)
 
 ACP schema 1.31.0 (protocol version 1).

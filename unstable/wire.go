@@ -92,6 +92,9 @@ func encodeError(id json.RawMessage, e *Error) []byte {
 	if id == nil {
 		id = json.RawMessage("null")
 	}
+	if e == nil { // it would go as nothing: the line wouldn't be JSON
+		e = &Error{Code: ErrorCodeInternalError, Message: "Internal error"}
+	}
 	ej, err := encodeValue(e)
 	if err != nil { // its data isn't JSON: send it without
 		ej, _ = encodeValue(&Error{Code: e.Code, Message: e.Message})
