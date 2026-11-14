@@ -41,7 +41,7 @@ func TestTheREADMEsCodeBuilds(t *testing.T) {
 	if module == nil {
 		t.Fatal("no module line in go.mod")
 	}
-	imports := map[string]string{"acp": string(module[1]), "context": "context", "exec": "os/exec", "fmt": "fmt", "os": "os"}
+	imports := map[string]string{"acp": string(module[1]), "context": "context", "exec": "os/exec", "fmt": "fmt", "os": "os", "time": "time"}
 	built := 0
 	for _, block := range regexp.MustCompile("(?s)```go\n(.*?)```").FindAllStringSubmatch(string(readme), -1) {
 		code := block[1]

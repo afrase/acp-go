@@ -23,7 +23,9 @@ type ClientConn struct {
 // NewClientConn speaks ACP to a client over r (what the client writes) and
 // w (what it reads): an agent's stdin and stdout. It calls newAgent with
 // the connection, before reading anything, so the agent can keep it to
-// talk to the client; the client's messages go to the agent it returns.
+// talk to the client later; the client's messages go to the agent it
+// returns. newAgent must not call the client itself: nothing is read until
+// it returns, so such a call would wait for its answer forever.
 // Close closes r and w, those that are io.Closers. On Unix, a pipe or
 // socket file in blocking mode (stdin often is) is read and written
 // through a non-blocking duplicate, so Close ends a read or write under

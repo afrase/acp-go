@@ -15,7 +15,8 @@
 // NewSession, Prompt. What the agent sends back (session/update
 // notifications, permission requests, file reads) goes to the [Client]
 // its factory returns, called with the connection so the client can keep
-// it; the Client embeds [UnimplementedClient] for what it doesn't do.
+// it (and call the agent once the factory has returned); the Client embeds
+// [UnimplementedClient] for what it doesn't do.
 //
 // # An agent
 //
@@ -40,7 +41,9 @@
 // side by side, so Prompt may not have registered its turn yet;
 // [SequenceFromContext] says which of two messages came first. A
 // notification handler must not call the other side and wait (the answer
-// can't be read until it returns); such a call fails at once.
+// can't be read until it returns). Such a call made with the handler's
+// context, or one made from it, fails at once; one made with any other
+// context stalls the connection until that context ends.
 //
 // Contexts reach every call and handler. A call whose context ends
 // returns at once and withdraws its request ($/cancel_request); a request
