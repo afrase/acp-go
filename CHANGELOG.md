@@ -6,6 +6,14 @@ schema it follows.
 
 ## Unreleased
 
+- **Breaking (`unstable`):** every field whose null the schema says clears
+  it is a `Nullable`. acpgen now reads this from the schema's
+  descriptions instead of a list kept by hand, which had fallen behind:
+  `SessionMessage`'s `SenderSessionID`, `RecipientSessionID`,
+  `SenderMessageID`, `RecipientMessageID` and `Meta`, and
+  `SubagentUpdate`'s `Cwd`, `AdditionalDirectories` and `Meta` are new.
+- `unstable`: a `SessionMessage`'s content drops bad items, as the schema
+  says, rather than the whole list.
 - **Breaking (`unstable`):** `MessageMCPRequest.Params` and
   `MessageMCPNotification.Params` are `json.RawMessage`, not
   `map[string]any`, as the response's `Result` already was: the inner MCP

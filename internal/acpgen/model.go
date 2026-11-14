@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"regexp"
 	"slices"
 	"strings"
 )
@@ -77,7 +78,6 @@ type model struct {
 	order   []string        // schema names, sorted by Go name
 	byGo    map[string]*def
 	ordered map[string]string // "Def.prop" -> a hand-written ordered type
-	null    map[string]bool   // "Def.prop": Nullable
 	rawDefs map[string]bool   // definitions kept as raw JSON
 }
 
@@ -86,12 +86,6 @@ func newModel(s *schema, pkg string) (*model, error) {
 		s: s, pkg: pkg, defs: map[string]*def{}, byGo: map[string]*def{},
 		// JSON objects whose order matters: a form's fields.
 		ordered: map[string]string{"ElicitationSchema.properties": "ElicitationProperties"},
-		// Fields whose null clears a value that absence leaves as it is.
-		null: map[string]bool{
-			"SessionInfoUpdate.title": true, "SessionInfoUpdate.updatedAt": true,
-			"SubagentUpdate.title": true, "SubagentUpdate.description": true, "SubagentUpdate.capabilities": true, "SubagentUpdate.state": true,
-			"SessionMessage.content": true,
-		},
 		// A JSON-RPC id is passed on as it came.
 		rawDefs: map[string]bool{"RequestId": true},
 	}
@@ -350,6 +344,9 @@ func (m *model) fields(d *def, n *node, top bool) {
 		doc := pn.Description
 		if k == "_meta" && strings.HasPrefix(doc, "The _meta property is reserved by ACP") {
 			doc = metaDoc
+			if clearsOnNull(pn) {
+				doc = metaNullDoc
+			}
 		}
 		f := &field{json: k, name: goName(k), doc: doc, required: top && slices.Contains(n.Required, k),
 			lenient: pn.Lenient, skipInvalid: pn.SkipInvalid}
@@ -364,7 +361,7 @@ func (m *model) fields(d *def, n *node, top bool) {
 		switch {
 		case m.ordered[key] != "":
 			f.typ = m.ordered[key]
-		case m.null[key]:
+		case clearsOnNull(pn):
 			f.typ, f.nullable = "Nullable["+base+"]", true
 		case !f.required && m.needsPtr(base):
 			f.typ, f.ptr = "*"+base, true
@@ -376,6 +373,31 @@ func (m *model) fields(d *def, n *node, top bool) {
 	for _, a := range n.AllOf {
 		m.fields(d, a, top)
 	}
+}
+
+// nullClears is how the schema says null clears a value that absence leaves
+// as it is ("`null` clears it", "`null` removes the metadata", "Set to null
+// to clear").
+var nullClears = regexp.MustCompile(`(?is)\bnull\b.{0,12}\b(clears|removes)\b|set to null to clear`)
+
+// clearsOnNull reports whether a property is a Nullable: one that may be
+// null, and whose null the schema says clears it. Its description is read,
+// not a list kept by hand, so a new one isn't missed.
+func clearsOnNull(n *node) bool {
+	return allowsNull(n) && nullClears.MatchString(n.Description)
+}
+
+// allowsNull reports whether a property's schema allows null.
+func allowsNull(n *node) bool {
+	if n.Type.nullable() {
+		return true
+	}
+	for _, v := range variants(n) {
+		if v.Type.nullable() {
+			return true
+		}
+	}
+	return false
 }
 
 // goType is the Go type of a property's schema (a union with null is its
@@ -510,7 +532,11 @@ func tagOf(vs []*node) string {
 }
 
 // metaDoc is the doc of every _meta field (the schema repeats a long one).
-const metaDoc = "Meta is extension data: ACP reserves _meta for it, and nothing may be\nassumed about its keys. See [Extensibility].\n\n[Extensibility]: https://agentclientprotocol.com/protocol/extensibility"
+const (
+	metaDoc     = "Meta is extension data: ACP reserves _meta for it, and nothing may be\nassumed about its keys. See [Extensibility].\n\n" + metaLink
+	metaNullDoc = "Meta is extension data: ACP reserves _meta for it, and nothing may be\nassumed about its keys. See [Extensibility]. In this update, absent\nleaves it as it was, and null removes it.\n\n" + metaLink
+	metaLink    = "[Extensibility]: https://agentclientprotocol.com/protocol/extensibility"
+)
 
 func isUpper(c byte) bool { return c >= 'A' && c <= 'Z' }
 

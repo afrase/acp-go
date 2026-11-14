@@ -86,3 +86,26 @@ func TestMCPParamsArePassedOnAsTheyCame(t *testing.T) {
 		t.Errorf("got %s (%v), want %s", out, err, in)
 	}
 }
+
+// A session message's content drops its bad items, as the schema says,
+// and its null clears it; so does its _meta's.
+func TestSessionMessageNulls(t *testing.T) {
+	var m acp.SessionMessage
+	if err := json.Unmarshal([]byte(`{"messageId":"m","content":[{"type":"text","text":"hi"},42],"_meta":null}`), &m); err != nil {
+		t.Fatal(err)
+	}
+	if v := m.Content.Value; !m.Content.Present || v == nil || len(*v) != 1 || (*v)[0].Text == nil || (*v)[0].Text.Text != "hi" {
+		t.Errorf("content: %+v", m.Content)
+	}
+	if !m.Meta.Present || m.Meta.Value != nil {
+		t.Errorf("_meta: %+v", m.Meta)
+	}
+	var cleared acp.SessionMessage
+	if err := json.Unmarshal([]byte(`{"messageId":"m","content":null}`), &cleared); err != nil || !cleared.Content.Present || cleared.Content.Value != nil || cleared.Meta.Present {
+		t.Errorf("null content: %+v, %v", cleared, err)
+	}
+	out, err := json.Marshal(acp.SessionMessage{MessageID: "m", Meta: acp.Nullable[map[string]any]{Present: true}})
+	if want := `{"messageId":"m","_meta":null}`; err != nil || string(out) != want {
+		t.Errorf("got %s (%v), want %s", out, err, want)
+	}
+}
