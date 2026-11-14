@@ -441,6 +441,7 @@ func (x AuthMethod) MarshalJSON() ([]byte, error) {
 		return x.Other, nil
 	}
 	if x.Agent != nil {
+		x.Type = "" // the variant without a tag goes without one
 		return marshalUnion(plain(x), x.Agent)
 	}
 	return marshalUnion(plain(x), nil)
@@ -456,8 +457,8 @@ func (x *AuthMethod) UnmarshalJSON(b []byte) error {
 	case "terminal":
 		x.Terminal = new(AuthMethodTerminal)
 		return json.Unmarshal(b, x.Terminal)
-	case "":
-		x.Agent = new(AuthMethodAgent)
+	case "", "agent":
+		x.Type, x.Agent = "", new(AuthMethodAgent)
 		return json.Unmarshal(b, x.Agent)
 	}
 	x.Other = append(json.RawMessage(nil), b...)
@@ -3178,7 +3179,7 @@ type IdleStateUpdate struct {
 	Meta map[string]any `json:"_meta,omitempty"`
 	// StopReason is the "stopReason" tag, which says which variant this is. MarshalJSON
 	// fills it in from the variant set when it is empty.
-	StopReason string `json:"stopReason"`
+	StopReason string `json:"stopReason,omitempty"`
 	// EndTurn is the "end_turn" variant (it has no fields of its own). The work ended successfully.
 	EndTurn bool `json:"-"`
 	// MaxTokens is the "max_tokens" variant (it has no fields of its own). The work ended because the agent reached the maximum number of tokens.
@@ -3192,6 +3193,8 @@ type IdleStateUpdate struct {
 	Cancelled bool `json:"-"`
 	// Error is the "error" variant. The work ended because something failed.
 	Error *ErrorStopReason `json:"-"`
+	// None is the variant without a "stopReason" tag (it has no fields of its own). No stop reason: `stopReason` is omitted or `null`.
+	None bool `json:"-"`
 	// Other is the whole object when its tag is one this package doesn't
 	// know (a newer peer's), kept as it came so it can be passed on.
 	// MarshalJSON writes it as it is.
@@ -3217,6 +3220,9 @@ func (x *IdleStateUpdate) which() (tag string, n int) {
 	}
 	if x.Error != nil {
 		tag, n = "error", n+1
+	}
+	if x.None {
+		tag, n = "", n+1
 	}
 	return tag, n
 }
@@ -3251,6 +3257,10 @@ func (x IdleStateUpdate) MarshalJSON() ([]byte, error) {
 	if x.Other != nil {
 		return x.Other, nil
 	}
+	if x.None {
+		x.StopReason = "" // the variant without a tag goes without one
+		return marshalUnion(plain(x), nil)
+	}
 	return marshalUnion(plain(x), nil)
 }
 
@@ -3279,6 +3289,9 @@ func (x *IdleStateUpdate) UnmarshalJSON(b []byte) error {
 	case "error":
 		x.Error = new(ErrorStopReason)
 		return json.Unmarshal(b, x.Error)
+	case "":
+		x.StopReason, x.None = "", true
+		return nil
 	}
 	x.Other = append(json.RawMessage(nil), b...)
 	return nil
@@ -3294,8 +3307,9 @@ func (x *IdleStateUpdate) decodeTag(b []byte) error {
 	*x = IdleStateUpdate{}
 	var v struct {
 		*plain
-		Usage json.RawMessage `json:"usage"`
-		Meta  json.RawMessage `json:"_meta"`
+		Usage      json.RawMessage `json:"usage"`
+		Meta       json.RawMessage `json:"_meta"`
+		StopReason json.RawMessage `json:"stopReason"`
 	}
 	v.plain = (*plain)(x)
 	if err := json.Unmarshal(b, &v); err != nil {
@@ -3303,6 +3317,7 @@ func (x *IdleStateUpdate) decodeTag(b []byte) error {
 	}
 	lenient(v.Usage, &x.Usage)
 	lenient(v.Meta, &x.Meta)
+	lenient(v.StopReason, &x.StopReason)
 	return nil
 }
 
@@ -3460,6 +3475,7 @@ func (x InitialSessionConfigOption) MarshalJSON() ([]byte, error) {
 		return x.Other, nil
 	}
 	if x.ValueID != nil {
+		x.Type = "" // the variant without a tag goes without one
 		return marshalUnion(plain(x), x.ValueID)
 	}
 	return marshalUnion(plain(x), nil)
@@ -3475,9 +3491,12 @@ func (x *InitialSessionConfigOption) UnmarshalJSON(b []byte) error {
 	case "boolean":
 		x.Boolean = new(InitialSessionConfigOptionBoolean)
 		return json.Unmarshal(b, x.Boolean)
-	case "":
+	default:
 		x.ValueID = new(InitialSessionConfigOptionValueID)
-		return json.Unmarshal(b, x.ValueID)
+		if err := json.Unmarshal(b, x.ValueID); err == nil || x.Type == "" {
+			return err
+		}
+		x.ValueID = nil
 	}
 	x.Other = append(json.RawMessage(nil), b...)
 	return nil
@@ -4331,6 +4350,7 @@ func (x MCPServer) MarshalJSON() ([]byte, error) {
 		return x.Other, nil
 	}
 	if x.Stdio != nil {
+		x.Type = "" // the variant without a tag goes without one
 		return marshalUnion(plain(x), x.Stdio)
 	}
 	return marshalUnion(plain(x), nil)
@@ -4352,8 +4372,8 @@ func (x *MCPServer) UnmarshalJSON(b []byte) error {
 	case "acp":
 		x.ACP = new(MCPServerACP)
 		return json.Unmarshal(b, x.ACP)
-	case "":
-		x.Stdio = new(MCPServerStdio)
+	case "", "stdio":
+		x.Type, x.Stdio = "", new(MCPServerStdio)
 		return json.Unmarshal(b, x.Stdio)
 	}
 	x.Other = append(json.RawMessage(nil), b...)
@@ -4810,6 +4830,7 @@ func (x MultiSelectItems) MarshalJSON() ([]byte, error) {
 		return x.Other, nil
 	}
 	if x.Titled != nil {
+		x.Type = "" // the variant without a tag goes without one
 		return marshalUnion(plain(x), x.Titled)
 	}
 	return marshalUnion(plain(x), nil)
@@ -4825,8 +4846,8 @@ func (x *MultiSelectItems) UnmarshalJSON(b []byte) error {
 	case "string":
 		x.String = new(StringMultiSelectItems)
 		return json.Unmarshal(b, x.String)
-	case "":
-		x.Titled = new(TitledMultiSelectItems)
+	case "", "titled":
+		x.Type, x.Titled = "", new(TitledMultiSelectItems)
 		return json.Unmarshal(b, x.Titled)
 	}
 	x.Other = append(json.RawMessage(nil), b...)
@@ -8699,6 +8720,7 @@ func (x SetSessionConfigOptionRequest) MarshalJSON() ([]byte, error) {
 		return x.Other, nil
 	}
 	if x.ValueID != nil {
+		x.Type = "" // the variant without a tag goes without one
 		return marshalUnion(plain(x), x.ValueID)
 	}
 	return marshalUnion(plain(x), nil)
@@ -9046,7 +9068,11 @@ func (x *StateUpdate) UnmarshalJSON(b []byte) error {
 		return json.Unmarshal(b, x.Running)
 	case "idle":
 		x.Idle = new(IdleStateUpdate)
-		return json.Unmarshal(b, x.Idle)
+		if err := json.Unmarshal(b, x.Idle); err != nil {
+			return err
+		}
+		x.Idle.Other = dropKey(x.Idle.Other, "state")
+		return nil
 	case "requires_action":
 		x.RequiresAction = new(RequiresActionStateUpdate)
 		return json.Unmarshal(b, x.RequiresAction)

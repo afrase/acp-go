@@ -139,6 +139,40 @@ func skipInvalidNullable[T any](raw json.RawMessage, dst *Nullable[[]T]) {
 	}
 }
 
+// dropKey is the JSON object obj without key, its other keys in order: obj
+// as it is when it isn't an object.
+//
+//nolint:unused // only the unstable schema has a union in a union
+func dropKey(obj json.RawMessage, key string) json.RawMessage {
+	if obj == nil {
+		return nil
+	}
+	dec := json.NewDecoder(bytes.NewReader(obj))
+	if t, err := dec.Token(); err != nil || t != json.Delim('{') {
+		return obj
+	}
+	out := []byte{'{'}
+	for dec.More() {
+		t, err := dec.Token()
+		if err != nil {
+			return obj
+		}
+		k, _ := t.(string)
+		var v json.RawMessage
+		if err := dec.Decode(&v); err != nil {
+			return obj
+		}
+		if k == key {
+			continue
+		}
+		if len(out) > 1 {
+			out = append(out, ',')
+		}
+		out = append(append(appendString(out, k), ':'), v...)
+	}
+	return append(out, '}')
+}
+
 // marshalUnion encodes a union's tag and the fields beside it (head), and
 // its variant's fields (payload, nil for none) as one object.
 func marshalUnion(head, payload any) ([]byte, error) {

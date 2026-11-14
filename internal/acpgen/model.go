@@ -42,6 +42,7 @@ type def struct {
 	synthetic bool // made for a variant's inline properties
 
 	unknownToDefault bool // kTagged: an unknown tag decodes as the default variant if it can
+	tagLenient       bool // kTagged: a tag that isn't a string decodes as absent
 }
 
 type enumConst struct {
@@ -62,6 +63,7 @@ type field struct {
 type variant struct {
 	tag      string // kTagged: the tag's value ("" for the default variant)
 	def      bool   // kTagged: the variant without a tag
+	title    string // kTagged: the default variant's title, which some peers send as its tag
 	name     string // its Go field
 	typ      string // its Go type: a payload type, or "bool" for a variant without one
 	doc      string
@@ -89,15 +91,11 @@ func newModel(s *schema, pkg string) (*model, error) {
 		// A JSON-RPC id is passed on as it came.
 		rawDefs: map[string]bool{"RequestId": true},
 	}
-	// Unions whose unknown tags the schema says decode as the variant
-	// without one ("Unknown `type` values with string payloads also
-	// gracefully deserialize into this variant").
-	unknownToDefault := map[string]bool{"SetSessionConfigOptionRequest": true}
 	for _, n := range s.names {
 		if s.defs[n].DocsIgnore {
 			continue
 		}
-		d := &def{schemaName: n, name: goName(n), doc: s.defs[n].Description, unknownToDefault: unknownToDefault[n]}
+		d := &def{schemaName: n, name: goName(n), doc: s.defs[n].Description}
 		m.defs[n] = d
 	}
 	for _, n := range s.names {
@@ -222,12 +220,26 @@ func (m *model) tagged(d *def, n *node, vs []*node) error {
 	d.tagField = goName(d.tag)
 	if n.Properties.m != nil {
 		m.fields(d, n, true)
+		if tp := n.Properties.get(d.tag); tp != nil {
+			d.tagLenient = tp.Lenient
+		}
 	}
 	for _, v := range vs {
 		tp := v.Properties.get(d.tag)
 		vr := &variant{doc: v.Description}
 		switch {
 		case tp == nil:
+			// The variant without a tag: the schema doesn't constrain the
+			// tag, so one equal to its title (an MCP server's "stdio") is
+			// taken as it too.
+			vr.def = true
+			vr.name, vr.title = goName(v.Title), v.Title
+			// "Unknown `type` values with string payloads also gracefully
+			// deserialize into this variant."
+			d.unknownToDefault = strings.Contains(strings.Join(strings.Fields(v.Description), " "), "gracefully deserialize into this variant")
+		case tp.Const == nil && tp.Type.nonNull() == "" && tp.Type.nullable():
+			// A null tag (IdleStateUpdate's "none"): the variant for an
+			// absent or null tag.
 			vr.def = true
 			vr.name = goName(v.Title)
 		case tp.Const == nil:
@@ -259,6 +271,9 @@ func (m *model) tagged(d *def, n *node, vs []*node) error {
 		}
 		vr.typ = payload
 		d.vars = append(d.vars, vr)
+	}
+	if n := len(slices.DeleteFunc(slices.Clone(d.vars), func(v *variant) bool { return !v.def })); n > 1 {
+		return fmt.Errorf("%d variants without a tag", n)
 	}
 	// Every field, variant, the tag and Other share the struct: a clash
 	// would only show as a compile error in the generated code.

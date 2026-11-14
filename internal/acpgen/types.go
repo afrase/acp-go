@@ -83,7 +83,7 @@ func genStruct(b *bytes.Buffer, m *model, d *def) {
 	if lenientFields(d.fields) != nil {
 		fmt.Fprintf(b, "// UnmarshalJSON decodes %s, dropping an optional field's bad value (or an\n// array's bad items) where the schema says to, rather than failing.\n", d.name)
 		fmt.Fprintf(b, "func (x *%s) UnmarshalJSON(b []byte) error {\n\ttype plain %s\n", d.name, d.name)
-		writeLenientDecode(b, d, "x")
+		writeLenientDecode(b, d, "x", lenientFields(d.fields))
 		b.WriteString("\treturn nil\n}\n\n")
 	}
 }
@@ -120,14 +120,14 @@ func lenientFields(fields []*field) []*field {
 
 // writeLenientDecode decodes b into recv (of type plain's), the quick way
 // first and, if that fails, again field by field for the lenient ones.
-func writeLenientDecode(b *bytes.Buffer, d *def, recv string) {
+func writeLenientDecode(b *bytes.Buffer, d *def, recv string, lenient []*field) {
 	fmt.Fprintf(b, "\tif err := json.Unmarshal(b, (*plain)(%s)); err == nil {\n\t\treturn nil\n\t}\n", recv)
 	fmt.Fprintf(b, "\t*%s = %s{}\n\tvar v struct {\n\t\t*plain\n", recv, d.name)
-	for _, f := range lenientFields(d.fields) {
+	for _, f := range lenient {
 		fmt.Fprintf(b, "\t\t%s json.RawMessage `json:%q`\n", f.name, f.json)
 	}
 	fmt.Fprintf(b, "\t}\n\tv.plain = (*plain)(%s)\n\tif err := json.Unmarshal(b, &v); err != nil {\n\t\treturn err\n\t}\n", recv)
-	for _, f := range lenientFields(d.fields) {
+	for _, f := range lenient {
 		switch {
 		case f.skipInvalid && strings.HasPrefix(f.typ, "[]"):
 			fmt.Fprintf(b, "\tskipInvalid(v.%s, &%s.%s)\n", f.name, recv, f.name)
@@ -140,7 +140,7 @@ func writeLenientDecode(b *bytes.Buffer, d *def, recv string) {
 }
 
 func genTagged(b *bytes.Buffer, m *model, d *def) {
-	hasDefault := slices.ContainsFunc(d.vars, func(v *variant) bool { return v.def })
+	hasDefault := defaultVariant(d) != nil
 	fmt.Fprintf(b, "type %s struct {\n", d.name)
 	writeFields(b, m, d.fields)
 	tagOpt := ""
@@ -174,12 +174,16 @@ func genTagged(b *bytes.Buffer, m *model, d *def) {
 	}
 	b.WriteString("\treturn tag, n\n}\n\n")
 
-	// MarshalJSON
+	genTaggedMarshal(b, d)
+	genTaggedUnmarshal(b, m, d)
+}
+
+func genTaggedMarshal(b *bytes.Buffer, d *def) {
 	fmt.Fprintf(b, "// MarshalJSON encodes the variant set, with its tag, as one object.\nfunc (x %s) MarshalJSON() ([]byte, error) {\n\ttype plain %s\n", d.name, d.name)
 	fmt.Fprintf(b, "\tif x.%s == \"\" && x.Other == nil {\n\t\ttag, n := x.which()\n\t\tif n != 1 {\n\t\t\treturn nil, variantError(%q, n)\n\t\t}\n\t\tx.%s = tag\n\t}\n", d.tagField, d.name, d.tagField)
 	fmt.Fprintf(b, "\tswitch x.%s {\n", d.tagField)
 	encode := func(payload string) string { return "marshalUnion(plain(x), " + payload + ")" }
-	if len(d.fields) == 0 && !slices.ContainsFunc(d.vars, func(v *variant) bool { return v.def }) {
+	if len(d.fields) == 0 && defaultVariant(d) == nil {
 		encode = func(payload string) string {
 			return fmt.Sprintf("marshalTagged(%q, x.%s, %s)", d.tag, d.tagField, payload)
 		}
@@ -196,45 +200,75 @@ func genTagged(b *bytes.Buffer, m *model, d *def) {
 		}
 	}
 	b.WriteString("\t}\n\tif x.Other != nil {\n\t\treturn x.Other, nil\n\t}\n")
-	for _, v := range d.vars {
-		if v.def {
-			fmt.Fprintf(b, "\tif x.%s != nil {\n\t\treturn marshalUnion(plain(x), x.%s)\n\t}\n", v.name, v.name)
+	if def := defaultVariant(d); def != nil {
+		cond, payload := "x."+def.name+" != nil", "x."+def.name
+		if def.typ == "bool" {
+			cond, payload = "x."+def.name, "nil"
 		}
+		fmt.Fprintf(b, "\tif %s {\n\t\tx.%s = \"\" // the variant without a tag goes without one\n\t\treturn marshalUnion(plain(x), %s)\n\t}\n", cond, d.tagField, payload)
 	}
 	b.WriteString("\treturn marshalUnion(plain(x), nil)\n}\n\n")
+}
 
-	// UnmarshalJSON
+func genTaggedUnmarshal(b *bytes.Buffer, m *model, d *def) {
 	fmt.Fprintf(b, "// UnmarshalJSON decodes the variant its tag names; an unknown tag is kept\n// whole in Other.\nfunc (x *%s) UnmarshalJSON(b []byte) error {\n", d.name)
 	fmt.Fprintf(b, "\tif err := x.decodeTag(b); err != nil {\n\t\treturn err\n\t}\n\tswitch x.%s {\n", d.tagField)
-	var def *variant
 	for _, v := range d.vars {
 		if v.def {
-			def = v
 			continue
 		}
 		fmt.Fprintf(b, "\tcase %q:\n", v.tag)
-		if v.typ == "bool" {
+		switch inner := m.byName(strings.TrimPrefix(v.typ, "*")); {
+		case v.typ == "bool":
 			fmt.Fprintf(b, "\t\tx.%s = true\n\t\treturn nil\n", v.name)
-		} else {
+		case inner != nil && inner.kind == kTagged:
+			// A union in a union (StateUpdate's idle) keeps an unknown
+			// variant in its own Other, which would have this tag twice
+			// when sent on.
+			fmt.Fprintf(b, "\t\tx.%s = new(%s)\n\t\tif err := json.Unmarshal(b, x.%s); err != nil {\n\t\t\treturn err\n\t\t}\n\t\tx.%s.Other = dropKey(x.%s.Other, %q)\n\t\treturn nil\n",
+				v.name, inner.name, v.name, v.name, v.name, d.tag)
+		default:
 			fmt.Fprintf(b, "\t\tx.%s = new(%s)\n\t\treturn json.Unmarshal(b, x.%s)\n", v.name, strings.TrimPrefix(v.typ, "*"), v.name)
 		}
 	}
-	switch {
-	case def != nil && d.unknownToDefault:
-		fmt.Fprintf(b, "\tdefault:\n\t\tx.%s = new(%s)\n\t\tif err := json.Unmarshal(b, x.%s); err == nil || x.%s == \"\" {\n\t\t\treturn err\n\t\t}\n\t\tx.%s = nil\n", def.name, strings.TrimPrefix(def.typ, "*"), def.name, d.tagField, def.name)
-	case def != nil:
-		fmt.Fprintf(b, "\tcase \"\":\n\t\tx.%s = new(%s)\n\t\treturn json.Unmarshal(b, x.%s)\n", def.name, strings.TrimPrefix(def.typ, "*"), def.name)
+	if def := defaultVariant(d); def != nil {
+		tags := `""`
+		if def.title != "" && !slices.ContainsFunc(d.vars, func(v *variant) bool { return v.tag == def.title }) {
+			tags += fmt.Sprintf(", %q", def.title)
+		}
+		switch {
+		case d.unknownToDefault && def.typ != "bool":
+			fmt.Fprintf(b, "\tdefault:\n\t\tx.%s = new(%s)\n\t\tif err := json.Unmarshal(b, x.%s); err == nil || x.%s == \"\" {\n\t\t\treturn err\n\t\t}\n\t\tx.%s = nil\n", def.name, strings.TrimPrefix(def.typ, "*"), def.name, d.tagField, def.name)
+		case def.typ == "bool":
+			fmt.Fprintf(b, "\tcase %s:\n\t\tx.%s, x.%s = \"\", true\n\t\treturn nil\n", tags, d.tagField, def.name)
+		default:
+			fmt.Fprintf(b, "\tcase %s:\n\t\tx.%s, x.%s = \"\", new(%s)\n\t\treturn json.Unmarshal(b, x.%s)\n", tags, d.tagField, def.name, strings.TrimPrefix(def.typ, "*"), def.name)
+		}
 	}
 	b.WriteString("\t}\n\tx.Other = append(json.RawMessage(nil), b...)\n\treturn nil\n}\n\n")
 
 	fmt.Fprintf(b, "// decodeTag decodes the tag and the fields beside it.\nfunc (x *%s) decodeTag(b []byte) error {\n\ttype plain %s\n", d.name, d.name)
-	if lenientFields(d.fields) != nil {
+	lenient := lenientFields(d.fields)
+	if d.tagLenient { // a tag that isn't a string is absent
+		lenient = append(lenient, &field{name: d.tagField, json: d.tag, lenient: true})
+	}
+	if lenient != nil {
 		fmt.Fprintf(b, "\t*x = %s{}\n", d.name)
-		writeLenientDecode(b, d, "x")
+		writeLenientDecode(b, d, "x", lenient)
 		b.WriteString("\treturn nil\n}\n\n")
 	} else {
 		fmt.Fprintf(b, "\t*x = %s{}\n\treturn json.Unmarshal(b, (*plain)(x))\n}\n\n", d.name)
 	}
+}
+
+// defaultVariant is d's variant without a tag, or nil.
+func defaultVariant(d *def) *variant {
+	for _, v := range d.vars {
+		if v.def {
+			return v
+		}
+	}
+	return nil
 }
 
 const otherDoc = "\t// Other is the whole object when its tag is one this package doesn't\n" +
