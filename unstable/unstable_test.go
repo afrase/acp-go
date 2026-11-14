@@ -72,3 +72,111 @@ func TestUnstableUpdates(t *testing.T) {
 		}
 	}
 }
+
+// An MCP message's params are passed on as they came: a big integer keeps
+// every digit.
+func TestMCPParamsArePassedOnAsTheyCame(t *testing.T) {
+	in := `{"serverId":"s","requestId":"1","method":"tools/call","params":{"arguments":{"id":9007199254740993}}}`
+	var req acp.MessageMCPRequest
+	if err := json.Unmarshal([]byte(in), &req); err != nil {
+		t.Fatal(err)
+	}
+	out, err := json.Marshal(req)
+	if err != nil || string(out) != in {
+		t.Errorf("got %s (%v), want %s", out, err, in)
+	}
+}
+
+// A session message's content drops its bad items, as the schema says,
+// and its null clears it; so does its _meta's.
+func TestSessionMessageNulls(t *testing.T) {
+	var m acp.SessionMessage
+	if err := json.Unmarshal([]byte(`{"messageId":"m","content":[{"type":"text","text":"hi"},42],"_meta":null}`), &m); err != nil {
+		t.Fatal(err)
+	}
+	if v := m.Content.Value; !m.Content.Present || v == nil || len(*v) != 1 || (*v)[0].Text == nil || (*v)[0].Text.Text != "hi" {
+		t.Errorf("content: %+v", m.Content)
+	}
+	if !m.Meta.Present || m.Meta.Value != nil {
+		t.Errorf("_meta: %+v", m.Meta)
+	}
+	var cleared acp.SessionMessage
+	if err := json.Unmarshal([]byte(`{"messageId":"m","content":null}`), &cleared); err != nil || !cleared.Content.Present || cleared.Content.Value != nil || cleared.Meta.Present {
+		t.Errorf("null content: %+v, %v", cleared, err)
+	}
+	out, err := json.Marshal(acp.SessionMessage{MessageID: "m", Meta: acp.Nullable[map[string]any]{Present: true}})
+	if want := `{"messageId":"m","_meta":null}`; err != nil || string(out) != want {
+		t.Errorf("got %s (%v), want %s", out, err, want)
+	}
+}
+
+// An idle state without a stop reason can be sent, and one that is
+// absent, null or bad decodes as None, as the schema says.
+func TestIdleWithoutAStopReason(t *testing.T) {
+	out, err := json.Marshal(acp.StateUpdate{Idle: &acp.IdleStateUpdate{None: true}})
+	if err != nil || string(out) != `{"state":"idle"}` {
+		t.Errorf("sent as %s (%v)", out, err)
+	}
+	for _, in := range []string{`{"state":"idle"}`, `{"state":"idle","stopReason":null}`, `{"state":"idle","stopReason":42}`} {
+		var s acp.StateUpdate
+		if err := json.Unmarshal([]byte(in), &s); err != nil || s.Idle == nil || !s.Idle.None || s.Idle.Other != nil {
+			t.Errorf("%s: %+v (%v)", in, s.Idle, err)
+		}
+	}
+	var u acp.SubagentUpdate
+	if err := json.Unmarshal([]byte(`{"sessionId":"c","state":{"state":"idle","stopReason":42}}`), &u); err != nil ||
+		u.State.Value == nil || u.State.Value.Idle == nil || !u.State.Value.Idle.None {
+		t.Errorf("a subagent's bad stop reason: %+v (%v)", u.State, err)
+	}
+}
+
+// An idle state with a stop reason this package doesn't know is passed on
+// with its "state" once.
+func TestAnUnknownStopReasonIsPassedOn(t *testing.T) {
+	for _, in := range []string{
+		`{"state":"idle","stopReason":"paused","x":1}`,
+		`{"state":"idle","stopReason":"end_turn"}`,
+	} {
+		var s acp.StateUpdate
+		if err := json.Unmarshal([]byte(in), &s); err != nil {
+			t.Fatal(err)
+		}
+		if out, err := json.Marshal(s); err != nil || string(out) != in {
+			t.Errorf("%s: passed on as %s (%v)", in, out, err)
+		}
+	}
+}
+
+// An initial config option of an unknown type with a string value is a
+// value id, as the schema says (and as session/set_config_option's is).
+func TestAnInitialOptionOfAnUnknownType(t *testing.T) {
+	var o acp.InitialSessionConfigOption
+	if err := json.Unmarshal([]byte(`{"configId":"c","type":"future","value":"v"}`), &o); err != nil || o.ValueID == nil || o.ValueID.Value != "v" {
+		t.Errorf("%+v (%v)", o, err)
+	}
+}
+
+// FuzzDecodeUnstable is FuzzDecode for the types only the unstable schema
+// has (FuzzDecode, copied from the root package, decodes the stable ones).
+func FuzzDecodeUnstable(f *testing.F) {
+	for _, s := range []string{
+		`{"sessionId":"s","update":{"sessionUpdate":"subagent_update","sessionId":"c","title":null,"cwd":"/a","state":{"state":"idle","stopReason":"error","message":"m"}}}`,
+		`{"sessionId":"s","update":{"sessionUpdate":"subagent_update","sessionId":"c","state":{"state":"idle","stopReason":"_future","x":1}}}`,
+		`{"sessionId":"s","update":{"sessionUpdate":"session_message","messageId":"m","content":[{"type":"text","text":"hi"},42],"_meta":null}}`,
+		`{"sessionId":"s","update":{"sessionUpdate":"plan_update","plan":{"entries":[{"content":"c","priority":"high","status":"pending"}]}}}`,
+		`{"sessionId":"s","cwd":"/a","mcpServers":[{"type":"stdio","name":"n","command":"c","args":[],"env":[]}]}`,
+		`{"cwd":"/a","mcpServers":[],"configOptions":[{"configId":"c","type":"future","value":"v"},{"configId":"b","type":"boolean","value":true}]}`,
+		`{"serverId":"s","requestId":"r","method":"tools/call","params":{"n":9007199254740993}}`,
+	} {
+		f.Add([]byte(s))
+	}
+	f.Fuzz(func(t *testing.T, data []byte) {
+		roundTrip[acp.SessionNotification](t, data)
+		roundTrip[acp.SubagentUpdate](t, data)
+		roundTrip[acp.StateUpdate](t, data)
+		roundTrip[acp.SessionMessage](t, data)
+		roundTrip[acp.ForkSessionRequest](t, data)
+		roundTrip[acp.NewSessionRequest](t, data)
+		roundTrip[acp.MessageMCPRequest](t, data)
+	})
+}

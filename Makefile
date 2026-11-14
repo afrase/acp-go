@@ -6,7 +6,7 @@ SCHEMA_URL := https://github.com/agentclientprotocol/agent-client-protocol/relea
 SCHEMA_FILES := schema.json schema.unstable.json meta.json meta.unstable.json
 FUZZTIME ?= 30s
 
-.PHONY: generate schema test lint check generated fuzz bench cover interop
+.PHONY: generate schema pinned test lint check generated fuzz bench cover interop
 
 # The Go code from the schema in schema/ (acpgen: internal/acpgen).
 generate:
@@ -23,6 +23,11 @@ schema:
 	cp "$$tmp"/*.json schema/
 	$(MAKE) generate
 
+# Fails if schema/ isn't the release schema/VERSION names: the code is
+# generated from these files, so a hand-edited schema would pass for it.
+pinned:
+	cd schema && shasum -a 256 -c SHA256SUMS
+
 test:
 	go test -race ./...
 
@@ -33,23 +38,27 @@ lint:
 # Fails if the generated code wasn't what the schema and acpgen make (it
 # is regenerated then).
 generated:
-	@state() { git status --porcelain -- '*_gen.go' unstable/; git diff -- '*_gen.go' unstable/; }; \
+	@state() { git status --porcelain -- '*_gen.go' '*_gen_test.go' unstable/; git diff -- '*_gen.go' '*_gen_test.go' unstable/; }; \
 	before=$$(state | shasum); $(MAKE) -s generate; after=$$(state | shasum); \
 	if [ "$$before" != "$$after" ]; then echo "the generated code was out of date: run make generate"; exit 1; fi
 
-check: lint generated test
+check: lint pinned generated test
 
-# Runs each fuzz target for FUZZTIME; new inputs go to Go's cache (copy
-# the interesting ones into testdata/fuzz to keep them).
+# Runs each fuzz target, in both packages, for FUZZTIME; new inputs go to
+# Go's cache (copy the interesting ones into testdata/fuzz to keep them:
+# unstable's copies of the targets read the root package's corpus too).
 fuzz:
 	go test -run '^$$' -fuzz '^FuzzStream$$' -fuzztime $(FUZZTIME) .
 	go test -run '^$$' -fuzz '^FuzzDecode$$' -fuzztime $(FUZZTIME) .
+	go test -run '^$$' -fuzz '^FuzzStream$$' -fuzztime $(FUZZTIME) ./unstable
+	go test -run '^$$' -fuzz '^FuzzDecode$$' -fuzztime $(FUZZTIME) ./unstable
+	go test -run '^$$' -fuzz '^FuzzDecodeUnstable$$' -fuzztime $(FUZZTIME) ./unstable
 
 bench:
 	go test -run '^$$' -bench . -benchtime 2s .
 
 cover:
-	go test -coverprofile=coverage.out . ./steering
+	go test -coverprofile=coverage.out . ./unstable ./steering
 	go tool cover -func=coverage.out | tail -1
 
 # Against the official TypeScript SDK; needs Node.js 24 or later and the

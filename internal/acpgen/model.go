@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"regexp"
 	"slices"
 	"strings"
 )
@@ -41,6 +42,7 @@ type def struct {
 	synthetic bool // made for a variant's inline properties
 
 	unknownToDefault bool // kTagged: an unknown tag decodes as the default variant if it can
+	tagLenient       bool // kTagged: a tag that isn't a string decodes as absent
 }
 
 type enumConst struct {
@@ -55,12 +57,14 @@ type field struct {
 	nullable             bool // Nullable[T]: absent, null and a value differ
 	lenient              bool // a bad value decodes as absent
 	skipInvalid          bool // bad items of an array are dropped
+	mayBeNull            bool // required, but the schema allows null
 }
 
 // variant is one case of a union.
 type variant struct {
 	tag      string // kTagged: the tag's value ("" for the default variant)
 	def      bool   // kTagged: the variant without a tag
+	title    string // kTagged: the default variant's title, which some peers send as its tag
 	name     string // its Go field
 	typ      string // its Go type: a payload type, or "bool" for a variant without one
 	doc      string
@@ -77,7 +81,6 @@ type model struct {
 	order   []string        // schema names, sorted by Go name
 	byGo    map[string]*def
 	ordered map[string]string // "Def.prop" -> a hand-written ordered type
-	null    map[string]bool   // "Def.prop": Nullable
 	rawDefs map[string]bool   // definitions kept as raw JSON
 }
 
@@ -86,24 +89,14 @@ func newModel(s *schema, pkg string) (*model, error) {
 		s: s, pkg: pkg, defs: map[string]*def{}, byGo: map[string]*def{},
 		// JSON objects whose order matters: a form's fields.
 		ordered: map[string]string{"ElicitationSchema.properties": "ElicitationProperties"},
-		// Fields whose null clears a value that absence leaves as it is.
-		null: map[string]bool{
-			"SessionInfoUpdate.title": true, "SessionInfoUpdate.updatedAt": true,
-			"SubagentUpdate.title": true, "SubagentUpdate.description": true, "SubagentUpdate.capabilities": true, "SubagentUpdate.state": true,
-			"SessionMessage.content": true,
-		},
 		// A JSON-RPC id is passed on as it came.
 		rawDefs: map[string]bool{"RequestId": true},
 	}
-	// Unions whose unknown tags the schema says decode as the variant
-	// without one ("Unknown `type` values with string payloads also
-	// gracefully deserialize into this variant").
-	unknownToDefault := map[string]bool{"SetSessionConfigOptionRequest": true}
 	for _, n := range s.names {
 		if s.defs[n].DocsIgnore {
 			continue
 		}
-		d := &def{schemaName: n, name: goName(n), doc: s.defs[n].Description, unknownToDefault: unknownToDefault[n]}
+		d := &def{schemaName: n, name: goName(n), doc: s.defs[n].Description}
 		m.defs[n] = d
 	}
 	for _, n := range s.names {
@@ -119,6 +112,10 @@ func newModel(s *schema, pkg string) (*model, error) {
 		}
 	}
 	for n, d := range m.defs {
+		// requireKeys keeps what it found of them in a uint64.
+		if c := len(slices.DeleteFunc(slices.Clone(d.fields), func(f *field) bool { return !f.required })); c > 64 {
+			return nil, fmt.Errorf("%s: %d required properties", n, c)
+		}
 		if prev := m.byGo[d.name]; prev != nil {
 			return nil, fmt.Errorf("%s and %s are both %s in Go", prev.schemaName, n, d.name)
 		}
@@ -228,12 +225,26 @@ func (m *model) tagged(d *def, n *node, vs []*node) error {
 	d.tagField = goName(d.tag)
 	if n.Properties.m != nil {
 		m.fields(d, n, true)
+		if tp := n.Properties.get(d.tag); tp != nil {
+			d.tagLenient = tp.Lenient
+		}
 	}
 	for _, v := range vs {
 		tp := v.Properties.get(d.tag)
 		vr := &variant{doc: v.Description}
 		switch {
 		case tp == nil:
+			// The variant without a tag: the schema doesn't constrain the
+			// tag, so one equal to its title (an MCP server's "stdio") is
+			// taken as it too.
+			vr.def = true
+			vr.name, vr.title = goName(v.Title), v.Title
+			// "Unknown `type` values with string payloads also gracefully
+			// deserialize into this variant."
+			d.unknownToDefault = strings.Contains(strings.Join(strings.Fields(v.Description), " "), "gracefully deserialize into this variant")
+		case tp.Const == nil && tp.Type.nonNull() == "" && tp.Type.nullable():
+			// A null tag (IdleStateUpdate's "none"): the variant for an
+			// absent or null tag.
 			vr.def = true
 			vr.name = goName(v.Title)
 		case tp.Const == nil:
@@ -266,12 +277,23 @@ func (m *model) tagged(d *def, n *node, vs []*node) error {
 		vr.typ = payload
 		d.vars = append(d.vars, vr)
 	}
-	for _, v := range d.vars {
-		for _, f := range d.fields {
-			if f.name == v.name || v.name == d.tagField || v.name == "Other" {
-				return fmt.Errorf("variant %s's field clashes", v.name)
-			}
+	if n := len(slices.DeleteFunc(slices.Clone(d.vars), func(v *variant) bool { return !v.def })); n > 1 {
+		return fmt.Errorf("%d variants without a tag", n)
+	}
+	// Every field, variant, the tag and Other share the struct: a clash
+	// would only show as a compile error in the generated code.
+	taken := map[string]string{d.tagField: "the tag", "Other": "Other"}
+	for _, f := range d.fields {
+		if what, ok := taken[f.name]; ok {
+			return fmt.Errorf("field %s clashes with %s", f.json, what)
 		}
+		taken[f.name] = "field " + f.json
+	}
+	for _, v := range d.vars {
+		if what, ok := taken[v.name]; ok {
+			return fmt.Errorf("variant %s clashes with %s", quoteTag(v), what)
+		}
+		taken[v.name] = "variant " + quoteTag(v)
 	}
 	return nil
 }
@@ -342,15 +364,24 @@ func (m *model) fields(d *def, n *node, top bool) {
 		doc := pn.Description
 		if k == "_meta" && strings.HasPrefix(doc, "The _meta property is reserved by ACP") {
 			doc = metaDoc
+			if m.clearsOnNull(pn) {
+				doc = metaNullDoc
+			}
 		}
 		f := &field{json: k, name: goName(k), doc: doc, required: top && slices.Contains(n.Required, k),
-			lenient: pn.Lenient, skipInvalid: pn.SkipInvalid}
+			lenient: pn.Lenient, skipInvalid: pn.SkipInvalid, mayBeNull: m.allowsNull(pn)}
 		key := d.schemaName + "." + k
 		base := m.goType(pn)
+		if k != "_meta" && pn.AnyProperties && pn.Properties.m == nil {
+			// An object of anything (an MCP message's params) is passed
+			// on as it came: a map would turn its big integers into
+			// float64s.
+			base = "json.RawMessage"
+		}
 		switch {
 		case m.ordered[key] != "":
 			f.typ = m.ordered[key]
-		case m.null[key]:
+		case m.clearsOnNull(pn):
 			f.typ, f.nullable = "Nullable["+base+"]", true
 		case !f.required && m.needsPtr(base):
 			f.typ, f.ptr = "*"+base, true
@@ -362,6 +393,36 @@ func (m *model) fields(d *def, n *node, top bool) {
 	for _, a := range n.AllOf {
 		m.fields(d, a, top)
 	}
+}
+
+// nullClears is how the schema says null clears a value that absence leaves
+// as it is ("`null` clears it", "`null` removes the metadata", "Set to null
+// to clear").
+var nullClears = regexp.MustCompile(`(?is)\bnull\b.{0,12}\b(clears|removes)\b|set to null to clear`)
+
+// clearsOnNull reports whether a property is a Nullable: one that may be
+// null, and whose null the schema says clears it. Its description is read,
+// not a list kept by hand, so a new one isn't missed.
+func (m *model) clearsOnNull(n *node) bool {
+	return m.allowsNull(n) && nullClears.MatchString(n.Description)
+}
+
+// allowsNull reports whether a property's schema allows null, through
+// the definitions it refers to.
+func (m *model) allowsNull(n *node) bool { return m.nullable(n, map[*node]bool{}) }
+
+func (m *model) nullable(n *node, seen map[*node]bool) bool {
+	if n == nil || seen[n] {
+		return false
+	}
+	seen[n] = true
+	if n.Type.nullable() {
+		return true
+	}
+	if r := refName(n); r != "" {
+		return m.nullable(m.s.defs[r], seen)
+	}
+	return slices.ContainsFunc(variants(n), func(v *node) bool { return m.nullable(v, seen) })
 }
 
 // goType is the Go type of a property's schema (a union with null is its
@@ -496,7 +557,11 @@ func tagOf(vs []*node) string {
 }
 
 // metaDoc is the doc of every _meta field (the schema repeats a long one).
-const metaDoc = "Meta is extension data: ACP reserves _meta for it, and nothing may be\nassumed about its keys. See [Extensibility].\n\n[Extensibility]: https://agentclientprotocol.com/protocol/extensibility"
+const (
+	metaDoc     = "Meta is extension data: ACP reserves _meta for it, and nothing may be\nassumed about its keys. See [Extensibility].\n\n" + metaLink
+	metaNullDoc = "Meta is extension data: ACP reserves _meta for it, and nothing may be\nassumed about its keys. See [Extensibility]. In this update, absent\nleaves it as it was, and null removes it.\n\n" + metaLink
+	metaLink    = "[Extensibility]: https://agentclientprotocol.com/protocol/extensibility"
+)
 
 func isUpper(c byte) bool { return c >= 'A' && c <= 'Z' }
 
