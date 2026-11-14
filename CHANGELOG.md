@@ -49,6 +49,12 @@ schema it follows.
   (so the console's Ctrl+C reaches the client alone, as on Unix) and runs
   in a job object, so Close kills the processes it started too.
 
+- `Close` ends a connection on a blocking pipe or socket file (an agent's
+  stdin and stdout, usually) though the other side is silent or doesn't
+  read: on Unix such a file is read and written through a non-blocking
+  duplicate. Before, `Done` stayed open until the other side wrote or
+  closed its end.
+
 ## v0.3.0 (2026-11-14)
 
 ACP schema 1.31.0 (protocol version 1).

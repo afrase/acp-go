@@ -22,8 +22,12 @@ type ClientConn struct {
 // w (what it reads): an agent's stdin and stdout. It calls newAgent with
 // the connection, before reading anything, so the agent can keep it to
 // talk to the client; the client's messages go to the agent it returns.
-// Close closes r and w, those that are io.Closers.
+// Close closes r and w, those that are io.Closers. On Unix, a pipe or
+// socket file in blocking mode (stdin often is) is read and written
+// through a non-blocking duplicate, so Close ends a read or write under
+// way: the connection ends though the client is silent, or doesn't read.
 func NewClientConn(r io.Reader, w io.Writer, newAgent func(*ClientConn) Agent, opts ...Option) *ClientConn {
+	r, w = streams(r, w)
 	c := &ClientConn{c: newConn(r, w, closeBoth(r, w), newOptions(opts))}
 	c.c.start(agentHandler(newAgent(c)))
 	return c
