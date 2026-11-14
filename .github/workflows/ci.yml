@@ -1,4 +1,4 @@
-# Lint, the generated code, the tests (with -race) on Linux, macOS and
+# Lint, the pinned schema's checksums, the generated code, the tests (with -race) on Linux, macOS and
 # Windows and on the oldest Go go.mod allows, and the TypeScript SDK
 # interop tests. Actions are pinned by commit.
 name: CI
@@ -17,7 +17,7 @@ concurrency:
 
 jobs:
   lint:
-    name: Lint and generated code
+    name: Lint, the pinned schema and generated code
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -26,6 +26,7 @@ jobs:
           go-version-file: tools/lint/go.mod
           cache-dependency-path: tools/lint/go.sum
       - run: make lint
+      - run: make pinned
       - run: make generated
 
   test:

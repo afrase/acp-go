@@ -6,7 +6,7 @@ SCHEMA_URL := https://github.com/agentclientprotocol/agent-client-protocol/relea
 SCHEMA_FILES := schema.json schema.unstable.json meta.json meta.unstable.json
 FUZZTIME ?= 30s
 
-.PHONY: generate schema test lint check generated fuzz bench cover interop
+.PHONY: generate schema pinned test lint check generated fuzz bench cover interop
 
 # The Go code from the schema in schema/ (acpgen: internal/acpgen).
 generate:
@@ -23,6 +23,11 @@ schema:
 	cp "$$tmp"/*.json schema/
 	$(MAKE) generate
 
+# Fails if schema/ isn't the release schema/VERSION names: the code is
+# generated from these files, so a hand-edited schema would pass for it.
+pinned:
+	cd schema && shasum -a 256 -c SHA256SUMS
+
 test:
 	go test -race ./...
 
@@ -37,7 +42,7 @@ generated:
 	before=$$(state | shasum); $(MAKE) -s generate; after=$$(state | shasum); \
 	if [ "$$before" != "$$after" ]; then echo "the generated code was out of date: run make generate"; exit 1; fi
 
-check: lint generated test
+check: lint pinned generated test
 
 # Runs each fuzz target for FUZZTIME; new inputs go to Go's cache (copy
 # the interesting ones into testdata/fuzz to keep them).
