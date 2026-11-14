@@ -4581,7 +4581,7 @@ type MessageMCPNotification struct {
 	// Optional inner MCP params.
 	//
 	// If omitted or set to `null`, the inner MCP message has no params.
-	Params map[string]any `json:"params,omitempty"`
+	Params json.RawMessage `json:"params,omitempty"`
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
@@ -4624,7 +4624,7 @@ type MessageMCPRequest struct {
 	// Optional inner MCP params.
 	//
 	// If omitted or set to `null`, the inner MCP message has no params.
-	Params map[string]any `json:"params,omitempty"`
+	Params json.RawMessage `json:"params,omitempty"`
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
