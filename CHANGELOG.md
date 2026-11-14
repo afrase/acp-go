@@ -9,7 +9,8 @@ schema it follows.
 ACP schema 1.31.0 (protocol version 1).
 
 - The client system prompt is stable: `SystemPrompt` (append or override) on
-  new, load, resume and fork requests, and `SessionSystemPromptCapabilities`.
+  new, load and resume requests (and fork's, in `unstable`), and
+  `SessionSystemPromptCapabilities`.
 - `unstable`: `ArchiveSession` and `UnarchiveSession`, `SessionStatus`,
   `SetSessionTitle`, `SessionOptions` with initial config option values,
   `AuthStatus` and the `AuthStatusUpdate` notification, the proxy's
