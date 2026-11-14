@@ -306,3 +306,27 @@ func TestAMessageWithoutItsRequiredPropertiesIsRefused(t *testing.T) {
 		t.Errorf("cancelled %q", agent.cancelled)
 	}
 }
+
+// A diff of an empty file sends oldText "", which a new file's leaves out.
+func TestAnEmptyOldTextIsNotANewFile(t *testing.T) {
+	empty := ""
+	for _, c := range []struct {
+		d    acp.Diff
+		want string
+	}{
+		{acp.Diff{Path: "/a", OldText: &empty, NewText: "x"}, `{"path":"/a","oldText":"","newText":"x"}`},
+		{acp.Diff{Path: "/a", NewText: "x"}, `{"path":"/a","newText":"x"}`},
+	} {
+		b, err := json.Marshal(c.d)
+		if err != nil || string(b) != c.want {
+			t.Errorf("Marshal = %s, %v; want %s", b, err, c.want)
+		}
+		var back acp.Diff
+		if err := json.Unmarshal(b, &back); err != nil {
+			t.Fatal(err)
+		}
+		if (back.OldText == nil) != (c.d.OldText == nil) {
+			t.Errorf("%s decoded with OldText %v", b, back.OldText)
+		}
+	}
+}

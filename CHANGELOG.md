@@ -4,8 +4,11 @@ This module follows semantic versioning; see the README's Versioning
 section for what that covers. Each release names the release of ACP's
 schema it follows.
 
-## Unreleased
+## v0.4.0 (2026-11-14)
 
+ACP schema 1.31.0 (protocol version 1). The fixes from a whole-code review.
+
+- **Breaking:** `Diff.OldText` is a `*string`: absent for a new file, `""` for an empty one, which a string couldn't tell apart.
 - A test builds the README's client and agent. The README said
   `Example_client` ran its client, which it doesn't (it has no `Start`).
 - Tests: every notification is checked to reach the other side's method of

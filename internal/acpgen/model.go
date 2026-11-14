@@ -383,7 +383,7 @@ func (m *model) fields(d *def, n *node, top bool) {
 			f.typ = m.ordered[key]
 		case m.clearsOnNull(pn):
 			f.typ, f.nullable = "Nullable["+base+"]", true
-		case !f.required && m.needsPtr(base):
+		case !f.required && (m.needsPtr(base) || emptyMeans[key]):
 			f.typ, f.ptr = "*"+base, true
 		default:
 			f.typ = base
@@ -481,6 +481,11 @@ func intType(format string) string {
 	}
 	return "int64"
 }
+
+// emptyMeans are the optional strings whose empty value means something
+// other than their absence, so they are held by pointer: a diff's oldText
+// is absent for a new file and "" for an empty one.
+var emptyMeans = map[string]bool{"Diff.oldText": true}
 
 // needsPtr reports whether an optional field of type t is held by pointer:
 // a struct (so it can be absent), or a number (whose zero means something).

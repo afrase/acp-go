@@ -2149,7 +2149,7 @@ type Diff struct {
 	// The absolute file path being modified.
 	Path string `json:"path"`
 	// The original content (omitted or `null` for new files).
-	OldText string `json:"oldText,omitempty"`
+	OldText *string `json:"oldText,omitempty"`
 	// The new content after modification.
 	NewText string `json:"newText"`
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
