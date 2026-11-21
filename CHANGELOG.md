@@ -36,6 +36,10 @@ ACP schema 1.31.0 (protocol version 1). Fixes from a review.
   didn't read piled up a goroutine a request. A handler still running
   doesn't count, so handlers that call the other side and wait can't
   stall the reading.
+- Docs: an agent's Cancel can run before the Prompt of a session/prompt
+  sent before it (the docs, the README, `StartPrompt` and the v0.4.0
+  entry said it ran only once Prompt was called), and `examples/echo`
+  orders the two with `SequenceFromContext`.
 
 ## v0.4.0 (2026-11-14)
 
@@ -101,9 +105,11 @@ ACP schema 1.31.0 (protocol version 1). The fixes from a whole-code review.
   once only when made with the handler's context; the README's client and
   `examples/prompt` give `Shutdown` five seconds rather than a context
   that never ends.
-- A request's handler has started before anything read after the request
-  is handled: an agent's Cancel no longer runs before the Prompt of a
-  session/prompt that came before it was called.
+- A request's goroutine has started before anything read after the
+  request is handled. Its handler may not have been called yet, so an
+  agent's Cancel can still run before the Prompt of a session/prompt that
+  came before it: `SequenceFromContext` orders the two. (This entry first
+  said Cancel no longer ran before Prompt was called.)
 - `SequenceFromContext`: where a message came among the other side's, so
   an agent can tell a Cancel that came after a Prompt still setting up.
 - `Shutdown` closes the agent's input through the writer, after the

@@ -38,10 +38,12 @@
 // answers to them wait to be written (the other side doesn't read), its
 // next request waits too. That
 // goroutine has started before anything read after the request is
-// handled: a session/cancel that follows a session/prompt reaches the
-// agent's Cancel only once its Prompt has been called. The two then run
-// side by side, so Prompt may not have registered its turn yet;
-// [SequenceFromContext] says which of two messages came first. A
+// handled, but its handler may not have been called yet: a session/cancel
+// that follows a session/prompt may reach the agent's Cancel before its
+// Prompt is called, or while Prompt sets up, before it has registered its
+// turn. [SequenceFromContext] says which of two messages came first: an
+// agent keeps the sequence of each session's last Cancel, and a Prompt
+// with a smaller one is cancelled already. A
 // notification handler must not call the other side and wait (the answer
 // can't be read until it returns). Such a call made with the handler's
 // context, or one made from it, fails at once; one made with any other

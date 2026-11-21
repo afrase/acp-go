@@ -177,10 +177,12 @@ both. Its unstable parts can change in any minor release (see
   and others support.
 - **Order.** Notifications are handled one at a time, in the order they
   arrive. Each request is handled on its own goroutine, and that goroutine
-  has started before anything after the request is handled. So an agent's
-  `Cancel` runs only after `Prompt` was called for each prompt before it.
-  The two then run side by side, and `Prompt` may not have registered its
-  turn yet. `acp.SequenceFromContext` tells which message came first.
+  has started before anything after the request is handled. Its handler
+  may not have been called yet, though: an agent's `Cancel` can run before
+  the `Prompt` of a prompt sent before it, or while that `Prompt` sets up.
+  `acp.SequenceFromContext` tells which message came first: keep the
+  sequence of each session's last `Cancel`, and a `Prompt` with a smaller
+  one is cancelled already (`examples/echo` does this).
 - **Errors.** An error from the other side is an `*acp.Error` with ACP's
   code (use `errors.As`). A call after the connection ends returns
   `acp.ErrClosed`.

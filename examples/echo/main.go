@@ -27,9 +27,12 @@ type echo struct {
 	acp.UnimplementedAgent
 	client *acp.ClientConn
 
-	mu    sync.Mutex
-	turns map[acp.SessionID]context.CancelFunc
+	mu        sync.Mutex
+	turns     map[acp.SessionID]*turn  // each session's running turn
+	cancelled map[acp.SessionID]uint64 // the sequence of each session's last Cancel
 }
+
+type turn struct{ cancel context.CancelFunc }
 
 func (e *echo) Initialize(context.Context, *acp.InitializeRequest) (*acp.InitializeResponse, error) {
 	return &acp.InitializeResponse{
@@ -47,11 +50,26 @@ func (e *echo) Authenticate(context.Context, *acp.AuthenticateRequest) (*acp.Aut
 }
 
 func (e *echo) Prompt(ctx context.Context, req *acp.PromptRequest) (*acp.PromptResponse, error) {
+	// A Cancel that came after this prompt may run before it, or while it
+	// sets up: the sequences say which came first.
+	seq, _ := acp.SequenceFromContext(ctx)
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
+	t := &turn{cancel: cancel}
 	e.mu.Lock()
-	e.turns[req.SessionID] = cancel
+	if e.cancelled[req.SessionID] > seq {
+		e.mu.Unlock()
+		return &acp.PromptResponse{StopReason: acp.StopReasonCancelled}, nil
+	}
+	e.turns[req.SessionID] = t
 	e.mu.Unlock()
+	defer func() {
+		e.mu.Lock()
+		defer e.mu.Unlock()
+		if e.turns[req.SessionID] == t {
+			delete(e.turns, req.SessionID)
+		}
+	}()
 	var text []string
 	for _, b := range req.Prompt {
 		if b.Text != nil {
@@ -95,18 +113,20 @@ func (e *echo) Prompt(ctx context.Context, req *acp.PromptRequest) (*acp.PromptR
 	return &acp.PromptResponse{StopReason: acp.StopReasonEndTurn}, nil
 }
 
-func (e *echo) Cancel(_ context.Context, n *acp.CancelNotification) error {
+func (e *echo) Cancel(ctx context.Context, n *acp.CancelNotification) error {
+	seq, _ := acp.SequenceFromContext(ctx)
 	e.mu.Lock()
 	defer e.mu.Unlock()
-	if cancel := e.turns[n.SessionID]; cancel != nil {
-		cancel()
+	e.cancelled[n.SessionID] = seq
+	if t := e.turns[n.SessionID]; t != nil {
+		t.cancel()
 	}
 	return nil
 }
 
 func main() {
 	conn := acp.NewClientConn(os.Stdin, os.Stdout, func(c *acp.ClientConn) acp.Agent {
-		return &echo{client: c, turns: map[acp.SessionID]context.CancelFunc{}}
+		return &echo{client: c, turns: map[acp.SessionID]*turn{}, cancelled: map[acp.SessionID]uint64{}}
 	})
 	<-conn.Done()
 	if err := conn.Err(); !errors.Is(err, io.EOF) { // the client closed our stdin: done
