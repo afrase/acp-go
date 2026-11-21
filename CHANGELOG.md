@@ -22,6 +22,10 @@ ACP schema 1.31.0 (protocol version 1). Fixes from a review.
   properties, so one its type requires is missing (an error): a
   `session/prompt` answered with null returned a `PromptResponse` with no
   stop reason. An extension's null result (`Call`) is as before.
+- A request with the id of one still being handled is answered Invalid
+  request and not handled. It took the first one's place, so
+  `$/cancel_request` no longer reached the first, and both were answered
+  with that id.
 
 ## v0.4.0 (2026-11-14)
 

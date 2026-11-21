@@ -1071,6 +1071,35 @@ func TestAWithdrawnRequestIsAnsweredRequestCancelled(t *testing.T) {
 	}
 }
 
+// A request with the id of one still being handled is refused: the first
+// can still be withdrawn, and is answered once.
+func TestARequestWithTheIDOfOneStillHandled(t *testing.T) {
+	started := make(chan struct{}, 2)
+	agent := &testAgent{prompt: func(ctx context.Context, _ *testAgent, _ *acp.PromptRequest) (*acp.PromptResponse, error) {
+		started <- struct{}{}
+		<-ctx.Done()
+		return nil, ctx.Err()
+	}}
+	r := rawClient(t, agent)
+	r.send(`{"jsonrpc":"2.0","id":"p","method":"session/prompt","params":{"sessionId":"s1","prompt":[]}}`)
+	<-started
+	r.send(`{"jsonrpc":"2.0","id":"p","method":"session/prompt","params":{"sessionId":"s1","prompt":[]}}`)
+	if m := r.read(); code(m) != -32600 || m["id"] != "p" {
+		t.Errorf("the second request: %v", m)
+	}
+	r.send(`{"jsonrpc":"2.0","method":"$/cancel_request","params":{"requestId":"p"}}`)
+	if m := r.read(); code(m) != -32800 || m["id"] != "p" {
+		t.Errorf("the first, withdrawn: %v", m)
+	}
+	r.send(`{"jsonrpc":"2.0","id":2,"method":"session/new","params":{"cwd":"/","mcpServers":[]}}`)
+	if m := r.read(); m["id"] != float64(2) {
+		t.Errorf("what came next: %v", m)
+	}
+	if len(started) != 0 {
+		t.Error("the second request was handled")
+	}
+}
+
 // Text goes on the wire as it is: no < for a "<".
 func TestTextGoesAsItIs(t *testing.T) {
 	agent := &testAgent{prompt: func(ctx context.Context, a *testAgent, _ *acp.PromptRequest) (*acp.PromptResponse, error) {

@@ -399,6 +399,16 @@ func (c *conn) serve(f frame) {
 		c.reply(&Error{Code: ErrorCodeInvalidRequest, Message: "Invalid request: a bad id"})
 		return
 	}
+	c.mu.Lock()
+	_, dup := c.incoming[key]
+	c.mu.Unlock()
+	if dup { // JSON-RPC's ids are unique: the first request keeps its id, to be withdrawn and answered by it
+		msg := encodeError(f.ID, &Error{Code: ErrorCodeInvalidRequest, Message: "Invalid request: the id of a request still being handled"})
+		c.handlers.Go(func() { // the other side's call waits for it
+			_, _ = c.write(c.ctx, msg) // the connection may be ending
+		})
+		return
+	}
 	ctx, cancel := context.WithCancel(context.WithValue(context.WithValue(c.ctx, requestIDKey{}, f.ID), seqKey{}, c.seq))
 	c.mu.Lock()
 	c.incoming[key] = cancel
