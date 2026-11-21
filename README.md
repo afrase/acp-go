@@ -287,7 +287,8 @@ make schema    # fetch the schema release in schema/VERSION, check it, regenerat
 - `internal/acpgen` ([source](internal/acpgen/main.go)) generates the types
   and methods from the pinned schema in `schema/`.
 - The `unstable` package's hand-written files are copies of the root
-  package's (`make generate`).
+  package's (`make generate`), but for the tests of the connection, the
+  processes and the README, which would only run the same code again.
 - golangci-lint is pinned in `tools/lint` and runs through `go tool`, so
   you install nothing.
 

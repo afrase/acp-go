@@ -122,3 +122,64 @@ func TestEveryNotificationIsRouted(t *testing.T) {
 		t.Errorf("only %d notifications sent", sent)
 	}
 }
+
+// A request without a property its type requires, or with one of the
+// wrong type, is answered Invalid params by its id; a handler's nil result
+// is answered as an empty one.
+func TestTheDispatchChecksParamsAndAnswersANilResult(t *testing.T) {
+	r := rawClient(t, &testAgent{prompt: func(context.Context, *testAgent, *acp.PromptRequest) (*acp.PromptResponse, error) {
+		return nil, nil //nolint:nilnil // the nil result under test
+	}})
+	for _, line := range []string{
+		`{"jsonrpc":"2.0","id":1,"method":"initialize"}`,
+		`{"jsonrpc":"2.0","id":1,"method":"session/new","params":{"mcpServers":[]}}`,
+		`{"jsonrpc":"2.0","id":1,"method":"session/new","params":{"cwd":5,"mcpServers":[]}}`,
+	} {
+		r.send(line)
+		if m := r.read(); code(m) != -32602 || m["id"] != float64(1) {
+			t.Errorf("%s: answered %v", line, m)
+		}
+	}
+	r.send(`{"jsonrpc":"2.0","id":2,"method":"session/prompt","params":{"sessionId":"s1","prompt":[]}}`)
+	if m := r.read(); m["error"] != nil || m["id"] != float64(2) {
+		t.Errorf("a nil result: answered %v", m)
+	} else if _, ok := m["result"].(map[string]any); !ok {
+		t.Errorf("a nil result: answered %v, not an object", m)
+	}
+}
+
+func TestMethodsOutsideACP(t *testing.T) {
+	agent := &testAgent{ext: func(_ context.Context, method string, params json.RawMessage) (any, error) {
+		return map[string]string{"method": method, "params": string(params)}, nil
+	}}
+	agentConn, _ := connect(t, &testClient{}, agent)
+	ctx := ctxFor(t)
+	var got map[string]string
+	if err := agentConn.Call(ctx, "_zed.dev/workspace/buffers", map[string]string{"language": "go"}, &got); err != nil {
+		t.Fatal(err)
+	}
+	if got["method"] != "_zed.dev/workspace/buffers" || got["params"] != `{"language":"go"}` {
+		t.Errorf("got %v", got)
+	}
+	var e *acp.Error
+	if err := agentConn.Call(ctx, "no/such", nil, nil); !errors.As(err, &e) || e.Code != acp.ErrorCodeMethodNotFound {
+		t.Errorf("an unknown method: %v", err)
+	}
+	if _, err := agentConn.LoadSession(ctx, &acp.LoadSessionRequest{SessionID: "s", Cwd: "/"}); !errors.As(err, &e) || e.Code != acp.ErrorCodeMethodNotFound {
+		t.Errorf("a method the agent left to UnimplementedAgent: %v", err)
+	}
+	if err := agentConn.Notify(ctx, "_zed.dev/file_opened", map[string]string{"path": "/a"}); err != nil {
+		t.Fatal(err)
+	}
+	if err := agentConn.Notify(ctx, "no/such/notification", nil); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := agentConn.NewSession(ctx, &acp.NewSessionRequest{Cwd: "/"}); err != nil { // after the notifications
+		t.Fatal(err)
+	}
+	agent.mu.Lock()
+	defer agent.mu.Unlock()
+	if len(agent.notes) != 1 || agent.notes[0] != "_zed.dev/file_opened" {
+		t.Errorf("notifications %v", agent.notes)
+	}
+}

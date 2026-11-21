@@ -14,9 +14,6 @@ import (
 // module.
 func TestTheREADMEsCodeBuilds(t *testing.T) {
 	readme, err := os.ReadFile("README.md")
-	if os.IsNotExist(err) {
-		t.Skip("no README here (this is a copy of the test in another package)")
-	}
 	if err != nil {
 		t.Fatal(err)
 	}
