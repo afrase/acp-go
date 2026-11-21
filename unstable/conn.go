@@ -647,6 +647,9 @@ func (c *conn) write(ctx context.Context, msg []byte) (handed bool, err error) {
 	if limit := c.opts.writeLimit; limit > 0 && len(msg)-1 > limit {
 		return false, fmt.Errorf("%w: %d bytes, over the write limit of %d", ErrTooLarge, len(msg)-1, limit)
 	}
+	if err := ctx.Err(); err != nil { // the select below may pick either when both are ready
+		return false, err
+	}
 	w := writeReq{msg: msg, done: doneChans.Get().(chan error)} //nolint:forcetypeassert // the pool holds channels
 	select {
 	case c.writes <- w:

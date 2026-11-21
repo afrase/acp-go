@@ -402,6 +402,26 @@ func TestAWithdrawnCallEndsItsHandler(t *testing.T) {
 	}
 }
 
+// A call or a notification whose context has already ended isn't sent.
+func TestNothingIsSentWithAnEndedContext(t *testing.T) {
+	agent := &testAgent{}
+	r := rawClient(t, agent)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	for range 100 {
+		if err := agent.client.Call(ctx, "_ask", nil, nil); !errors.Is(err, context.Canceled) {
+			t.Fatalf("a call: %v", err)
+		}
+		if err := agent.client.Notify(ctx, "_note", nil); !errors.Is(err, context.Canceled) {
+			t.Fatalf("a notification: %v", err)
+		}
+	}
+	r.send(`{"jsonrpc":"2.0","id":2,"method":"session/new","params":{"cwd":"/","mcpServers":[]}}`)
+	if m := r.read(); m["id"] != float64(2) {
+		t.Errorf("sent %v", m)
+	}
+}
+
 // The agent stops waiting for an answer (another one came): the client's
 // question goes away.
 func TestTheAgentWithdrawsAQuestion(t *testing.T) {

@@ -14,6 +14,8 @@ ACP schema 1.31.0 (protocol version 1). Fixes from a review.
   answered, and a response was answered with a null-id error while its
   call waited on. A response whose id can't be read is dropped, never
   answered.
+- A call or a notification whose context has already ended isn't sent.
+  About half of them were.
 
 ## v0.4.0 (2026-11-14)
 
