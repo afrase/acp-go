@@ -1,7 +1,6 @@
 package acp_test
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"log/slog"
@@ -12,29 +11,11 @@ import (
 	"github.com/afrase/acp-go"
 )
 
-// syncBuffer is a buffer the connection's goroutines can log to.
-type syncBuffer struct {
-	mu sync.Mutex
-	b  bytes.Buffer
-}
-
-func (s *syncBuffer) Write(p []byte) (int, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	return s.b.Write(p)
-}
-
-func (s *syncBuffer) String() string {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	return s.b.String()
-}
-
 // What a connection logs says what happened, never what the messages
 // carried.
 func TestTheLogNeverHasWhatMessagesCarry(t *testing.T) {
 	const secret = "sk-secret-marker"
-	var buf syncBuffer
+	var buf lockedBuffer
 	log := slog.New(slog.NewTextHandler(&buf, &slog.HandlerOptions{Level: slog.LevelDebug}))
 	agent := &testAgent{prompt: func(ctx context.Context, a *testAgent, req *acp.PromptRequest) (*acp.PromptResponse, error) {
 		if err := a.say(ctx, req.Prompt[0].Text.Text); err != nil {
@@ -63,7 +44,7 @@ func TestTheLogNeverHasWhatMessagesCarry(t *testing.T) {
 }
 
 func TestPanicsAndJunkAreLogged(t *testing.T) {
-	var buf syncBuffer
+	var buf lockedBuffer
 	log := slog.New(slog.NewTextHandler(&buf, nil))
 	r := rawClientWith(t, &testAgent{prompt: func(context.Context, *testAgent, *acp.PromptRequest) (*acp.PromptResponse, error) {
 		panic("boom")
