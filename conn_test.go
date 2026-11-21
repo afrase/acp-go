@@ -266,6 +266,35 @@ func TestARequestOverTheReadLimit(t *testing.T) {
 	}
 }
 
+// A message over the read limit whose id comes after its params or its
+// result, as many encoders write it, is still taken by its id: a request
+// is answered with it, a response fails its call, and neither an id inside
+// the params nor a response is answered with a null id.
+func TestAMessageOverTheReadLimitWithItsIDLast(t *testing.T) {
+	agent := &testAgent{}
+	r := rawClientWith(t, agent, acp.WithReadLimit(1000))
+	big := strings.Repeat("a", 200<<10) // more than the reading buffer
+	r.send(`{"jsonrpc":"2.0","method":"session/prompt","params":{"sessionId":"s1","prompt":[{"type":"text","text":"` + big + `"}],"id":"inner"},"id":"big"}`)
+	if m := r.read(); code(m) != -32600 || m["id"] != "big" {
+		t.Errorf("a request with its id last: %v", m)
+	}
+	r.send(`{"jsonrpc":"2.0","method":"session/cancel","params":{"sessionId":"s1","x":"` + big + `","id":"inner"}}`) // a notification: dropped
+	called := make(chan error, 1)
+	go func() { called <- agent.client.Call(ctxFor(t), "_ask", nil, nil) }()
+	if m := r.read(); m["method"] != "_ask" || m["id"] != float64(1) {
+		t.Fatalf("the agent's call: %v", m)
+	}
+	r.send(`{"jsonrpc":"2.0","result":{"text":"` + big + `"}, "id" : 1 }`)
+	if err := <-called; !errors.Is(err, acp.ErrTooLarge) {
+		t.Errorf("the call answered over the read limit, its id last: %v", err)
+	}
+	r.send(`{"jsonrpc":"2.0","result":{"text":"` + big + `"},"x":"` + big + `"}`) // a response whose id can't be read: dropped, not answered
+	r.send(`{"jsonrpc":"2.0","id":2,"method":"session/new","params":{"cwd":"/","mcpServers":[]}}`)
+	if m := r.read(); m["id"] != float64(2) || m["result"] == nil {
+		t.Errorf("what came next: %v (a reply to a response or a notification?)", m)
+	}
+}
+
 // bigClient answers an extension's call with more than a write limit of
 // 200 lets through.
 type bigClient struct{ testClient }

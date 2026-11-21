@@ -4,6 +4,17 @@ This module follows semantic versioning; see the README's Versioning
 section for what that covers. Each release names the release of ACP's
 schema it follows.
 
+## v0.4.1 (unreleased)
+
+ACP schema 1.31.0 (protocol version 1). Fixes from a review.
+
+- A message over the read limit whose `id` comes after its params or its
+  result (as many encoders write it) is taken by its id: its tail is kept
+  as well as its head. A request was taken for a notification and never
+  answered, and a response was answered with a null-id error while its
+  call waited on. A response whose id can't be read is dropped, never
+  answered.
+
 ## v0.4.0 (2026-11-14)
 
 ACP schema 1.31.0 (protocol version 1). The fixes from a whole-code review.

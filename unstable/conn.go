@@ -5,6 +5,7 @@ package unstable
 import (
 	"bufio"
 	"bytes"
+	"cmp"
 	"context"
 	"encoding/json"
 	"errors"
@@ -91,12 +92,12 @@ func (c *conn) read() {
 	br := bufio.NewReaderSize(c.r, 64<<10)
 	var err error
 	for {
-		var line []byte
+		var line, tail []byte
 		var over bool
-		line, over, err = c.readLine(br)
+		line, tail, over, err = c.readLine(br)
 		switch {
 		case over:
-			c.tooLarge(line)
+			c.tooLarge(line, tail)
 		case len(line) > 0:
 			c.dispatch(line)
 		}
@@ -117,47 +118,62 @@ func (c *conn) read() {
 }
 
 // readLine reads one line, of any length unless a read limit is set. A
-// line over the limit is read to its end, but only its head is kept (to
-// answer it by its id), and over is true.
-func (c *conn) readLine(br *bufio.Reader) (line []byte, over bool, err error) {
+// line over the limit is read to its end, but only its head and its tail
+// are kept (to answer it by its id), and over is true.
+func (c *conn) readLine(br *bufio.Reader) (line, tail []byte, over bool, err error) {
 	limit := c.opts.readLimit
 	for {
 		chunk, err := br.ReadSlice('\n')
 		if !over && limit > 0 && len(line)+len(bytes.TrimRight(chunk, "\r\n")) > limit {
 			over = true
-			line = line[:min(len(line), headSize)]
+			tail = append([]byte(nil), line[max(0, len(line)-edgeSize):]...)
+			line = line[:min(len(line), edgeSize)]
 		}
 		switch {
 		case over:
-			line = append(line, chunk[:min(len(chunk), headSize-len(line))]...)
+			line = append(line, chunk[:min(len(chunk), edgeSize-len(line))]...)
+			if tail = append(tail, chunk...); len(tail) > 2*edgeSize {
+				tail = append(tail[:0], tail[len(tail)-edgeSize:]...)
+			}
 		case line == nil && err == nil:
-			return append([]byte(nil), chunk...), false, nil // the usual case: the line fit the buffer
+			return append([]byte(nil), chunk...), nil, false, nil // the usual case: the line fit the buffer
 		default:
 			line = append(line, chunk...)
 		}
 		if !errors.Is(err, bufio.ErrBufferFull) {
-			return line, over, err
+			return line, tail[max(0, len(tail)-edgeSize):], over, err
 		}
 	}
 }
 
-// headSize is how much of a line over the read limit is kept: enough for
-// the id and method that come before the params.
-const headSize = 4 << 10
+// edgeSize is how much of each end of a line over the read limit is kept:
+// enough for the id and method, which come before the params or the
+// result, or after them.
+const edgeSize = 4 << 10
 
-// tooLarge answers a message over the read limit by what its head says
-// it is, and the connection goes on: a request is answered with an
-// error, a response fails the call it answers with [ErrTooLarge], and a
-// notification is dropped.
-func (c *conn) tooLarge(head []byte) {
+// tooLarge answers a message over the read limit by what its head and its
+// tail say it is, and the connection goes on: a request is answered with
+// an error, a response fails the call it answers with [ErrTooLarge] (or
+// is dropped, when its id can't be read: a response is never answered),
+// and a notification is dropped.
+func (c *conn) tooLarge(head, tail []byte) {
 	c.seq++
 	limit := c.opts.readLimit
 	id, method, isResponse := peek(head)
+	if id == nil || method == "" {
+		tid, tmethod, tresponse := peekTail(tail)
+		if id == nil {
+			id = tid
+		}
+		method, isResponse = cmp.Or(method, tmethod), isResponse || tresponse
+	}
 	c.log.Warn("acp: a message over the read limit", "limit", limit, "rpc", method)
 	e := &Error{Code: ErrorCodeInvalidRequest, Message: fmt.Sprintf("Invalid request: over the read limit of %d bytes", limit)}
 	switch {
-	case isResponse && id != nil:
-		c.settle(id, response{err: fmt.Errorf("%w: a response over the read limit of %d bytes", ErrTooLarge, limit)})
+	case isResponse:
+		if id != nil {
+			c.settle(id, response{err: fmt.Errorf("%w: a response over the read limit of %d bytes", ErrTooLarge, limit)})
+		}
 	case method != "" && id != nil && idKey(id) != "":
 		msg := encodeError(id, e)
 		c.handlers.Go(func() { // the other side's call waits for it
@@ -199,6 +215,39 @@ func peek(head []byte) (id json.RawMessage, method string, response bool) {
 		}
 	}
 	return id, method, response
+}
+
+// peekTail reads a message's id and method from its tail: the members of
+// the message object that the tail holds whole, those after the last one
+// it cuts. A member is found by where it starts (a "," or "{" before a
+// key): what follows it, with a "{" before, is a whole object only when
+// it is a member of the message itself, not of an object inside it.
+func peekTail(tail []byte) (id json.RawMessage, method string, response bool) {
+	tail = bytes.TrimRight(tail, " \t\r\n")
+	for i := range tail {
+		if tail[i] != '"' {
+			continue
+		}
+		before := bytes.TrimRight(tail[:i], " \t\r\n")
+		if len(before) == 0 || (before[len(before)-1] != ',' && before[len(before)-1] != '{') {
+			continue
+		}
+		var f struct {
+			ID     json.RawMessage `json:"id"`
+			Method *string         `json:"method"`
+			Result json.RawMessage `json:"result"`
+			Error  json.RawMessage `json:"error"`
+		}
+		rest := append([]byte{'{'}, tail[i:]...)
+		if !json.Valid(rest) || json.Unmarshal(rest, &f) != nil {
+			continue
+		}
+		if f.Method != nil {
+			method = *f.Method
+		}
+		return f.ID, method, f.Result != nil || f.Error != nil
+	}
+	return nil, "", false
 }
 
 // maxJunkLogged is how many lines that aren't JSON-RPC are logged one by
