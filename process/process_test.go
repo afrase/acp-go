@@ -60,8 +60,8 @@ func (s signalling) Read(p []byte) (int, error) {
 	return s.ReadCloser.Read(p)
 }
 
-// Drain closes a pipe whose reader waits on it through a tick of idle
-// time, and leaves one whose reader is behind until the reading ends.
+// Drain gives up a pipe whose reader waits on it through a tick of idle
+// time, and not one whose reader is behind, until the reading ends.
 func TestDrain(t *testing.T) {
 	ticks := make(chan time.Time)
 	calls := make(chan struct{})
@@ -88,8 +88,9 @@ func TestDrain(t *testing.T) {
 	<-calls
 	ticks <- time.Time{}
 	if !<-closed {
-		t.Error("a pipe whose reader waited wasn't closed")
+		t.Error("a pipe whose reader waited isn't given up")
 	}
+	_ = waiting.Close()
 	if err := <-readErr; !errors.Is(err, os.ErrClosed) {
 		t.Errorf("the read: %v", err)
 	}
@@ -102,6 +103,6 @@ func TestDrain(t *testing.T) {
 	<-calls // no Read under way: it waits on
 	close(ended)
 	if <-closed {
-		t.Error("a pipe whose reader is behind was closed")
+		t.Error("a pipe whose reader is behind is given up")
 	}
 }

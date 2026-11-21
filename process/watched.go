@@ -20,11 +20,12 @@ func (w *Watched) Read(p []byte) (int, error) {
 	return w.ReadCloser.Read(p)
 }
 
-// Drain waits for the reading to end (ended), or closes the pipe once a
-// Read has waited idle with nothing to read, and reports whether it closed
-// it. A reader that is behind, still handling what it read, isn't cut off:
-// what the program wrote before it exited is still in the pipe. after is
-// the clock (nil: [time.After]).
+// Drain waits for the reading to end (ended), and returns false then, or
+// returns true once a Read has waited idle with nothing to read: the
+// caller then gives the pipe up, by closing it. A reader that is behind,
+// still handling what it read, isn't given up on: what the program wrote
+// before it exited is still in the pipe. after is the clock (nil:
+// [time.After]).
 func (w *Watched) Drain(ended <-chan struct{}, idle time.Duration, after func(time.Duration) <-chan time.Time) bool {
 	if after == nil {
 		after = time.After
@@ -37,7 +38,6 @@ func (w *Watched) Drain(ended <-chan struct{}, idle time.Duration, after func(ti
 		case <-after(idle):
 		}
 		if armed%2 == 1 && w.edges.Load() == armed {
-			_ = w.Close()
 			return true
 		}
 	}
