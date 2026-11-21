@@ -18,9 +18,9 @@ ACP schema 1.31.0 (protocol version 1). Additions only.
   `Start` puts a program on pipes of its own; `OwnGroup` and `NewGroup`
   give it a process group (Unix) or a console process group and a
   kill-on-close job object (Windows), whose `Kill`, `Signal` and `Sweep`
-  reach what it started; `Watched` gives up on a pipe a process the
-  program left running holds open; `ExitSignal` says which signal ended
-  it. `acp.Start` uses it and behaves as before.
+  reach what it started; `Watched` says when to give up on a pipe that a
+  process the program left running holds open; `ExitSignal` says which
+  signal ended it. `acp.Start` uses it and behaves as before.
 - On Windows the agent's job object lets a process the agent starts with
   `CREATE_BREAKAWAY_FROM_JOB` leave it, so a browser an agent opens for a
   sign-in outlives the agent. Other processes the agent starts are still
