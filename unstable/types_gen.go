@@ -33,23 +33,21 @@ type AgentAuthCapabilities struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *AgentAuthCapabilities) UnmarshalJSON(b []byte) error {
 	type plain AgentAuthCapabilities
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = AgentAuthCapabilities{}
+		v := struct {
+			*plain
+			Status json.RawMessage `json:"status"`
+			Logout json.RawMessage `json:"logout"`
+			Meta   json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Status, &x.Status)
+		lenient(v.Logout, &x.Logout)
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = AgentAuthCapabilities{}
-	var v struct {
-		*plain
-		Status json.RawMessage `json:"status"`
-		Logout json.RawMessage `json:"logout"`
-		Meta   json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Status, &x.Status)
-	lenient(v.Logout, &x.Logout)
-	lenient(v.Meta, &x.Meta)
 	return nil
 }
 
@@ -92,31 +90,29 @@ type AgentCapabilities struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *AgentCapabilities) UnmarshalJSON(b []byte) error {
 	type plain AgentCapabilities
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = AgentCapabilities{}
+		v := struct {
+			*plain
+			LoadSession         json.RawMessage `json:"loadSession"`
+			PromptCapabilities  json.RawMessage `json:"promptCapabilities"`
+			MCPCapabilities     json.RawMessage `json:"mcpCapabilities"`
+			SessionCapabilities json.RawMessage `json:"sessionCapabilities"`
+			Auth                json.RawMessage `json:"auth"`
+			Providers           json.RawMessage `json:"providers"`
+			Meta                json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.LoadSession, &x.LoadSession)
+		lenient(v.PromptCapabilities, &x.PromptCapabilities)
+		lenient(v.MCPCapabilities, &x.MCPCapabilities)
+		lenient(v.SessionCapabilities, &x.SessionCapabilities)
+		lenient(v.Auth, &x.Auth)
+		lenient(v.Providers, &x.Providers)
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = AgentCapabilities{}
-	var v struct {
-		*plain
-		LoadSession         json.RawMessage `json:"loadSession"`
-		PromptCapabilities  json.RawMessage `json:"promptCapabilities"`
-		MCPCapabilities     json.RawMessage `json:"mcpCapabilities"`
-		SessionCapabilities json.RawMessage `json:"sessionCapabilities"`
-		Auth                json.RawMessage `json:"auth"`
-		Providers           json.RawMessage `json:"providers"`
-		Meta                json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.LoadSession, &x.LoadSession)
-	lenient(v.PromptCapabilities, &x.PromptCapabilities)
-	lenient(v.MCPCapabilities, &x.MCPCapabilities)
-	lenient(v.SessionCapabilities, &x.SessionCapabilities)
-	lenient(v.Auth, &x.Auth)
-	lenient(v.Providers, &x.Providers)
-	lenient(v.Meta, &x.Meta)
 	return nil
 }
 
@@ -139,25 +135,23 @@ type Annotations struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *Annotations) UnmarshalJSON(b []byte) error {
 	type plain Annotations
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = Annotations{}
+		v := struct {
+			*plain
+			Audience     json.RawMessage `json:"audience"`
+			LastModified json.RawMessage `json:"lastModified"`
+			Priority     json.RawMessage `json:"priority"`
+			Meta         json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		skipInvalid(v.Audience, &x.Audience)
+		lenient(v.LastModified, &x.LastModified)
+		lenient(v.Priority, &x.Priority)
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = Annotations{}
-	var v struct {
-		*plain
-		Audience     json.RawMessage `json:"audience"`
-		LastModified json.RawMessage `json:"lastModified"`
-		Priority     json.RawMessage `json:"priority"`
-		Meta         json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	skipInvalid(v.Audience, &x.Audience)
-	lenient(v.LastModified, &x.LastModified)
-	lenient(v.Priority, &x.Priority)
-	lenient(v.Meta, &x.Meta)
 	return nil
 }
 
@@ -187,19 +181,17 @@ type ArchiveSessionRequest struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *ArchiveSessionRequest) UnmarshalJSON(b []byte) error {
 	type plain ArchiveSessionRequest
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "ArchiveSessionRequest", []string{"sessionId"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = ArchiveSessionRequest{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = ArchiveSessionRequest{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "ArchiveSessionRequest", []string{"sessionId"}, nil)
 }
 
@@ -220,19 +212,17 @@ type ArchiveSessionResponse struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *ArchiveSessionResponse) UnmarshalJSON(b []byte) error {
 	type plain ArchiveSessionResponse
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = ArchiveSessionResponse{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = ArchiveSessionResponse{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return nil
 }
 
@@ -255,21 +245,19 @@ type AudioContent struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *AudioContent) UnmarshalJSON(b []byte) error {
 	type plain AudioContent
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "AudioContent", []string{"data", "mimeType"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = AudioContent{}
+		v := struct {
+			*plain
+			Annotations json.RawMessage `json:"annotations"`
+			Meta        json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Annotations, &x.Annotations)
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = AudioContent{}
-	var v struct {
-		*plain
-		Annotations json.RawMessage `json:"annotations"`
-		Meta        json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Annotations, &x.Annotations)
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "AudioContent", []string{"data", "mimeType"}, nil)
 }
 
@@ -321,29 +309,27 @@ type AuthAccount struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *AuthAccount) UnmarshalJSON(b []byte) error {
 	type plain AuthAccount
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "AuthAccount", []string{"label"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = AuthAccount{}
+		v := struct {
+			*plain
+			Description  json.RawMessage `json:"description"`
+			Active       json.RawMessage `json:"active"`
+			Name         json.RawMessage `json:"name"`
+			Email        json.RawMessage `json:"email"`
+			Organization json.RawMessage `json:"organization"`
+			Meta         json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Description, &x.Description)
+		lenient(v.Active, &x.Active)
+		lenient(v.Name, &x.Name)
+		lenient(v.Email, &x.Email)
+		lenient(v.Organization, &x.Organization)
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = AuthAccount{}
-	var v struct {
-		*plain
-		Description  json.RawMessage `json:"description"`
-		Active       json.RawMessage `json:"active"`
-		Name         json.RawMessage `json:"name"`
-		Email        json.RawMessage `json:"email"`
-		Organization json.RawMessage `json:"organization"`
-		Meta         json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Description, &x.Description)
-	lenient(v.Active, &x.Active)
-	lenient(v.Name, &x.Name)
-	lenient(v.Email, &x.Email)
-	lenient(v.Organization, &x.Organization)
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "AuthAccount", []string{"label"}, nil)
 }
 
@@ -370,21 +356,19 @@ type AuthCapabilities struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *AuthCapabilities) UnmarshalJSON(b []byte) error {
 	type plain AuthCapabilities
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = AuthCapabilities{}
+		v := struct {
+			*plain
+			Terminal json.RawMessage `json:"terminal"`
+			Meta     json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Terminal, &x.Terminal)
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = AuthCapabilities{}
-	var v struct {
-		*plain
-		Terminal json.RawMessage `json:"terminal"`
-		Meta     json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Terminal, &x.Terminal)
-	lenient(v.Meta, &x.Meta)
 	return nil
 }
 
@@ -496,21 +480,19 @@ type AuthMethodAgent struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *AuthMethodAgent) UnmarshalJSON(b []byte) error {
 	type plain AuthMethodAgent
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "AuthMethodAgent", []string{"id", "name"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = AuthMethodAgent{}
+		v := struct {
+			*plain
+			Description json.RawMessage `json:"description"`
+			Meta        json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Description, &x.Description)
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = AuthMethodAgent{}
-	var v struct {
-		*plain
-		Description json.RawMessage `json:"description"`
-		Meta        json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Description, &x.Description)
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "AuthMethodAgent", []string{"id", "name"}, nil)
 }
 
@@ -547,21 +529,19 @@ type AuthMethodTerminal struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *AuthMethodTerminal) UnmarshalJSON(b []byte) error {
 	type plain AuthMethodTerminal
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "AuthMethodTerminal", []string{"id", "name"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = AuthMethodTerminal{}
+		v := struct {
+			*plain
+			Description json.RawMessage `json:"description"`
+			Meta        json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Description, &x.Description)
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = AuthMethodTerminal{}
-	var v struct {
-		*plain
-		Description json.RawMessage `json:"description"`
-		Meta        json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Description, &x.Description)
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "AuthMethodTerminal", []string{"id", "name"}, nil)
 }
 
@@ -604,19 +584,17 @@ type AuthStatusCapabilities struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *AuthStatusCapabilities) UnmarshalJSON(b []byte) error {
 	type plain AuthStatusCapabilities
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = AuthStatusCapabilities{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = AuthStatusCapabilities{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return nil
 }
 
@@ -642,19 +620,17 @@ type AuthStatusRequest struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *AuthStatusRequest) UnmarshalJSON(b []byte) error {
 	type plain AuthStatusRequest
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = AuthStatusRequest{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = AuthStatusRequest{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return nil
 }
 
@@ -686,21 +662,19 @@ type AuthStatusResponse struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *AuthStatusResponse) UnmarshalJSON(b []byte) error {
 	type plain AuthStatusResponse
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "AuthStatusResponse", []string{"state"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = AuthStatusResponse{}
+		v := struct {
+			*plain
+			Accounts json.RawMessage `json:"accounts"`
+			Meta     json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		skipInvalid(v.Accounts, &x.Accounts)
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = AuthStatusResponse{}
-	var v struct {
-		*plain
-		Accounts json.RawMessage `json:"accounts"`
-		Meta     json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	skipInvalid(v.Accounts, &x.Accounts)
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "AuthStatusResponse", []string{"state"}, nil)
 }
 
@@ -736,21 +710,19 @@ type AuthStatusUpdateNotification struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *AuthStatusUpdateNotification) UnmarshalJSON(b []byte) error {
 	type plain AuthStatusUpdateNotification
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "AuthStatusUpdateNotification", []string{"state"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = AuthStatusUpdateNotification{}
+		v := struct {
+			*plain
+			Accounts json.RawMessage `json:"accounts"`
+			Meta     json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		skipInvalid(v.Accounts, &x.Accounts)
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = AuthStatusUpdateNotification{}
-	var v struct {
-		*plain
-		Accounts json.RawMessage `json:"accounts"`
-		Meta     json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	skipInvalid(v.Accounts, &x.Accounts)
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "AuthStatusUpdateNotification", []string{"state"}, nil)
 }
 
@@ -772,19 +744,17 @@ type AuthenticateRequest struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *AuthenticateRequest) UnmarshalJSON(b []byte) error {
 	type plain AuthenticateRequest
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "AuthenticateRequest", []string{"methodId"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = AuthenticateRequest{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = AuthenticateRequest{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "AuthenticateRequest", []string{"methodId"}, nil)
 }
 
@@ -801,19 +771,17 @@ type AuthenticateResponse struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *AuthenticateResponse) UnmarshalJSON(b []byte) error {
 	type plain AuthenticateResponse
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = AuthenticateResponse{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = AuthenticateResponse{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return nil
 }
 
@@ -836,21 +804,19 @@ type AvailableCommand struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *AvailableCommand) UnmarshalJSON(b []byte) error {
 	type plain AvailableCommand
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "AvailableCommand", []string{"name", "description"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = AvailableCommand{}
+		v := struct {
+			*plain
+			Input json.RawMessage `json:"input"`
+			Meta  json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Input, &x.Input)
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = AvailableCommand{}
-	var v struct {
-		*plain
-		Input json.RawMessage `json:"input"`
-		Meta  json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Input, &x.Input)
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "AvailableCommand", []string{"name", "description"}, nil)
 }
 
@@ -919,21 +885,19 @@ func (x AvailableCommandsUpdate) MarshalJSON() ([]byte, error) {
 // array's bad items) where the schema says to, rather than failing.
 func (x *AvailableCommandsUpdate) UnmarshalJSON(b []byte) error {
 	type plain AvailableCommandsUpdate
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "AvailableCommandsUpdate", []string{"availableCommands"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = AvailableCommandsUpdate{}
+		v := struct {
+			*plain
+			AvailableCommands json.RawMessage `json:"availableCommands"`
+			Meta              json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		skipInvalid(v.AvailableCommands, &x.AvailableCommands)
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = AvailableCommandsUpdate{}
-	var v struct {
-		*plain
-		AvailableCommands json.RawMessage `json:"availableCommands"`
-		Meta              json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	skipInvalid(v.AvailableCommands, &x.AvailableCommands)
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "AvailableCommandsUpdate", []string{"availableCommands"}, nil)
 }
 
@@ -956,21 +920,19 @@ type BlobResourceContents struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *BlobResourceContents) UnmarshalJSON(b []byte) error {
 	type plain BlobResourceContents
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "BlobResourceContents", []string{"blob", "uri"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = BlobResourceContents{}
+		v := struct {
+			*plain
+			MimeType json.RawMessage `json:"mimeType"`
+			Meta     json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.MimeType, &x.MimeType)
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = BlobResourceContents{}
-	var v struct {
-		*plain
-		MimeType json.RawMessage `json:"mimeType"`
-		Meta     json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.MimeType, &x.MimeType)
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "BlobResourceContents", []string{"blob", "uri"}, nil)
 }
 
@@ -989,19 +951,17 @@ type BooleanConfigOptionCapabilities struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *BooleanConfigOptionCapabilities) UnmarshalJSON(b []byte) error {
 	type plain BooleanConfigOptionCapabilities
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = BooleanConfigOptionCapabilities{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = BooleanConfigOptionCapabilities{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return nil
 }
 
@@ -1030,25 +990,23 @@ type BooleanPropertySchema struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *BooleanPropertySchema) UnmarshalJSON(b []byte) error {
 	type plain BooleanPropertySchema
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = BooleanPropertySchema{}
+		v := struct {
+			*plain
+			Title       json.RawMessage `json:"title"`
+			Description json.RawMessage `json:"description"`
+			Default     json.RawMessage `json:"default"`
+			Meta        json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Title, &x.Title)
+		lenient(v.Description, &x.Description)
+		lenient(v.Default, &x.Default)
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = BooleanPropertySchema{}
-	var v struct {
-		*plain
-		Title       json.RawMessage `json:"title"`
-		Description json.RawMessage `json:"description"`
-		Default     json.RawMessage `json:"default"`
-		Meta        json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Title, &x.Title)
-	lenient(v.Description, &x.Description)
-	lenient(v.Default, &x.Default)
-	lenient(v.Meta, &x.Meta)
 	return nil
 }
 
@@ -1071,19 +1029,17 @@ type CancelNotification struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *CancelNotification) UnmarshalJSON(b []byte) error {
 	type plain CancelNotification
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "CancelNotification", []string{"sessionId"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = CancelNotification{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = CancelNotification{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "CancelNotification", []string{"sessionId"}, nil)
 }
 
@@ -1106,19 +1062,17 @@ type CancelRequestNotification struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *CancelRequestNotification) UnmarshalJSON(b []byte) error {
 	type plain CancelRequestNotification
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "CancelRequestNotification", nil, []string{"requestId"})
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = CancelRequestNotification{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = CancelRequestNotification{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "CancelRequestNotification", nil, []string{"requestId"})
 }
 
@@ -1182,33 +1136,31 @@ type ClientCapabilities struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *ClientCapabilities) UnmarshalJSON(b []byte) error {
 	type plain ClientCapabilities
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = ClientCapabilities{}
+		v := struct {
+			*plain
+			Fs          json.RawMessage `json:"fs"`
+			Terminal    json.RawMessage `json:"terminal"`
+			Session     json.RawMessage `json:"session"`
+			Subagents   json.RawMessage `json:"subagents"`
+			Plan        json.RawMessage `json:"plan"`
+			Auth        json.RawMessage `json:"auth"`
+			Elicitation json.RawMessage `json:"elicitation"`
+			Meta        json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Fs, &x.Fs)
+		lenient(v.Terminal, &x.Terminal)
+		lenient(v.Session, &x.Session)
+		lenient(v.Subagents, &x.Subagents)
+		lenient(v.Plan, &x.Plan)
+		lenient(v.Auth, &x.Auth)
+		lenient(v.Elicitation, &x.Elicitation)
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = ClientCapabilities{}
-	var v struct {
-		*plain
-		Fs          json.RawMessage `json:"fs"`
-		Terminal    json.RawMessage `json:"terminal"`
-		Session     json.RawMessage `json:"session"`
-		Subagents   json.RawMessage `json:"subagents"`
-		Plan        json.RawMessage `json:"plan"`
-		Auth        json.RawMessage `json:"auth"`
-		Elicitation json.RawMessage `json:"elicitation"`
-		Meta        json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Fs, &x.Fs)
-	lenient(v.Terminal, &x.Terminal)
-	lenient(v.Session, &x.Session)
-	lenient(v.Subagents, &x.Subagents)
-	lenient(v.Plan, &x.Plan)
-	lenient(v.Auth, &x.Auth)
-	lenient(v.Elicitation, &x.Elicitation)
-	lenient(v.Meta, &x.Meta)
 	return nil
 }
 
@@ -1238,25 +1190,23 @@ type ClientSessionCapabilities struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *ClientSessionCapabilities) UnmarshalJSON(b []byte) error {
 	type plain ClientSessionCapabilities
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = ClientSessionCapabilities{}
+		v := struct {
+			*plain
+			Compaction    json.RawMessage `json:"compaction"`
+			ConfigOptions json.RawMessage `json:"configOptions"`
+			Notices       json.RawMessage `json:"notices"`
+			Meta          json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Compaction, &x.Compaction)
+		lenient(v.ConfigOptions, &x.ConfigOptions)
+		lenient(v.Notices, &x.Notices)
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = ClientSessionCapabilities{}
-	var v struct {
-		*plain
-		Compaction    json.RawMessage `json:"compaction"`
-		ConfigOptions json.RawMessage `json:"configOptions"`
-		Notices       json.RawMessage `json:"notices"`
-		Meta          json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Compaction, &x.Compaction)
-	lenient(v.ConfigOptions, &x.ConfigOptions)
-	lenient(v.Notices, &x.Notices)
-	lenient(v.Meta, &x.Meta)
 	return nil
 }
 
@@ -1281,19 +1231,17 @@ type CloseSessionRequest struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *CloseSessionRequest) UnmarshalJSON(b []byte) error {
 	type plain CloseSessionRequest
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "CloseSessionRequest", []string{"sessionId"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = CloseSessionRequest{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = CloseSessionRequest{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "CloseSessionRequest", []string{"sessionId"}, nil)
 }
 
@@ -1310,19 +1258,17 @@ type CloseSessionResponse struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *CloseSessionResponse) UnmarshalJSON(b []byte) error {
 	type plain CloseSessionResponse
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = CloseSessionResponse{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = CloseSessionResponse{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return nil
 }
 
@@ -1365,19 +1311,17 @@ type CompactionSummaryChunk struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *CompactionSummaryChunk) UnmarshalJSON(b []byte) error {
 	type plain CompactionSummaryChunk
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "CompactionSummaryChunk", []string{"compactionId", "content"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = CompactionSummaryChunk{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = CompactionSummaryChunk{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "CompactionSummaryChunk", []string{"compactionId", "content"}, nil)
 }
 
@@ -1406,23 +1350,21 @@ type CompactionUpdate struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *CompactionUpdate) UnmarshalJSON(b []byte) error {
 	type plain CompactionUpdate
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "CompactionUpdate", []string{"compactionId", "status"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = CompactionUpdate{}
+		v := struct {
+			*plain
+			Summary json.RawMessage `json:"summary"`
+			Error   json.RawMessage `json:"error"`
+			Meta    json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		skipInvalid(v.Summary, &x.Summary)
+		lenient(v.Error, &x.Error)
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = CompactionUpdate{}
-	var v struct {
-		*plain
-		Summary json.RawMessage `json:"summary"`
-		Error   json.RawMessage `json:"error"`
-		Meta    json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	skipInvalid(v.Summary, &x.Summary)
-	lenient(v.Error, &x.Error)
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "CompactionUpdate", []string{"compactionId", "status"}, nil)
 }
 
@@ -1441,19 +1383,17 @@ type CompleteElicitationNotification struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *CompleteElicitationNotification) UnmarshalJSON(b []byte) error {
 	type plain CompleteElicitationNotification
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "CompleteElicitationNotification", []string{"elicitationId"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = CompleteElicitationNotification{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = CompleteElicitationNotification{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "CompleteElicitationNotification", []string{"elicitationId"}, nil)
 }
 
@@ -1482,21 +1422,19 @@ func (x ConfigOptionUpdate) MarshalJSON() ([]byte, error) {
 // array's bad items) where the schema says to, rather than failing.
 func (x *ConfigOptionUpdate) UnmarshalJSON(b []byte) error {
 	type plain ConfigOptionUpdate
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "ConfigOptionUpdate", []string{"configOptions"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = ConfigOptionUpdate{}
+		v := struct {
+			*plain
+			ConfigOptions json.RawMessage `json:"configOptions"`
+			Meta          json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		skipInvalid(v.ConfigOptions, &x.ConfigOptions)
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = ConfigOptionUpdate{}
-	var v struct {
-		*plain
-		ConfigOptions json.RawMessage `json:"configOptions"`
-		Meta          json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	skipInvalid(v.ConfigOptions, &x.ConfigOptions)
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "ConfigOptionUpdate", []string{"configOptions"}, nil)
 }
 
@@ -1515,19 +1453,17 @@ type Content struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *Content) UnmarshalJSON(b []byte) error {
 	type plain Content
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "Content", []string{"content"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = Content{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = Content{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "Content", []string{"content"}, nil)
 }
 
@@ -1697,21 +1633,19 @@ type ContentChunk struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *ContentChunk) UnmarshalJSON(b []byte) error {
 	type plain ContentChunk
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "ContentChunk", []string{"content"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = ContentChunk{}
+		v := struct {
+			*plain
+			MessageID json.RawMessage `json:"messageId"`
+			Meta      json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.MessageID, &x.MessageID)
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = ContentChunk{}
-	var v struct {
-		*plain
-		MessageID json.RawMessage `json:"messageId"`
-		Meta      json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.MessageID, &x.MessageID)
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "ContentChunk", []string{"content"}, nil)
 }
 
@@ -1733,19 +1667,17 @@ type Cost struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *Cost) UnmarshalJSON(b []byte) error {
 	type plain Cost
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "Cost", []string{"amount", "currency"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = Cost{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = Cost{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "Cost", []string{"amount", "currency"}, nil)
 }
 
@@ -1839,19 +1771,17 @@ func (x *CreateElicitationRequest) decodeTag(b []byte) error {
 		return kindError("CreateElicitationRequest", b)
 	}
 	*x = CreateElicitationRequest{}
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "CreateElicitationRequest", []string{"message"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = CreateElicitationRequest{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = CreateElicitationRequest{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "CreateElicitationRequest", []string{"message"}, nil)
 }
 
@@ -1946,19 +1876,17 @@ func (x *CreateElicitationResponse) decodeTag(b []byte) error {
 		return kindError("CreateElicitationResponse", b)
 	}
 	*x = CreateElicitationResponse{}
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = CreateElicitationResponse{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = CreateElicitationResponse{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return nil
 }
 
@@ -1994,19 +1922,17 @@ type CreateTerminalRequest struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *CreateTerminalRequest) UnmarshalJSON(b []byte) error {
 	type plain CreateTerminalRequest
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "CreateTerminalRequest", []string{"sessionId", "command"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = CreateTerminalRequest{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = CreateTerminalRequest{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "CreateTerminalRequest", []string{"sessionId", "command"}, nil)
 }
 
@@ -2025,19 +1951,17 @@ type CreateTerminalResponse struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *CreateTerminalResponse) UnmarshalJSON(b []byte) error {
 	type plain CreateTerminalResponse
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "CreateTerminalResponse", []string{"terminalId"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = CreateTerminalResponse{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = CreateTerminalResponse{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "CreateTerminalResponse", []string{"terminalId"}, nil)
 }
 
@@ -2060,19 +1984,17 @@ type CurrentModeUpdate struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *CurrentModeUpdate) UnmarshalJSON(b []byte) error {
 	type plain CurrentModeUpdate
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "CurrentModeUpdate", []string{"currentModeId"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = CurrentModeUpdate{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = CurrentModeUpdate{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "CurrentModeUpdate", []string{"currentModeId"}, nil)
 }
 
@@ -2093,19 +2015,17 @@ type DeleteSessionRequest struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *DeleteSessionRequest) UnmarshalJSON(b []byte) error {
 	type plain DeleteSessionRequest
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "DeleteSessionRequest", []string{"sessionId"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = DeleteSessionRequest{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = DeleteSessionRequest{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "DeleteSessionRequest", []string{"sessionId"}, nil)
 }
 
@@ -2122,19 +2042,17 @@ type DeleteSessionResponse struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *DeleteSessionResponse) UnmarshalJSON(b []byte) error {
 	type plain DeleteSessionResponse
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = DeleteSessionResponse{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = DeleteSessionResponse{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return nil
 }
 
@@ -2163,21 +2081,19 @@ type Diff struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *Diff) UnmarshalJSON(b []byte) error {
 	type plain Diff
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "Diff", []string{"path", "newText"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = Diff{}
+		v := struct {
+			*plain
+			OldText json.RawMessage `json:"oldText"`
+			Meta    json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.OldText, &x.OldText)
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = Diff{}
-	var v struct {
-		*plain
-		OldText json.RawMessage `json:"oldText"`
-		Meta    json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.OldText, &x.OldText)
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "Diff", []string{"path", "newText"}, nil)
 }
 
@@ -2200,19 +2116,17 @@ type DisableProviderRequest struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *DisableProviderRequest) UnmarshalJSON(b []byte) error {
 	type plain DisableProviderRequest
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "DisableProviderRequest", []string{"providerId"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = DisableProviderRequest{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = DisableProviderRequest{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "DisableProviderRequest", []string{"providerId"}, nil)
 }
 
@@ -2233,19 +2147,17 @@ type DisableProviderResponse struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *DisableProviderResponse) UnmarshalJSON(b []byte) error {
 	type plain DisableProviderResponse
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = DisableProviderResponse{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = DisableProviderResponse{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return nil
 }
 
@@ -2278,23 +2190,21 @@ type ElicitationCapabilities struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *ElicitationCapabilities) UnmarshalJSON(b []byte) error {
 	type plain ElicitationCapabilities
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = ElicitationCapabilities{}
+		v := struct {
+			*plain
+			Form json.RawMessage `json:"form"`
+			URL  json.RawMessage `json:"url"`
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Form, &x.Form)
+		lenient(v.URL, &x.URL)
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = ElicitationCapabilities{}
-	var v struct {
-		*plain
-		Form json.RawMessage `json:"form"`
-		URL  json.RawMessage `json:"url"`
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Form, &x.Form)
-	lenient(v.URL, &x.URL)
-	lenient(v.Meta, &x.Meta)
 	return nil
 }
 
@@ -2371,19 +2281,17 @@ type ElicitationFormCapabilities struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *ElicitationFormCapabilities) UnmarshalJSON(b []byte) error {
 	type plain ElicitationFormCapabilities
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = ElicitationFormCapabilities{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = ElicitationFormCapabilities{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return nil
 }
 
@@ -2406,19 +2314,17 @@ type ElicitationFormMode struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *ElicitationFormMode) UnmarshalJSON(b []byte) error {
 	type plain ElicitationFormMode
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "ElicitationFormMode", []string{"requestedSchema"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = ElicitationFormMode{}
+		v := struct {
+			*plain
+			ToolCallID json.RawMessage `json:"toolCallId"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.ToolCallID, &x.ToolCallID)
 	}
-	*x = ElicitationFormMode{}
-	var v struct {
-		*plain
-		ToolCallID json.RawMessage `json:"toolCallId"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.ToolCallID, &x.ToolCallID)
 	return requireKeys(b, "ElicitationFormMode", []string{"requestedSchema"}, nil)
 }
 
@@ -2598,25 +2504,23 @@ type ElicitationSchema struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *ElicitationSchema) UnmarshalJSON(b []byte) error {
 	type plain ElicitationSchema
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = ElicitationSchema{}
+		v := struct {
+			*plain
+			Type        json.RawMessage `json:"type"`
+			Title       json.RawMessage `json:"title"`
+			Description json.RawMessage `json:"description"`
+			Meta        json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Type, &x.Type)
+		lenient(v.Title, &x.Title)
+		lenient(v.Description, &x.Description)
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = ElicitationSchema{}
-	var v struct {
-		*plain
-		Type        json.RawMessage `json:"type"`
-		Title       json.RawMessage `json:"title"`
-		Description json.RawMessage `json:"description"`
-		Meta        json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Type, &x.Type)
-	lenient(v.Title, &x.Title)
-	lenient(v.Description, &x.Description)
-	lenient(v.Meta, &x.Meta)
 	return nil
 }
 
@@ -2648,19 +2552,17 @@ type ElicitationSessionScope struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *ElicitationSessionScope) UnmarshalJSON(b []byte) error {
 	type plain ElicitationSessionScope
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "ElicitationSessionScope", []string{"sessionId"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = ElicitationSessionScope{}
+		v := struct {
+			*plain
+			ToolCallID json.RawMessage `json:"toolCallId"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.ToolCallID, &x.ToolCallID)
 	}
-	*x = ElicitationSessionScope{}
-	var v struct {
-		*plain
-		ToolCallID json.RawMessage `json:"toolCallId"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.ToolCallID, &x.ToolCallID)
 	return requireKeys(b, "ElicitationSessionScope", []string{"sessionId"}, nil)
 }
 
@@ -2679,19 +2581,17 @@ type ElicitationURLCapabilities struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *ElicitationURLCapabilities) UnmarshalJSON(b []byte) error {
 	type plain ElicitationURLCapabilities
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = ElicitationURLCapabilities{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = ElicitationURLCapabilities{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return nil
 }
 
@@ -2716,19 +2616,17 @@ type ElicitationURLMode struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *ElicitationURLMode) UnmarshalJSON(b []byte) error {
 	type plain ElicitationURLMode
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "ElicitationURLMode", []string{"elicitationId", "url"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = ElicitationURLMode{}
+		v := struct {
+			*plain
+			ToolCallID json.RawMessage `json:"toolCallId"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.ToolCallID, &x.ToolCallID)
 	}
-	*x = ElicitationURLMode{}
-	var v struct {
-		*plain
-		ToolCallID json.RawMessage `json:"toolCallId"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.ToolCallID, &x.ToolCallID)
 	return requireKeys(b, "ElicitationURLMode", []string{"elicitationId", "url"}, nil)
 }
 
@@ -2749,21 +2647,19 @@ type EmbeddedResource struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *EmbeddedResource) UnmarshalJSON(b []byte) error {
 	type plain EmbeddedResource
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "EmbeddedResource", []string{"resource"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = EmbeddedResource{}
+		v := struct {
+			*plain
+			Annotations json.RawMessage `json:"annotations"`
+			Meta        json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Annotations, &x.Annotations)
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = EmbeddedResource{}
-	var v struct {
-		*plain
-		Annotations json.RawMessage `json:"annotations"`
-		Meta        json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Annotations, &x.Annotations)
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "EmbeddedResource", []string{"resource"}, nil)
 }
 
@@ -2835,21 +2731,19 @@ type EnumOption struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *EnumOption) UnmarshalJSON(b []byte) error {
 	type plain EnumOption
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "EnumOption", []string{"const", "title"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = EnumOption{}
+		v := struct {
+			*plain
+			Description json.RawMessage `json:"description"`
+			Meta        json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Description, &x.Description)
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = EnumOption{}
-	var v struct {
-		*plain
-		Description json.RawMessage `json:"description"`
-		Meta        json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Description, &x.Description)
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "EnumOption", []string{"const", "title"}, nil)
 }
 
@@ -2870,19 +2764,17 @@ type EnvVariable struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *EnvVariable) UnmarshalJSON(b []byte) error {
 	type plain EnvVariable
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "EnvVariable", []string{"name", "value"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = EnvVariable{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = EnvVariable{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "EnvVariable", []string{"name", "value"}, nil)
 }
 
@@ -2910,19 +2802,17 @@ type Error struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *Error) UnmarshalJSON(b []byte) error {
 	type plain Error
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = Error{}
+		v := struct {
+			*plain
+			Data json.RawMessage `json:"data"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Data, &x.Data)
 	}
-	*x = Error{}
-	var v struct {
-		*plain
-		Data json.RawMessage `json:"data"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Data, &x.Data)
 	return nil
 }
 
@@ -2972,19 +2862,17 @@ type ErrorStopReason struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *ErrorStopReason) UnmarshalJSON(b []byte) error {
 	type plain ErrorStopReason
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = ErrorStopReason{}
+		v := struct {
+			*plain
+			Error json.RawMessage `json:"error"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Error, &x.Error)
 	}
-	*x = ErrorStopReason{}
-	var v struct {
-		*plain
-		Error json.RawMessage `json:"error"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Error, &x.Error)
 	return nil
 }
 
@@ -3036,23 +2924,21 @@ type FileSystemCapabilities struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *FileSystemCapabilities) UnmarshalJSON(b []byte) error {
 	type plain FileSystemCapabilities
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = FileSystemCapabilities{}
+		v := struct {
+			*plain
+			ReadTextFile  json.RawMessage `json:"readTextFile"`
+			WriteTextFile json.RawMessage `json:"writeTextFile"`
+			Meta          json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.ReadTextFile, &x.ReadTextFile)
+		lenient(v.WriteTextFile, &x.WriteTextFile)
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = FileSystemCapabilities{}
-	var v struct {
-		*plain
-		ReadTextFile  json.RawMessage `json:"readTextFile"`
-		WriteTextFile json.RawMessage `json:"writeTextFile"`
-		Meta          json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.ReadTextFile, &x.ReadTextFile)
-	lenient(v.WriteTextFile, &x.WriteTextFile)
-	lenient(v.Meta, &x.Meta)
 	return nil
 }
 
@@ -3098,19 +2984,17 @@ type ForkSessionRequest struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *ForkSessionRequest) UnmarshalJSON(b []byte) error {
 	type plain ForkSessionRequest
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "ForkSessionRequest", []string{"sessionId", "cwd"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = ForkSessionRequest{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = ForkSessionRequest{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "ForkSessionRequest", []string{"sessionId", "cwd"}, nil)
 }
 
@@ -3141,23 +3025,21 @@ type ForkSessionResponse struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *ForkSessionResponse) UnmarshalJSON(b []byte) error {
 	type plain ForkSessionResponse
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "ForkSessionResponse", []string{"sessionId"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = ForkSessionResponse{}
+		v := struct {
+			*plain
+			Modes         json.RawMessage `json:"modes"`
+			ConfigOptions json.RawMessage `json:"configOptions"`
+			Meta          json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Modes, &x.Modes)
+		skipInvalid(v.ConfigOptions, &x.ConfigOptions)
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = ForkSessionResponse{}
-	var v struct {
-		*plain
-		Modes         json.RawMessage `json:"modes"`
-		ConfigOptions json.RawMessage `json:"configOptions"`
-		Meta          json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Modes, &x.Modes)
-	skipInvalid(v.ConfigOptions, &x.ConfigOptions)
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "ForkSessionResponse", []string{"sessionId"}, nil)
 }
 
@@ -3178,19 +3060,17 @@ type HTTPHeader struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *HTTPHeader) UnmarshalJSON(b []byte) error {
 	type plain HTTPHeader
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "HTTPHeader", []string{"name", "value"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = HTTPHeader{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = HTTPHeader{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "HTTPHeader", []string{"name", "value"}, nil)
 }
 
@@ -3334,23 +3214,21 @@ func (x *IdleStateUpdate) decodeTag(b []byte) error {
 		return kindError("IdleStateUpdate", b)
 	}
 	*x = IdleStateUpdate{}
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = IdleStateUpdate{}
+		v := struct {
+			*plain
+			Usage      json.RawMessage `json:"usage"`
+			Meta       json.RawMessage `json:"_meta"`
+			StopReason json.RawMessage `json:"stopReason"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Usage, &x.Usage)
+		lenient(v.Meta, &x.Meta)
+		lenient(v.StopReason, &x.StopReason)
 	}
-	*x = IdleStateUpdate{}
-	var v struct {
-		*plain
-		Usage      json.RawMessage `json:"usage"`
-		Meta       json.RawMessage `json:"_meta"`
-		StopReason json.RawMessage `json:"stopReason"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Usage, &x.Usage)
-	lenient(v.Meta, &x.Meta)
-	lenient(v.StopReason, &x.StopReason)
 	return nil
 }
 
@@ -3375,23 +3253,21 @@ type ImageContent struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *ImageContent) UnmarshalJSON(b []byte) error {
 	type plain ImageContent
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "ImageContent", []string{"data", "mimeType"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = ImageContent{}
+		v := struct {
+			*plain
+			Annotations json.RawMessage `json:"annotations"`
+			URI         json.RawMessage `json:"uri"`
+			Meta        json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Annotations, &x.Annotations)
+		lenient(v.URI, &x.URI)
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = ImageContent{}
-	var v struct {
-		*plain
-		Annotations json.RawMessage `json:"annotations"`
-		URI         json.RawMessage `json:"uri"`
-		Meta        json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Annotations, &x.Annotations)
-	lenient(v.URI, &x.URI)
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "ImageContent", []string{"data", "mimeType"}, nil)
 }
 
@@ -3421,21 +3297,19 @@ type Implementation struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *Implementation) UnmarshalJSON(b []byte) error {
 	type plain Implementation
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "Implementation", []string{"name", "version"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = Implementation{}
+		v := struct {
+			*plain
+			Title json.RawMessage `json:"title"`
+			Meta  json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Title, &x.Title)
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = Implementation{}
-	var v struct {
-		*plain
-		Title json.RawMessage `json:"title"`
-		Meta  json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Title, &x.Title)
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "Implementation", []string{"name", "version"}, nil)
 }
 
@@ -3542,19 +3416,17 @@ func (x *InitialSessionConfigOption) decodeTag(b []byte) error {
 		return kindError("InitialSessionConfigOption", b)
 	}
 	*x = InitialSessionConfigOption{}
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "InitialSessionConfigOption", []string{"configId"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = InitialSessionConfigOption{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = InitialSessionConfigOption{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "InitialSessionConfigOption", []string{"configId"}, nil)
 }
 
@@ -3645,23 +3517,21 @@ type InitializeRequest struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *InitializeRequest) UnmarshalJSON(b []byte) error {
 	type plain InitializeRequest
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "InitializeRequest", []string{"protocolVersion"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = InitializeRequest{}
+		v := struct {
+			*plain
+			ClientCapabilities json.RawMessage `json:"clientCapabilities"`
+			ClientInfo         json.RawMessage `json:"clientInfo"`
+			Meta               json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.ClientCapabilities, &x.ClientCapabilities)
+		lenient(v.ClientInfo, &x.ClientInfo)
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = InitializeRequest{}
-	var v struct {
-		*plain
-		ClientCapabilities json.RawMessage `json:"clientCapabilities"`
-		ClientInfo         json.RawMessage `json:"clientInfo"`
-		Meta               json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.ClientCapabilities, &x.ClientCapabilities)
-	lenient(v.ClientInfo, &x.ClientInfo)
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "InitializeRequest", []string{"protocolVersion"}, nil)
 }
 
@@ -3697,25 +3567,23 @@ type InitializeResponse struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *InitializeResponse) UnmarshalJSON(b []byte) error {
 	type plain InitializeResponse
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "InitializeResponse", []string{"protocolVersion"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = InitializeResponse{}
+		v := struct {
+			*plain
+			AgentCapabilities json.RawMessage `json:"agentCapabilities"`
+			AuthMethods       json.RawMessage `json:"authMethods"`
+			AgentInfo         json.RawMessage `json:"agentInfo"`
+			Meta              json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.AgentCapabilities, &x.AgentCapabilities)
+		skipInvalid(v.AuthMethods, &x.AuthMethods)
+		lenient(v.AgentInfo, &x.AgentInfo)
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = InitializeResponse{}
-	var v struct {
-		*plain
-		AgentCapabilities json.RawMessage `json:"agentCapabilities"`
-		AuthMethods       json.RawMessage `json:"authMethods"`
-		AgentInfo         json.RawMessage `json:"agentInfo"`
-		Meta              json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.AgentCapabilities, &x.AgentCapabilities)
-	skipInvalid(v.AuthMethods, &x.AuthMethods)
-	lenient(v.AgentInfo, &x.AgentInfo)
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "InitializeResponse", []string{"protocolVersion"}, nil)
 }
 
@@ -3752,25 +3620,23 @@ type IntegerPropertySchema struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *IntegerPropertySchema) UnmarshalJSON(b []byte) error {
 	type plain IntegerPropertySchema
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = IntegerPropertySchema{}
+		v := struct {
+			*plain
+			Title       json.RawMessage `json:"title"`
+			Description json.RawMessage `json:"description"`
+			Default     json.RawMessage `json:"default"`
+			Meta        json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Title, &x.Title)
+		lenient(v.Description, &x.Description)
+		lenient(v.Default, &x.Default)
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = IntegerPropertySchema{}
-	var v struct {
-		*plain
-		Title       json.RawMessage `json:"title"`
-		Description json.RawMessage `json:"description"`
-		Default     json.RawMessage `json:"default"`
-		Meta        json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Title, &x.Title)
-	lenient(v.Description, &x.Description)
-	lenient(v.Default, &x.Default)
-	lenient(v.Meta, &x.Meta)
 	return nil
 }
 
@@ -3791,19 +3657,17 @@ type KillTerminalRequest struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *KillTerminalRequest) UnmarshalJSON(b []byte) error {
 	type plain KillTerminalRequest
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "KillTerminalRequest", []string{"sessionId", "terminalId"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = KillTerminalRequest{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = KillTerminalRequest{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "KillTerminalRequest", []string{"sessionId", "terminalId"}, nil)
 }
 
@@ -3820,19 +3684,17 @@ type KillTerminalResponse struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *KillTerminalResponse) UnmarshalJSON(b []byte) error {
 	type plain KillTerminalResponse
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = KillTerminalResponse{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = KillTerminalResponse{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return nil
 }
 
@@ -3879,19 +3741,17 @@ type ListProvidersRequest struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *ListProvidersRequest) UnmarshalJSON(b []byte) error {
 	type plain ListProvidersRequest
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = ListProvidersRequest{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = ListProvidersRequest{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return nil
 }
 
@@ -3924,19 +3784,17 @@ func (x ListProvidersResponse) MarshalJSON() ([]byte, error) {
 // array's bad items) where the schema says to, rather than failing.
 func (x *ListProvidersResponse) UnmarshalJSON(b []byte) error {
 	type plain ListProvidersResponse
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "ListProvidersResponse", []string{"providers"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = ListProvidersResponse{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = ListProvidersResponse{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "ListProvidersResponse", []string{"providers"}, nil)
 }
 
@@ -3969,19 +3827,17 @@ type ListSessionsRequest struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *ListSessionsRequest) UnmarshalJSON(b []byte) error {
 	type plain ListSessionsRequest
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = ListSessionsRequest{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = ListSessionsRequest{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return nil
 }
 
@@ -4013,23 +3869,21 @@ func (x ListSessionsResponse) MarshalJSON() ([]byte, error) {
 // array's bad items) where the schema says to, rather than failing.
 func (x *ListSessionsResponse) UnmarshalJSON(b []byte) error {
 	type plain ListSessionsResponse
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "ListSessionsResponse", []string{"sessions"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = ListSessionsResponse{}
+		v := struct {
+			*plain
+			Sessions   json.RawMessage `json:"sessions"`
+			NextCursor json.RawMessage `json:"nextCursor"`
+			Meta       json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		skipInvalid(v.Sessions, &x.Sessions)
+		lenient(v.NextCursor, &x.NextCursor)
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = ListSessionsResponse{}
-	var v struct {
-		*plain
-		Sessions   json.RawMessage `json:"sessions"`
-		NextCursor json.RawMessage `json:"nextCursor"`
-		Meta       json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	skipInvalid(v.Sessions, &x.Sessions)
-	lenient(v.NextCursor, &x.NextCursor)
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "ListSessionsResponse", []string{"sessions"}, nil)
 }
 
@@ -4099,19 +3953,17 @@ func (x LoadSessionRequest) MarshalJSON() ([]byte, error) {
 // array's bad items) where the schema says to, rather than failing.
 func (x *LoadSessionRequest) UnmarshalJSON(b []byte) error {
 	type plain LoadSessionRequest
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "LoadSessionRequest", []string{"mcpServers", "cwd", "sessionId"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = LoadSessionRequest{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = LoadSessionRequest{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "LoadSessionRequest", []string{"mcpServers", "cwd", "sessionId"}, nil)
 }
 
@@ -4136,23 +3988,21 @@ type LoadSessionResponse struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *LoadSessionResponse) UnmarshalJSON(b []byte) error {
 	type plain LoadSessionResponse
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = LoadSessionResponse{}
+		v := struct {
+			*plain
+			Modes         json.RawMessage `json:"modes"`
+			ConfigOptions json.RawMessage `json:"configOptions"`
+			Meta          json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Modes, &x.Modes)
+		skipInvalid(v.ConfigOptions, &x.ConfigOptions)
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = LoadSessionResponse{}
-	var v struct {
-		*plain
-		Modes         json.RawMessage `json:"modes"`
-		ConfigOptions json.RawMessage `json:"configOptions"`
-		Meta          json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Modes, &x.Modes)
-	skipInvalid(v.ConfigOptions, &x.ConfigOptions)
-	lenient(v.Meta, &x.Meta)
 	return nil
 }
 
@@ -4171,19 +4021,17 @@ type LogoutCapabilities struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *LogoutCapabilities) UnmarshalJSON(b []byte) error {
 	type plain LogoutCapabilities
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = LogoutCapabilities{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = LogoutCapabilities{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return nil
 }
 
@@ -4202,19 +4050,17 @@ type LogoutRequest struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *LogoutRequest) UnmarshalJSON(b []byte) error {
 	type plain LogoutRequest
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = LogoutRequest{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = LogoutRequest{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return nil
 }
 
@@ -4231,19 +4077,17 @@ type LogoutResponse struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *LogoutResponse) UnmarshalJSON(b []byte) error {
 	type plain LogoutResponse
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = LogoutResponse{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = LogoutResponse{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return nil
 }
 
@@ -4270,25 +4114,23 @@ type MCPCapabilities struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *MCPCapabilities) UnmarshalJSON(b []byte) error {
 	type plain MCPCapabilities
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = MCPCapabilities{}
+		v := struct {
+			*plain
+			HTTP json.RawMessage `json:"http"`
+			SSE  json.RawMessage `json:"sse"`
+			ACP  json.RawMessage `json:"acp"`
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.HTTP, &x.HTTP)
+		lenient(v.SSE, &x.SSE)
+		lenient(v.ACP, &x.ACP)
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = MCPCapabilities{}
-	var v struct {
-		*plain
-		HTTP json.RawMessage `json:"http"`
-		SSE  json.RawMessage `json:"sse"`
-		ACP  json.RawMessage `json:"acp"`
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.HTTP, &x.HTTP)
-	lenient(v.SSE, &x.SSE)
-	lenient(v.ACP, &x.ACP)
-	lenient(v.Meta, &x.Meta)
 	return nil
 }
 
@@ -4480,19 +4322,17 @@ type MCPServerACP struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *MCPServerACP) UnmarshalJSON(b []byte) error {
 	type plain MCPServerACP
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "MCPServerACP", []string{"name", "serverId"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = MCPServerACP{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = MCPServerACP{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "MCPServerACP", []string{"name", "serverId"}, nil)
 }
 
@@ -4535,19 +4375,17 @@ func (x MCPServerHTTP) MarshalJSON() ([]byte, error) {
 // array's bad items) where the schema says to, rather than failing.
 func (x *MCPServerHTTP) UnmarshalJSON(b []byte) error {
 	type plain MCPServerHTTP
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "MCPServerHTTP", []string{"name", "url", "headers"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = MCPServerHTTP{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = MCPServerHTTP{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "MCPServerHTTP", []string{"name", "url", "headers"}, nil)
 }
 
@@ -4580,19 +4418,17 @@ func (x MCPServerSSE) MarshalJSON() ([]byte, error) {
 // array's bad items) where the schema says to, rather than failing.
 func (x *MCPServerSSE) UnmarshalJSON(b []byte) error {
 	type plain MCPServerSSE
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "MCPServerSSE", []string{"name", "url", "headers"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = MCPServerSSE{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = MCPServerSSE{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "MCPServerSSE", []string{"name", "url", "headers"}, nil)
 }
 
@@ -4630,19 +4466,17 @@ func (x MCPServerStdio) MarshalJSON() ([]byte, error) {
 // array's bad items) where the schema says to, rather than failing.
 func (x *MCPServerStdio) UnmarshalJSON(b []byte) error {
 	type plain MCPServerStdio
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "MCPServerStdio", []string{"name", "command", "args", "env"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = MCPServerStdio{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = MCPServerStdio{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "MCPServerStdio", []string{"name", "command", "args", "env"}, nil)
 }
 
@@ -4679,19 +4513,17 @@ type MessageMCPNotification struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *MessageMCPNotification) UnmarshalJSON(b []byte) error {
 	type plain MessageMCPNotification
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "MessageMCPNotification", []string{"serverId", "requestId", "method"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = MessageMCPNotification{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = MessageMCPNotification{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "MessageMCPNotification", []string{"serverId", "requestId", "method"}, nil)
 }
 
@@ -4722,19 +4554,17 @@ type MessageMCPRequest struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *MessageMCPRequest) UnmarshalJSON(b []byte) error {
 	type plain MessageMCPRequest
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "MessageMCPRequest", []string{"serverId", "requestId", "method"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = MessageMCPRequest{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = MessageMCPRequest{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "MessageMCPRequest", []string{"serverId", "requestId", "method"}, nil)
 }
 
@@ -4806,19 +4636,17 @@ type MessageMCPResponseError struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *MessageMCPResponseError) UnmarshalJSON(b []byte) error {
 	type plain MessageMCPResponseError
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "MessageMCPResponseError", []string{"error"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = MessageMCPResponseError{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = MessageMCPResponseError{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "MessageMCPResponseError", []string{"error"}, nil)
 }
 
@@ -4834,19 +4662,17 @@ type MessageMCPResponseResult struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *MessageMCPResponseResult) UnmarshalJSON(b []byte) error {
 	type plain MessageMCPResponseResult
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "MessageMCPResponseResult", []string{"result"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = MessageMCPResponseResult{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = MessageMCPResponseResult{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "MessageMCPResponseResult", []string{"result"}, nil)
 }
 
@@ -4968,25 +4794,23 @@ type MultiSelectPropertySchema struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *MultiSelectPropertySchema) UnmarshalJSON(b []byte) error {
 	type plain MultiSelectPropertySchema
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "MultiSelectPropertySchema", []string{"items"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = MultiSelectPropertySchema{}
+		v := struct {
+			*plain
+			Title       json.RawMessage `json:"title"`
+			Description json.RawMessage `json:"description"`
+			Default     json.RawMessage `json:"default"`
+			Meta        json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Title, &x.Title)
+		lenient(v.Description, &x.Description)
+		skipInvalid(v.Default, &x.Default)
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = MultiSelectPropertySchema{}
-	var v struct {
-		*plain
-		Title       json.RawMessage `json:"title"`
-		Description json.RawMessage `json:"description"`
-		Default     json.RawMessage `json:"default"`
-		Meta        json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Title, &x.Title)
-	lenient(v.Description, &x.Description)
-	skipInvalid(v.Default, &x.Default)
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "MultiSelectPropertySchema", []string{"items"}, nil)
 }
 
@@ -5049,19 +4873,17 @@ func (x NewSessionRequest) MarshalJSON() ([]byte, error) {
 // array's bad items) where the schema says to, rather than failing.
 func (x *NewSessionRequest) UnmarshalJSON(b []byte) error {
 	type plain NewSessionRequest
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "NewSessionRequest", []string{"cwd", "mcpServers"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = NewSessionRequest{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = NewSessionRequest{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "NewSessionRequest", []string{"cwd", "mcpServers"}, nil)
 }
 
@@ -5094,23 +4916,21 @@ type NewSessionResponse struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *NewSessionResponse) UnmarshalJSON(b []byte) error {
 	type plain NewSessionResponse
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "NewSessionResponse", []string{"sessionId"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = NewSessionResponse{}
+		v := struct {
+			*plain
+			Modes         json.RawMessage `json:"modes"`
+			ConfigOptions json.RawMessage `json:"configOptions"`
+			Meta          json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Modes, &x.Modes)
+		skipInvalid(v.ConfigOptions, &x.ConfigOptions)
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = NewSessionResponse{}
-	var v struct {
-		*plain
-		Modes         json.RawMessage `json:"modes"`
-		ConfigOptions json.RawMessage `json:"configOptions"`
-		Meta          json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Modes, &x.Modes)
-	skipInvalid(v.ConfigOptions, &x.ConfigOptions)
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "NewSessionResponse", []string{"sessionId"}, nil)
 }
 
@@ -5144,21 +4964,19 @@ type Notice struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *Notice) UnmarshalJSON(b []byte) error {
 	type plain Notice
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "Notice", []string{"severity", "title"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = Notice{}
+		v := struct {
+			*plain
+			Description json.RawMessage `json:"description"`
+			Meta        json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Description, &x.Description)
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = Notice{}
-	var v struct {
-		*plain
-		Description json.RawMessage `json:"description"`
-		Meta        json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Description, &x.Description)
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "Notice", []string{"severity", "title"}, nil)
 }
 
@@ -5212,25 +5030,23 @@ type NumberPropertySchema struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *NumberPropertySchema) UnmarshalJSON(b []byte) error {
 	type plain NumberPropertySchema
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = NumberPropertySchema{}
+		v := struct {
+			*plain
+			Title       json.RawMessage `json:"title"`
+			Description json.RawMessage `json:"description"`
+			Default     json.RawMessage `json:"default"`
+			Meta        json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Title, &x.Title)
+		lenient(v.Description, &x.Description)
+		lenient(v.Default, &x.Default)
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = NumberPropertySchema{}
-	var v struct {
-		*plain
-		Title       json.RawMessage `json:"title"`
-		Description json.RawMessage `json:"description"`
-		Default     json.RawMessage `json:"default"`
-		Meta        json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Title, &x.Title)
-	lenient(v.Description, &x.Description)
-	lenient(v.Default, &x.Default)
-	lenient(v.Meta, &x.Meta)
 	return nil
 }
 
@@ -5253,19 +5069,17 @@ type PermissionOption struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *PermissionOption) UnmarshalJSON(b []byte) error {
 	type plain PermissionOption
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "PermissionOption", []string{"optionId", "name", "kind"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = PermissionOption{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = PermissionOption{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "PermissionOption", []string{"optionId", "name", "kind"}, nil)
 }
 
@@ -5325,21 +5139,19 @@ func (x Plan) MarshalJSON() ([]byte, error) {
 // array's bad items) where the schema says to, rather than failing.
 func (x *Plan) UnmarshalJSON(b []byte) error {
 	type plain Plan
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "Plan", []string{"entries"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = Plan{}
+		v := struct {
+			*plain
+			Entries json.RawMessage `json:"entries"`
+			Meta    json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		skipInvalid(v.Entries, &x.Entries)
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = Plan{}
-	var v struct {
-		*plain
-		Entries json.RawMessage `json:"entries"`
-		Meta    json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	skipInvalid(v.Entries, &x.Entries)
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "Plan", []string{"entries"}, nil)
 }
 
@@ -5360,19 +5172,17 @@ type PlanCapabilities struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *PlanCapabilities) UnmarshalJSON(b []byte) error {
 	type plain PlanCapabilities
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = PlanCapabilities{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = PlanCapabilities{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return nil
 }
 
@@ -5402,19 +5212,17 @@ type PlanEntry struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *PlanEntry) UnmarshalJSON(b []byte) error {
 	type plain PlanEntry
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "PlanEntry", []string{"content", "priority", "status"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = PlanEntry{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = PlanEntry{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "PlanEntry", []string{"content", "priority", "status"}, nil)
 }
 
@@ -5476,19 +5284,17 @@ type PlanFile struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *PlanFile) UnmarshalJSON(b []byte) error {
 	type plain PlanFile
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "PlanFile", []string{"planId", "uri"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = PlanFile{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = PlanFile{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "PlanFile", []string{"planId", "uri"}, nil)
 }
 
@@ -5533,21 +5339,19 @@ func (x PlanItems) MarshalJSON() ([]byte, error) {
 // array's bad items) where the schema says to, rather than failing.
 func (x *PlanItems) UnmarshalJSON(b []byte) error {
 	type plain PlanItems
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "PlanItems", []string{"planId", "entries"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = PlanItems{}
+		v := struct {
+			*plain
+			Entries json.RawMessage `json:"entries"`
+			Meta    json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		skipInvalid(v.Entries, &x.Entries)
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = PlanItems{}
-	var v struct {
-		*plain
-		Entries json.RawMessage `json:"entries"`
-		Meta    json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	skipInvalid(v.Entries, &x.Entries)
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "PlanItems", []string{"planId", "entries"}, nil)
 }
 
@@ -5572,19 +5376,17 @@ type PlanMarkdown struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *PlanMarkdown) UnmarshalJSON(b []byte) error {
 	type plain PlanMarkdown
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "PlanMarkdown", []string{"planId", "content"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = PlanMarkdown{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = PlanMarkdown{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "PlanMarkdown", []string{"planId", "content"}, nil)
 }
 
@@ -5607,19 +5409,17 @@ type PlanRemoved struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *PlanRemoved) UnmarshalJSON(b []byte) error {
 	type plain PlanRemoved
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "PlanRemoved", []string{"planId"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = PlanRemoved{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = PlanRemoved{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "PlanRemoved", []string{"planId"}, nil)
 }
 
@@ -5642,19 +5442,17 @@ type PlanUpdate struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *PlanUpdate) UnmarshalJSON(b []byte) error {
 	type plain PlanUpdate
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "PlanUpdate", []string{"plan"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = PlanUpdate{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = PlanUpdate{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "PlanUpdate", []string{"plan"}, nil)
 }
 
@@ -5792,25 +5590,23 @@ type PromptCapabilities struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *PromptCapabilities) UnmarshalJSON(b []byte) error {
 	type plain PromptCapabilities
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = PromptCapabilities{}
+		v := struct {
+			*plain
+			Image           json.RawMessage `json:"image"`
+			Audio           json.RawMessage `json:"audio"`
+			EmbeddedContext json.RawMessage `json:"embeddedContext"`
+			Meta            json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Image, &x.Image)
+		lenient(v.Audio, &x.Audio)
+		lenient(v.EmbeddedContext, &x.EmbeddedContext)
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = PromptCapabilities{}
-	var v struct {
-		*plain
-		Image           json.RawMessage `json:"image"`
-		Audio           json.RawMessage `json:"audio"`
-		EmbeddedContext json.RawMessage `json:"embeddedContext"`
-		Meta            json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Image, &x.Image)
-	lenient(v.Audio, &x.Audio)
-	lenient(v.EmbeddedContext, &x.EmbeddedContext)
-	lenient(v.Meta, &x.Meta)
 	return nil
 }
 
@@ -5859,19 +5655,17 @@ func (x PromptRequest) MarshalJSON() ([]byte, error) {
 // array's bad items) where the schema says to, rather than failing.
 func (x *PromptRequest) UnmarshalJSON(b []byte) error {
 	type plain PromptRequest
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "PromptRequest", []string{"sessionId", "prompt"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = PromptRequest{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = PromptRequest{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "PromptRequest", []string{"sessionId", "prompt"}, nil)
 }
 
@@ -5900,21 +5694,19 @@ type PromptResponse struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *PromptResponse) UnmarshalJSON(b []byte) error {
 	type plain PromptResponse
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "PromptResponse", []string{"stopReason"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = PromptResponse{}
+		v := struct {
+			*plain
+			Usage json.RawMessage `json:"usage"`
+			Meta  json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Usage, &x.Usage)
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = PromptResponse{}
-	var v struct {
-		*plain
-		Usage json.RawMessage `json:"usage"`
-		Meta  json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Usage, &x.Usage)
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "PromptResponse", []string{"stopReason"}, nil)
 }
 
@@ -5945,19 +5737,17 @@ type ProviderCurrentConfig struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *ProviderCurrentConfig) UnmarshalJSON(b []byte) error {
 	type plain ProviderCurrentConfig
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "ProviderCurrentConfig", []string{"apiType", "baseUrl"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = ProviderCurrentConfig{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = ProviderCurrentConfig{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "ProviderCurrentConfig", []string{"apiType", "baseUrl"}, nil)
 }
 
@@ -6005,21 +5795,19 @@ func (x ProviderInfo) MarshalJSON() ([]byte, error) {
 // array's bad items) where the schema says to, rather than failing.
 func (x *ProviderInfo) UnmarshalJSON(b []byte) error {
 	type plain ProviderInfo
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "ProviderInfo", []string{"providerId", "supported", "required"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = ProviderInfo{}
+		v := struct {
+			*plain
+			Supported json.RawMessage `json:"supported"`
+			Meta      json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		skipInvalid(v.Supported, &x.Supported)
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = ProviderInfo{}
-	var v struct {
-		*plain
-		Supported json.RawMessage `json:"supported"`
-		Meta      json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	skipInvalid(v.Supported, &x.Supported)
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "ProviderInfo", []string{"providerId", "supported", "required"}, nil)
 }
 
@@ -6042,19 +5830,17 @@ type ProvidersCapabilities struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *ProvidersCapabilities) UnmarshalJSON(b []byte) error {
 	type plain ProvidersCapabilities
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = ProvidersCapabilities{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = ProvidersCapabilities{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return nil
 }
 
@@ -6098,19 +5884,17 @@ type ProxySuccessorNotification struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *ProxySuccessorNotification) UnmarshalJSON(b []byte) error {
 	type plain ProxySuccessorNotification
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "ProxySuccessorNotification", []string{"method"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = ProxySuccessorNotification{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = ProxySuccessorNotification{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "ProxySuccessorNotification", []string{"method"}, nil)
 }
 
@@ -6161,19 +5945,17 @@ type ProxySuccessorRequest struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *ProxySuccessorRequest) UnmarshalJSON(b []byte) error {
 	type plain ProxySuccessorRequest
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "ProxySuccessorRequest", []string{"method"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = ProxySuccessorRequest{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = ProxySuccessorRequest{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "ProxySuccessorRequest", []string{"method"}, nil)
 }
 
@@ -6207,19 +5989,17 @@ type ReadTextFileRequest struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *ReadTextFileRequest) UnmarshalJSON(b []byte) error {
 	type plain ReadTextFileRequest
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "ReadTextFileRequest", []string{"sessionId", "path"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = ReadTextFileRequest{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = ReadTextFileRequest{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "ReadTextFileRequest", []string{"sessionId", "path"}, nil)
 }
 
@@ -6238,19 +6018,17 @@ type ReadTextFileResponse struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *ReadTextFileResponse) UnmarshalJSON(b []byte) error {
 	type plain ReadTextFileResponse
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "ReadTextFileResponse", []string{"content"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = ReadTextFileResponse{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = ReadTextFileResponse{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "ReadTextFileResponse", []string{"content"}, nil)
 }
 
@@ -6271,19 +6049,17 @@ type ReleaseTerminalRequest struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *ReleaseTerminalRequest) UnmarshalJSON(b []byte) error {
 	type plain ReleaseTerminalRequest
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "ReleaseTerminalRequest", []string{"sessionId", "terminalId"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = ReleaseTerminalRequest{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = ReleaseTerminalRequest{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "ReleaseTerminalRequest", []string{"sessionId", "terminalId"}, nil)
 }
 
@@ -6300,19 +6076,17 @@ type ReleaseTerminalResponse struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *ReleaseTerminalResponse) UnmarshalJSON(b []byte) error {
 	type plain ReleaseTerminalResponse
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = ReleaseTerminalResponse{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = ReleaseTerminalResponse{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return nil
 }
 
@@ -6449,19 +6223,17 @@ func (x RequestPermissionRequest) MarshalJSON() ([]byte, error) {
 // array's bad items) where the schema says to, rather than failing.
 func (x *RequestPermissionRequest) UnmarshalJSON(b []byte) error {
 	type plain RequestPermissionRequest
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "RequestPermissionRequest", []string{"sessionId", "toolCall", "options"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = RequestPermissionRequest{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = RequestPermissionRequest{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "RequestPermissionRequest", []string{"sessionId", "toolCall", "options"}, nil)
 }
 
@@ -6480,19 +6252,17 @@ type RequestPermissionResponse struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *RequestPermissionResponse) UnmarshalJSON(b []byte) error {
 	type plain RequestPermissionResponse
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "RequestPermissionResponse", []string{"outcome"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = RequestPermissionResponse{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = RequestPermissionResponse{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "RequestPermissionResponse", []string{"outcome"}, nil)
 }
 
@@ -6509,19 +6279,17 @@ type RequiresActionStateUpdate struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *RequiresActionStateUpdate) UnmarshalJSON(b []byte) error {
 	type plain RequiresActionStateUpdate
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = RequiresActionStateUpdate{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = RequiresActionStateUpdate{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return nil
 }
 
@@ -6552,29 +6320,27 @@ type ResourceLink struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *ResourceLink) UnmarshalJSON(b []byte) error {
 	type plain ResourceLink
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "ResourceLink", []string{"name", "uri"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = ResourceLink{}
+		v := struct {
+			*plain
+			Annotations json.RawMessage `json:"annotations"`
+			Description json.RawMessage `json:"description"`
+			MimeType    json.RawMessage `json:"mimeType"`
+			Size        json.RawMessage `json:"size"`
+			Title       json.RawMessage `json:"title"`
+			Meta        json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Annotations, &x.Annotations)
+		lenient(v.Description, &x.Description)
+		lenient(v.MimeType, &x.MimeType)
+		lenient(v.Size, &x.Size)
+		lenient(v.Title, &x.Title)
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = ResourceLink{}
-	var v struct {
-		*plain
-		Annotations json.RawMessage `json:"annotations"`
-		Description json.RawMessage `json:"description"`
-		MimeType    json.RawMessage `json:"mimeType"`
-		Size        json.RawMessage `json:"size"`
-		Title       json.RawMessage `json:"title"`
-		Meta        json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Annotations, &x.Annotations)
-	lenient(v.Description, &x.Description)
-	lenient(v.MimeType, &x.MimeType)
-	lenient(v.Size, &x.Size)
-	lenient(v.Title, &x.Title)
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "ResourceLink", []string{"name", "uri"}, nil)
 }
 
@@ -6633,19 +6399,17 @@ type ResumeSessionRequest struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *ResumeSessionRequest) UnmarshalJSON(b []byte) error {
 	type plain ResumeSessionRequest
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "ResumeSessionRequest", []string{"sessionId", "cwd"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = ResumeSessionRequest{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = ResumeSessionRequest{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "ResumeSessionRequest", []string{"sessionId", "cwd"}, nil)
 }
 
@@ -6670,23 +6434,21 @@ type ResumeSessionResponse struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *ResumeSessionResponse) UnmarshalJSON(b []byte) error {
 	type plain ResumeSessionResponse
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = ResumeSessionResponse{}
+		v := struct {
+			*plain
+			Modes         json.RawMessage `json:"modes"`
+			ConfigOptions json.RawMessage `json:"configOptions"`
+			Meta          json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Modes, &x.Modes)
+		skipInvalid(v.ConfigOptions, &x.ConfigOptions)
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = ResumeSessionResponse{}
-	var v struct {
-		*plain
-		Modes         json.RawMessage `json:"modes"`
-		ConfigOptions json.RawMessage `json:"configOptions"`
-		Meta          json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Modes, &x.Modes)
-	skipInvalid(v.ConfigOptions, &x.ConfigOptions)
-	lenient(v.Meta, &x.Meta)
 	return nil
 }
 
@@ -6714,19 +6476,17 @@ type RunningStateUpdate struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *RunningStateUpdate) UnmarshalJSON(b []byte) error {
 	type plain RunningStateUpdate
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = RunningStateUpdate{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = RunningStateUpdate{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return nil
 }
 
@@ -6745,19 +6505,17 @@ type SelectedPermissionOutcome struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *SelectedPermissionOutcome) UnmarshalJSON(b []byte) error {
 	type plain SelectedPermissionOutcome
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "SelectedPermissionOutcome", []string{"optionId"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = SelectedPermissionOutcome{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = SelectedPermissionOutcome{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "SelectedPermissionOutcome", []string{"optionId"}, nil)
 }
 
@@ -6779,19 +6537,17 @@ type SessionAdditionalDirectoriesCapabilities struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *SessionAdditionalDirectoriesCapabilities) UnmarshalJSON(b []byte) error {
 	type plain SessionAdditionalDirectoriesCapabilities
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = SessionAdditionalDirectoriesCapabilities{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = SessionAdditionalDirectoriesCapabilities{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return nil
 }
 
@@ -6815,19 +6571,17 @@ type SessionArchiveCapabilities struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *SessionArchiveCapabilities) UnmarshalJSON(b []byte) error {
 	type plain SessionArchiveCapabilities
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = SessionArchiveCapabilities{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = SessionArchiveCapabilities{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return nil
 }
 
@@ -6870,19 +6624,17 @@ type SessionCancelCapabilities struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *SessionCancelCapabilities) UnmarshalJSON(b []byte) error {
 	type plain SessionCancelCapabilities
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = SessionCancelCapabilities{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = SessionCancelCapabilities{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return nil
 }
 
@@ -6994,41 +6746,39 @@ type SessionCapabilities struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *SessionCapabilities) UnmarshalJSON(b []byte) error {
 	type plain SessionCapabilities
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = SessionCapabilities{}
+		v := struct {
+			*plain
+			List                  json.RawMessage `json:"list"`
+			Delete                json.RawMessage `json:"delete"`
+			AdditionalDirectories json.RawMessage `json:"additionalDirectories"`
+			SystemPrompt          json.RawMessage `json:"systemPrompt"`
+			Fork                  json.RawMessage `json:"fork"`
+			Archive               json.RawMessage `json:"archive"`
+			Status                json.RawMessage `json:"status"`
+			Options               json.RawMessage `json:"options"`
+			Title                 json.RawMessage `json:"title"`
+			Resume                json.RawMessage `json:"resume"`
+			Close                 json.RawMessage `json:"close"`
+			Meta                  json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.List, &x.List)
+		lenient(v.Delete, &x.Delete)
+		lenient(v.AdditionalDirectories, &x.AdditionalDirectories)
+		lenient(v.SystemPrompt, &x.SystemPrompt)
+		lenient(v.Fork, &x.Fork)
+		lenient(v.Archive, &x.Archive)
+		lenient(v.Status, &x.Status)
+		lenient(v.Options, &x.Options)
+		lenient(v.Title, &x.Title)
+		lenient(v.Resume, &x.Resume)
+		lenient(v.Close, &x.Close)
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = SessionCapabilities{}
-	var v struct {
-		*plain
-		List                  json.RawMessage `json:"list"`
-		Delete                json.RawMessage `json:"delete"`
-		AdditionalDirectories json.RawMessage `json:"additionalDirectories"`
-		SystemPrompt          json.RawMessage `json:"systemPrompt"`
-		Fork                  json.RawMessage `json:"fork"`
-		Archive               json.RawMessage `json:"archive"`
-		Status                json.RawMessage `json:"status"`
-		Options               json.RawMessage `json:"options"`
-		Title                 json.RawMessage `json:"title"`
-		Resume                json.RawMessage `json:"resume"`
-		Close                 json.RawMessage `json:"close"`
-		Meta                  json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.List, &x.List)
-	lenient(v.Delete, &x.Delete)
-	lenient(v.AdditionalDirectories, &x.AdditionalDirectories)
-	lenient(v.SystemPrompt, &x.SystemPrompt)
-	lenient(v.Fork, &x.Fork)
-	lenient(v.Archive, &x.Archive)
-	lenient(v.Status, &x.Status)
-	lenient(v.Options, &x.Options)
-	lenient(v.Title, &x.Title)
-	lenient(v.Resume, &x.Resume)
-	lenient(v.Close, &x.Close)
-	lenient(v.Meta, &x.Meta)
 	return nil
 }
 
@@ -7047,19 +6797,17 @@ type SessionCloseCapabilities struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *SessionCloseCapabilities) UnmarshalJSON(b []byte) error {
 	type plain SessionCloseCapabilities
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = SessionCloseCapabilities{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = SessionCloseCapabilities{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return nil
 }
 
@@ -7176,23 +6924,21 @@ func (x *SessionConfigOption) decodeTag(b []byte) error {
 		return kindError("SessionConfigOption", b)
 	}
 	*x = SessionConfigOption{}
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "SessionConfigOption", []string{"id", "name"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = SessionConfigOption{}
+		v := struct {
+			*plain
+			Description json.RawMessage `json:"description"`
+			Category    json.RawMessage `json:"category"`
+			Meta        json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Description, &x.Description)
+		lenient(v.Category, &x.Category)
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = SessionConfigOption{}
-	var v struct {
-		*plain
-		Description json.RawMessage `json:"description"`
-		Category    json.RawMessage `json:"category"`
-		Meta        json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Description, &x.Description)
-	lenient(v.Category, &x.Category)
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "SessionConfigOption", []string{"id", "name"}, nil)
 }
 
@@ -7239,21 +6985,19 @@ type SessionConfigOptionsCapabilities struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *SessionConfigOptionsCapabilities) UnmarshalJSON(b []byte) error {
 	type plain SessionConfigOptionsCapabilities
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = SessionConfigOptionsCapabilities{}
+		v := struct {
+			*plain
+			Boolean json.RawMessage `json:"boolean"`
+			Meta    json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Boolean, &x.Boolean)
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = SessionConfigOptionsCapabilities{}
-	var v struct {
-		*plain
-		Boolean json.RawMessage `json:"boolean"`
-		Meta    json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Boolean, &x.Boolean)
-	lenient(v.Meta, &x.Meta)
 	return nil
 }
 
@@ -7303,21 +7047,19 @@ func (x SessionConfigSelectGroup) MarshalJSON() ([]byte, error) {
 // array's bad items) where the schema says to, rather than failing.
 func (x *SessionConfigSelectGroup) UnmarshalJSON(b []byte) error {
 	type plain SessionConfigSelectGroup
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "SessionConfigSelectGroup", []string{"group", "name", "options"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = SessionConfigSelectGroup{}
+		v := struct {
+			*plain
+			Options json.RawMessage `json:"options"`
+			Meta    json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		skipInvalid(v.Options, &x.Options)
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = SessionConfigSelectGroup{}
-	var v struct {
-		*plain
-		Options json.RawMessage `json:"options"`
-		Meta    json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	skipInvalid(v.Options, &x.Options)
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "SessionConfigSelectGroup", []string{"group", "name", "options"}, nil)
 }
 
@@ -7340,21 +7082,19 @@ type SessionConfigSelectOption struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *SessionConfigSelectOption) UnmarshalJSON(b []byte) error {
 	type plain SessionConfigSelectOption
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "SessionConfigSelectOption", []string{"value", "name"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = SessionConfigSelectOption{}
+		v := struct {
+			*plain
+			Description json.RawMessage `json:"description"`
+			Meta        json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Description, &x.Description)
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = SessionConfigSelectOption{}
-	var v struct {
-		*plain
-		Description json.RawMessage `json:"description"`
-		Meta        json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Description, &x.Description)
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "SessionConfigSelectOption", []string{"value", "name"}, nil)
 }
 
@@ -7411,19 +7151,17 @@ type SessionDeleteCapabilities struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *SessionDeleteCapabilities) UnmarshalJSON(b []byte) error {
 	type plain SessionDeleteCapabilities
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = SessionDeleteCapabilities{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = SessionDeleteCapabilities{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return nil
 }
 
@@ -7446,19 +7184,17 @@ type SessionForkCapabilities struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *SessionForkCapabilities) UnmarshalJSON(b []byte) error {
 	type plain SessionForkCapabilities
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = SessionForkCapabilities{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = SessionForkCapabilities{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return nil
 }
 
@@ -7508,27 +7244,25 @@ type SessionInfo struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *SessionInfo) UnmarshalJSON(b []byte) error {
 	type plain SessionInfo
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "SessionInfo", []string{"sessionId", "cwd"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = SessionInfo{}
+		v := struct {
+			*plain
+			AdditionalDirectories json.RawMessage `json:"additionalDirectories"`
+			Title                 json.RawMessage `json:"title"`
+			UpdatedAt             json.RawMessage `json:"updatedAt"`
+			Archived              json.RawMessage `json:"archived"`
+			Meta                  json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		skipInvalid(v.AdditionalDirectories, &x.AdditionalDirectories)
+		lenient(v.Title, &x.Title)
+		lenient(v.UpdatedAt, &x.UpdatedAt)
+		lenient(v.Archived, &x.Archived)
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = SessionInfo{}
-	var v struct {
-		*plain
-		AdditionalDirectories json.RawMessage `json:"additionalDirectories"`
-		Title                 json.RawMessage `json:"title"`
-		UpdatedAt             json.RawMessage `json:"updatedAt"`
-		Archived              json.RawMessage `json:"archived"`
-		Meta                  json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	skipInvalid(v.AdditionalDirectories, &x.AdditionalDirectories)
-	lenient(v.Title, &x.Title)
-	lenient(v.UpdatedAt, &x.UpdatedAt)
-	lenient(v.Archived, &x.Archived)
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "SessionInfo", []string{"sessionId", "cwd"}, nil)
 }
 
@@ -7552,23 +7286,21 @@ type SessionInfoUpdate struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *SessionInfoUpdate) UnmarshalJSON(b []byte) error {
 	type plain SessionInfoUpdate
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = SessionInfoUpdate{}
+		v := struct {
+			*plain
+			Title     json.RawMessage `json:"title"`
+			UpdatedAt json.RawMessage `json:"updatedAt"`
+			Meta      json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Title, &x.Title)
+		lenient(v.UpdatedAt, &x.UpdatedAt)
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = SessionInfoUpdate{}
-	var v struct {
-		*plain
-		Title     json.RawMessage `json:"title"`
-		UpdatedAt json.RawMessage `json:"updatedAt"`
-		Meta      json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Title, &x.Title)
-	lenient(v.UpdatedAt, &x.UpdatedAt)
-	lenient(v.Meta, &x.Meta)
 	return nil
 }
 
@@ -7587,19 +7319,17 @@ type SessionListCapabilities struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *SessionListCapabilities) UnmarshalJSON(b []byte) error {
 	type plain SessionListCapabilities
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = SessionListCapabilities{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = SessionListCapabilities{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return nil
 }
 
@@ -7644,29 +7374,27 @@ type SessionMessage struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *SessionMessage) UnmarshalJSON(b []byte) error {
 	type plain SessionMessage
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "SessionMessage", []string{"messageId"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = SessionMessage{}
+		v := struct {
+			*plain
+			SenderSessionID    json.RawMessage `json:"senderSessionId"`
+			RecipientSessionID json.RawMessage `json:"recipientSessionId"`
+			SenderMessageID    json.RawMessage `json:"senderMessageId"`
+			RecipientMessageID json.RawMessage `json:"recipientMessageId"`
+			Content            json.RawMessage `json:"content"`
+			Meta               json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.SenderSessionID, &x.SenderSessionID)
+		lenient(v.RecipientSessionID, &x.RecipientSessionID)
+		lenient(v.SenderMessageID, &x.SenderMessageID)
+		lenient(v.RecipientMessageID, &x.RecipientMessageID)
+		skipInvalidNullable(v.Content, &x.Content)
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = SessionMessage{}
-	var v struct {
-		*plain
-		SenderSessionID    json.RawMessage `json:"senderSessionId"`
-		RecipientSessionID json.RawMessage `json:"recipientSessionId"`
-		SenderMessageID    json.RawMessage `json:"senderMessageId"`
-		RecipientMessageID json.RawMessage `json:"recipientMessageId"`
-		Content            json.RawMessage `json:"content"`
-		Meta               json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.SenderSessionID, &x.SenderSessionID)
-	lenient(v.RecipientSessionID, &x.RecipientSessionID)
-	lenient(v.SenderMessageID, &x.SenderMessageID)
-	lenient(v.RecipientMessageID, &x.RecipientMessageID)
-	skipInvalidNullable(v.Content, &x.Content)
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "SessionMessage", []string{"messageId"}, nil)
 }
 
@@ -7693,19 +7421,17 @@ type SessionMessageChunk struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *SessionMessageChunk) UnmarshalJSON(b []byte) error {
 	type plain SessionMessageChunk
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "SessionMessageChunk", []string{"messageId", "content"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = SessionMessageChunk{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = SessionMessageChunk{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "SessionMessageChunk", []string{"messageId", "content"}, nil)
 }
 
@@ -7732,21 +7458,19 @@ type SessionMode struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *SessionMode) UnmarshalJSON(b []byte) error {
 	type plain SessionMode
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "SessionMode", []string{"id", "name"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = SessionMode{}
+		v := struct {
+			*plain
+			Description json.RawMessage `json:"description"`
+			Meta        json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Description, &x.Description)
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = SessionMode{}
-	var v struct {
-		*plain
-		Description json.RawMessage `json:"description"`
-		Meta        json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Description, &x.Description)
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "SessionMode", []string{"id", "name"}, nil)
 }
 
@@ -7780,21 +7504,19 @@ func (x SessionModeState) MarshalJSON() ([]byte, error) {
 // array's bad items) where the schema says to, rather than failing.
 func (x *SessionModeState) UnmarshalJSON(b []byte) error {
 	type plain SessionModeState
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "SessionModeState", []string{"currentModeId", "availableModes"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = SessionModeState{}
+		v := struct {
+			*plain
+			AvailableModes json.RawMessage `json:"availableModes"`
+			Meta           json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		skipInvalid(v.AvailableModes, &x.AvailableModes)
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = SessionModeState{}
-	var v struct {
-		*plain
-		AvailableModes json.RawMessage `json:"availableModes"`
-		Meta           json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	skipInvalid(v.AvailableModes, &x.AvailableModes)
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "SessionModeState", []string{"currentModeId", "availableModes"}, nil)
 }
 
@@ -7821,19 +7543,17 @@ type SessionNotification struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *SessionNotification) UnmarshalJSON(b []byte) error {
 	type plain SessionNotification
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "SessionNotification", []string{"sessionId", "update"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = SessionNotification{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = SessionNotification{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "SessionNotification", []string{"sessionId", "update"}, nil)
 }
 
@@ -7857,19 +7577,17 @@ type SessionOptionsCapabilities struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *SessionOptionsCapabilities) UnmarshalJSON(b []byte) error {
 	type plain SessionOptionsCapabilities
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = SessionOptionsCapabilities{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = SessionOptionsCapabilities{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return nil
 }
 
@@ -7912,19 +7630,17 @@ type SessionOptionsRequest struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *SessionOptionsRequest) UnmarshalJSON(b []byte) error {
 	type plain SessionOptionsRequest
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "SessionOptionsRequest", []string{"cwd"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = SessionOptionsRequest{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = SessionOptionsRequest{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "SessionOptionsRequest", []string{"cwd"}, nil)
 }
 
@@ -7962,23 +7678,21 @@ type SessionOptionsResponse struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *SessionOptionsResponse) UnmarshalJSON(b []byte) error {
 	type plain SessionOptionsResponse
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = SessionOptionsResponse{}
+		v := struct {
+			*plain
+			Modes         json.RawMessage `json:"modes"`
+			ConfigOptions json.RawMessage `json:"configOptions"`
+			Meta          json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Modes, &x.Modes)
+		skipInvalid(v.ConfigOptions, &x.ConfigOptions)
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = SessionOptionsResponse{}
-	var v struct {
-		*plain
-		Modes         json.RawMessage `json:"modes"`
-		ConfigOptions json.RawMessage `json:"configOptions"`
-		Meta          json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Modes, &x.Modes)
-	skipInvalid(v.ConfigOptions, &x.ConfigOptions)
-	lenient(v.Meta, &x.Meta)
 	return nil
 }
 
@@ -8007,19 +7721,17 @@ type SessionReference struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *SessionReference) UnmarshalJSON(b []byte) error {
 	type plain SessionReference
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "SessionReference", []string{"sessionId"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = SessionReference{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = SessionReference{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "SessionReference", []string{"sessionId"}, nil)
 }
 
@@ -8038,19 +7750,17 @@ type SessionResumeCapabilities struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *SessionResumeCapabilities) UnmarshalJSON(b []byte) error {
 	type plain SessionResumeCapabilities
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = SessionResumeCapabilities{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = SessionResumeCapabilities{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return nil
 }
 
@@ -8095,19 +7805,17 @@ type SessionStatusCapabilities struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *SessionStatusCapabilities) UnmarshalJSON(b []byte) error {
 	type plain SessionStatusCapabilities
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = SessionStatusCapabilities{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = SessionStatusCapabilities{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return nil
 }
 
@@ -8136,19 +7844,17 @@ type SessionStatusRequest struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *SessionStatusRequest) UnmarshalJSON(b []byte) error {
 	type plain SessionStatusRequest
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "SessionStatusRequest", []string{"sessionId"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = SessionStatusRequest{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = SessionStatusRequest{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "SessionStatusRequest", []string{"sessionId"}, nil)
 }
 
@@ -8176,19 +7882,17 @@ type SessionStatusResponse struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *SessionStatusResponse) UnmarshalJSON(b []byte) error {
 	type plain SessionStatusResponse
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "SessionStatusResponse", []string{"status"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = SessionStatusResponse{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = SessionStatusResponse{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "SessionStatusResponse", []string{"status"}, nil)
 }
 
@@ -8212,21 +7916,19 @@ type SessionSystemPromptCapabilities struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *SessionSystemPromptCapabilities) UnmarshalJSON(b []byte) error {
 	type plain SessionSystemPromptCapabilities
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = SessionSystemPromptCapabilities{}
+		v := struct {
+			*plain
+			Mode json.RawMessage `json:"mode"`
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Mode, &x.Mode)
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = SessionSystemPromptCapabilities{}
-	var v struct {
-		*plain
-		Mode json.RawMessage `json:"mode"`
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Mode, &x.Mode)
-	lenient(v.Meta, &x.Meta)
 	return nil
 }
 
@@ -8252,21 +7954,19 @@ type SessionSystemPromptModeCapabilities struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *SessionSystemPromptModeCapabilities) UnmarshalJSON(b []byte) error {
 	type plain SessionSystemPromptModeCapabilities
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = SessionSystemPromptModeCapabilities{}
+		v := struct {
+			*plain
+			Override json.RawMessage `json:"override"`
+			Meta     json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Override, &x.Override)
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = SessionSystemPromptModeCapabilities{}
-	var v struct {
-		*plain
-		Override json.RawMessage `json:"override"`
-		Meta     json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Override, &x.Override)
-	lenient(v.Meta, &x.Meta)
 	return nil
 }
 
@@ -8286,19 +7986,17 @@ type SessionSystemPromptOverrideCapabilities struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *SessionSystemPromptOverrideCapabilities) UnmarshalJSON(b []byte) error {
 	type plain SessionSystemPromptOverrideCapabilities
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = SessionSystemPromptOverrideCapabilities{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = SessionSystemPromptOverrideCapabilities{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return nil
 }
 
@@ -8322,19 +8020,17 @@ type SessionTitleCapabilities struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *SessionTitleCapabilities) UnmarshalJSON(b []byte) error {
 	type plain SessionTitleCapabilities
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = SessionTitleCapabilities{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = SessionTitleCapabilities{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return nil
 }
 
@@ -8713,19 +8409,17 @@ type SetProviderRequest struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *SetProviderRequest) UnmarshalJSON(b []byte) error {
 	type plain SetProviderRequest
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "SetProviderRequest", []string{"providerId", "apiType", "baseUrl"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = SetProviderRequest{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = SetProviderRequest{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "SetProviderRequest", []string{"providerId", "apiType", "baseUrl"}, nil)
 }
 
@@ -8746,19 +8440,17 @@ type SetProviderResponse struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *SetProviderResponse) UnmarshalJSON(b []byte) error {
 	type plain SetProviderResponse
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = SetProviderResponse{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = SetProviderResponse{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return nil
 }
 
@@ -8856,19 +8548,17 @@ func (x *SetSessionConfigOptionRequest) decodeTag(b []byte) error {
 		return kindError("SetSessionConfigOptionRequest", b)
 	}
 	*x = SetSessionConfigOptionRequest{}
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "SetSessionConfigOptionRequest", []string{"sessionId", "configId"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = SetSessionConfigOptionRequest{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = SetSessionConfigOptionRequest{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "SetSessionConfigOptionRequest", []string{"sessionId", "configId"}, nil)
 }
 
@@ -8927,21 +8617,19 @@ func (x SetSessionConfigOptionResponse) MarshalJSON() ([]byte, error) {
 // array's bad items) where the schema says to, rather than failing.
 func (x *SetSessionConfigOptionResponse) UnmarshalJSON(b []byte) error {
 	type plain SetSessionConfigOptionResponse
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "SetSessionConfigOptionResponse", []string{"configOptions"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = SetSessionConfigOptionResponse{}
+		v := struct {
+			*plain
+			ConfigOptions json.RawMessage `json:"configOptions"`
+			Meta          json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		skipInvalid(v.ConfigOptions, &x.ConfigOptions)
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = SetSessionConfigOptionResponse{}
-	var v struct {
-		*plain
-		ConfigOptions json.RawMessage `json:"configOptions"`
-		Meta          json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	skipInvalid(v.ConfigOptions, &x.ConfigOptions)
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "SetSessionConfigOptionResponse", []string{"configOptions"}, nil)
 }
 
@@ -8962,19 +8650,17 @@ type SetSessionModeRequest struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *SetSessionModeRequest) UnmarshalJSON(b []byte) error {
 	type plain SetSessionModeRequest
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "SetSessionModeRequest", []string{"sessionId", "modeId"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = SetSessionModeRequest{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = SetSessionModeRequest{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "SetSessionModeRequest", []string{"sessionId", "modeId"}, nil)
 }
 
@@ -8991,19 +8677,17 @@ type SetSessionModeResponse struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *SetSessionModeResponse) UnmarshalJSON(b []byte) error {
 	type plain SetSessionModeResponse
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = SetSessionModeResponse{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = SetSessionModeResponse{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return nil
 }
 
@@ -9041,19 +8725,17 @@ type SetSessionTitleRequest struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *SetSessionTitleRequest) UnmarshalJSON(b []byte) error {
 	type plain SetSessionTitleRequest
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "SetSessionTitleRequest", []string{"sessionId", "title"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = SetSessionTitleRequest{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = SetSessionTitleRequest{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "SetSessionTitleRequest", []string{"sessionId", "title"}, nil)
 }
 
@@ -9079,19 +8761,17 @@ type SetSessionTitleResponse struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *SetSessionTitleResponse) UnmarshalJSON(b []byte) error {
 	type plain SetSessionTitleResponse
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "SetSessionTitleResponse", []string{"title"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = SetSessionTitleResponse{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = SetSessionTitleResponse{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "SetSessionTitleResponse", []string{"title"}, nil)
 }
 
@@ -9286,19 +8966,17 @@ func (x StringMultiSelectItems) MarshalJSON() ([]byte, error) {
 // array's bad items) where the schema says to, rather than failing.
 func (x *StringMultiSelectItems) UnmarshalJSON(b []byte) error {
 	type plain StringMultiSelectItems
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "StringMultiSelectItems", []string{"enum"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = StringMultiSelectItems{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = StringMultiSelectItems{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "StringMultiSelectItems", []string{"enum"}, nil)
 }
 
@@ -9354,25 +9032,23 @@ type StringPropertySchema struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *StringPropertySchema) UnmarshalJSON(b []byte) error {
 	type plain StringPropertySchema
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = StringPropertySchema{}
+		v := struct {
+			*plain
+			Title       json.RawMessage `json:"title"`
+			Description json.RawMessage `json:"description"`
+			Default     json.RawMessage `json:"default"`
+			Meta        json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Title, &x.Title)
+		lenient(v.Description, &x.Description)
+		lenient(v.Default, &x.Default)
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = StringPropertySchema{}
-	var v struct {
-		*plain
-		Title       json.RawMessage `json:"title"`
-		Description json.RawMessage `json:"description"`
-		Default     json.RawMessage `json:"default"`
-		Meta        json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Title, &x.Title)
-	lenient(v.Description, &x.Description)
-	lenient(v.Default, &x.Default)
-	lenient(v.Meta, &x.Meta)
 	return nil
 }
 
@@ -9398,19 +9074,17 @@ type SubagentCapabilities struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *SubagentCapabilities) UnmarshalJSON(b []byte) error {
 	type plain SubagentCapabilities
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = SubagentCapabilities{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = SubagentCapabilities{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return nil
 }
 
@@ -9438,21 +9112,19 @@ type SubagentSessionCapabilities struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *SubagentSessionCapabilities) UnmarshalJSON(b []byte) error {
 	type plain SubagentSessionCapabilities
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = SubagentSessionCapabilities{}
+		v := struct {
+			*plain
+			Cancel json.RawMessage `json:"cancel"`
+			Meta   json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Cancel, &x.Cancel)
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = SubagentSessionCapabilities{}
-	var v struct {
-		*plain
-		Cancel json.RawMessage `json:"cancel"`
-		Meta   json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Cancel, &x.Cancel)
-	lenient(v.Meta, &x.Meta)
 	return nil
 }
 
@@ -9536,27 +9208,25 @@ type SubagentUpdate struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *SubagentUpdate) UnmarshalJSON(b []byte) error {
 	type plain SubagentUpdate
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "SubagentUpdate", []string{"sessionId"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = SubagentUpdate{}
+		v := struct {
+			*plain
+			Title        json.RawMessage `json:"title"`
+			Description  json.RawMessage `json:"description"`
+			Capabilities json.RawMessage `json:"capabilities"`
+			State        json.RawMessage `json:"state"`
+			Meta         json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Title, &x.Title)
+		lenient(v.Description, &x.Description)
+		lenient(v.Capabilities, &x.Capabilities)
+		lenient(v.State, &x.State)
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = SubagentUpdate{}
-	var v struct {
-		*plain
-		Title        json.RawMessage `json:"title"`
-		Description  json.RawMessage `json:"description"`
-		Capabilities json.RawMessage `json:"capabilities"`
-		State        json.RawMessage `json:"state"`
-		Meta         json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Title, &x.Title)
-	lenient(v.Description, &x.Description)
-	lenient(v.Capabilities, &x.Capabilities)
-	lenient(v.State, &x.State)
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "SubagentUpdate", []string{"sessionId"}, nil)
 }
 
@@ -9603,19 +9273,17 @@ func (x SystemPrompt) MarshalJSON() ([]byte, error) {
 // array's bad items) where the schema says to, rather than failing.
 func (x *SystemPrompt) UnmarshalJSON(b []byte) error {
 	type plain SystemPrompt
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "SystemPrompt", []string{"mode", "content"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = SystemPrompt{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = SystemPrompt{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "SystemPrompt", []string{"mode", "content"}, nil)
 }
 
@@ -9667,19 +9335,17 @@ type Terminal struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *Terminal) UnmarshalJSON(b []byte) error {
 	type plain Terminal
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "Terminal", []string{"terminalId"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = Terminal{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = Terminal{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "Terminal", []string{"terminalId"}, nil)
 }
 
@@ -9700,23 +9366,21 @@ type TerminalExitStatus struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *TerminalExitStatus) UnmarshalJSON(b []byte) error {
 	type plain TerminalExitStatus
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = TerminalExitStatus{}
+		v := struct {
+			*plain
+			ExitCode json.RawMessage `json:"exitCode"`
+			Signal   json.RawMessage `json:"signal"`
+			Meta     json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.ExitCode, &x.ExitCode)
+		lenient(v.Signal, &x.Signal)
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = TerminalExitStatus{}
-	var v struct {
-		*plain
-		ExitCode json.RawMessage `json:"exitCode"`
-		Signal   json.RawMessage `json:"signal"`
-		Meta     json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.ExitCode, &x.ExitCode)
-	lenient(v.Signal, &x.Signal)
-	lenient(v.Meta, &x.Meta)
 	return nil
 }
 
@@ -9740,19 +9404,17 @@ type TerminalOutputRequest struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *TerminalOutputRequest) UnmarshalJSON(b []byte) error {
 	type plain TerminalOutputRequest
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "TerminalOutputRequest", []string{"sessionId", "terminalId"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = TerminalOutputRequest{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = TerminalOutputRequest{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "TerminalOutputRequest", []string{"sessionId", "terminalId"}, nil)
 }
 
@@ -9775,21 +9437,19 @@ type TerminalOutputResponse struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *TerminalOutputResponse) UnmarshalJSON(b []byte) error {
 	type plain TerminalOutputResponse
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "TerminalOutputResponse", []string{"output", "truncated"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = TerminalOutputResponse{}
+		v := struct {
+			*plain
+			ExitStatus json.RawMessage `json:"exitStatus"`
+			Meta       json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.ExitStatus, &x.ExitStatus)
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = TerminalOutputResponse{}
-	var v struct {
-		*plain
-		ExitStatus json.RawMessage `json:"exitStatus"`
-		Meta       json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.ExitStatus, &x.ExitStatus)
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "TerminalOutputResponse", []string{"output", "truncated"}, nil)
 }
 
@@ -9810,21 +9470,19 @@ type TextContent struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *TextContent) UnmarshalJSON(b []byte) error {
 	type plain TextContent
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "TextContent", []string{"text"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = TextContent{}
+		v := struct {
+			*plain
+			Annotations json.RawMessage `json:"annotations"`
+			Meta        json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Annotations, &x.Annotations)
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = TextContent{}
-	var v struct {
-		*plain
-		Annotations json.RawMessage `json:"annotations"`
-		Meta        json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Annotations, &x.Annotations)
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "TextContent", []string{"text"}, nil)
 }
 
@@ -9847,21 +9505,19 @@ type TextResourceContents struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *TextResourceContents) UnmarshalJSON(b []byte) error {
 	type plain TextResourceContents
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "TextResourceContents", []string{"text", "uri"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = TextResourceContents{}
+		v := struct {
+			*plain
+			MimeType json.RawMessage `json:"mimeType"`
+			Meta     json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.MimeType, &x.MimeType)
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = TextResourceContents{}
-	var v struct {
-		*plain
-		MimeType json.RawMessage `json:"mimeType"`
-		Meta     json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.MimeType, &x.MimeType)
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "TextResourceContents", []string{"text", "uri"}, nil)
 }
 
@@ -9890,19 +9546,17 @@ func (x TitledMultiSelectItems) MarshalJSON() ([]byte, error) {
 // array's bad items) where the schema says to, rather than failing.
 func (x *TitledMultiSelectItems) UnmarshalJSON(b []byte) error {
 	type plain TitledMultiSelectItems
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "TitledMultiSelectItems", []string{"anyOf"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = TitledMultiSelectItems{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = TitledMultiSelectItems{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "TitledMultiSelectItems", []string{"anyOf"}, nil)
 }
 
@@ -9949,33 +9603,31 @@ type ToolCall struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *ToolCall) UnmarshalJSON(b []byte) error {
 	type plain ToolCall
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "ToolCall", []string{"toolCallId", "title"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = ToolCall{}
+		v := struct {
+			*plain
+			Name      json.RawMessage `json:"name"`
+			Kind      json.RawMessage `json:"kind"`
+			Status    json.RawMessage `json:"status"`
+			Content   json.RawMessage `json:"content"`
+			Locations json.RawMessage `json:"locations"`
+			RawInput  json.RawMessage `json:"rawInput"`
+			RawOutput json.RawMessage `json:"rawOutput"`
+			Meta      json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Name, &x.Name)
+		lenient(v.Kind, &x.Kind)
+		lenient(v.Status, &x.Status)
+		skipInvalid(v.Content, &x.Content)
+		skipInvalid(v.Locations, &x.Locations)
+		lenient(v.RawInput, &x.RawInput)
+		lenient(v.RawOutput, &x.RawOutput)
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = ToolCall{}
-	var v struct {
-		*plain
-		Name      json.RawMessage `json:"name"`
-		Kind      json.RawMessage `json:"kind"`
-		Status    json.RawMessage `json:"status"`
-		Content   json.RawMessage `json:"content"`
-		Locations json.RawMessage `json:"locations"`
-		RawInput  json.RawMessage `json:"rawInput"`
-		RawOutput json.RawMessage `json:"rawOutput"`
-		Meta      json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Name, &x.Name)
-	lenient(v.Kind, &x.Kind)
-	lenient(v.Status, &x.Status)
-	skipInvalid(v.Content, &x.Content)
-	skipInvalid(v.Locations, &x.Locations)
-	lenient(v.RawInput, &x.RawInput)
-	lenient(v.RawOutput, &x.RawOutput)
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "ToolCall", []string{"toolCallId", "title"}, nil)
 }
 
@@ -10131,21 +9783,19 @@ type ToolCallLocation struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *ToolCallLocation) UnmarshalJSON(b []byte) error {
 	type plain ToolCallLocation
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "ToolCallLocation", []string{"path"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = ToolCallLocation{}
+		v := struct {
+			*plain
+			Line json.RawMessage `json:"line"`
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Line, &x.Line)
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = ToolCallLocation{}
-	var v struct {
-		*plain
-		Line json.RawMessage `json:"line"`
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Line, &x.Line)
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "ToolCallLocation", []string{"path"}, nil)
 }
 
@@ -10212,35 +9862,33 @@ type ToolCallUpdate struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *ToolCallUpdate) UnmarshalJSON(b []byte) error {
 	type plain ToolCallUpdate
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "ToolCallUpdate", []string{"toolCallId"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = ToolCallUpdate{}
+		v := struct {
+			*plain
+			Kind      json.RawMessage `json:"kind"`
+			Status    json.RawMessage `json:"status"`
+			Title     json.RawMessage `json:"title"`
+			Name      json.RawMessage `json:"name"`
+			Content   json.RawMessage `json:"content"`
+			Locations json.RawMessage `json:"locations"`
+			RawInput  json.RawMessage `json:"rawInput"`
+			RawOutput json.RawMessage `json:"rawOutput"`
+			Meta      json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Kind, &x.Kind)
+		lenient(v.Status, &x.Status)
+		lenient(v.Title, &x.Title)
+		lenient(v.Name, &x.Name)
+		skipInvalid(v.Content, &x.Content)
+		skipInvalid(v.Locations, &x.Locations)
+		lenient(v.RawInput, &x.RawInput)
+		lenient(v.RawOutput, &x.RawOutput)
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = ToolCallUpdate{}
-	var v struct {
-		*plain
-		Kind      json.RawMessage `json:"kind"`
-		Status    json.RawMessage `json:"status"`
-		Title     json.RawMessage `json:"title"`
-		Name      json.RawMessage `json:"name"`
-		Content   json.RawMessage `json:"content"`
-		Locations json.RawMessage `json:"locations"`
-		RawInput  json.RawMessage `json:"rawInput"`
-		RawOutput json.RawMessage `json:"rawOutput"`
-		Meta      json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Kind, &x.Kind)
-	lenient(v.Status, &x.Status)
-	lenient(v.Title, &x.Title)
-	lenient(v.Name, &x.Name)
-	skipInvalid(v.Content, &x.Content)
-	skipInvalid(v.Locations, &x.Locations)
-	lenient(v.RawInput, &x.RawInput)
-	lenient(v.RawOutput, &x.RawOutput)
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "ToolCallUpdate", []string{"toolCallId"}, nil)
 }
 
@@ -10305,19 +9953,17 @@ type UnarchiveSessionRequest struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *UnarchiveSessionRequest) UnmarshalJSON(b []byte) error {
 	type plain UnarchiveSessionRequest
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "UnarchiveSessionRequest", []string{"sessionId"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = UnarchiveSessionRequest{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = UnarchiveSessionRequest{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "UnarchiveSessionRequest", []string{"sessionId"}, nil)
 }
 
@@ -10338,19 +9984,17 @@ type UnarchiveSessionResponse struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *UnarchiveSessionResponse) UnmarshalJSON(b []byte) error {
 	type plain UnarchiveSessionResponse
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = UnarchiveSessionResponse{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = UnarchiveSessionResponse{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return nil
 }
 
@@ -10379,19 +10023,17 @@ type UnknownStateUpdate struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *UnknownStateUpdate) UnmarshalJSON(b []byte) error {
 	type plain UnknownStateUpdate
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = UnknownStateUpdate{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = UnknownStateUpdate{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return nil
 }
 
@@ -10410,19 +10052,17 @@ type UnstructuredCommandInput struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *UnstructuredCommandInput) UnmarshalJSON(b []byte) error {
 	type plain UnstructuredCommandInput
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "UnstructuredCommandInput", []string{"hint"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = UnstructuredCommandInput{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = UnstructuredCommandInput{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "UnstructuredCommandInput", []string{"hint"}, nil)
 }
 
@@ -10455,25 +10095,23 @@ type Usage struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *Usage) UnmarshalJSON(b []byte) error {
 	type plain Usage
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "Usage", []string{"totalTokens", "inputTokens", "outputTokens"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = Usage{}
+		v := struct {
+			*plain
+			ThoughtTokens     json.RawMessage `json:"thoughtTokens"`
+			CachedReadTokens  json.RawMessage `json:"cachedReadTokens"`
+			CachedWriteTokens json.RawMessage `json:"cachedWriteTokens"`
+			Meta              json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.ThoughtTokens, &x.ThoughtTokens)
+		lenient(v.CachedReadTokens, &x.CachedReadTokens)
+		lenient(v.CachedWriteTokens, &x.CachedWriteTokens)
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = Usage{}
-	var v struct {
-		*plain
-		ThoughtTokens     json.RawMessage `json:"thoughtTokens"`
-		CachedReadTokens  json.RawMessage `json:"cachedReadTokens"`
-		CachedWriteTokens json.RawMessage `json:"cachedWriteTokens"`
-		Meta              json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.ThoughtTokens, &x.ThoughtTokens)
-	lenient(v.CachedReadTokens, &x.CachedReadTokens)
-	lenient(v.CachedWriteTokens, &x.CachedWriteTokens)
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "Usage", []string{"totalTokens", "inputTokens", "outputTokens"}, nil)
 }
 
@@ -10496,21 +10134,19 @@ type UsageUpdate struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *UsageUpdate) UnmarshalJSON(b []byte) error {
 	type plain UsageUpdate
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "UsageUpdate", []string{"used", "size"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = UsageUpdate{}
+		v := struct {
+			*plain
+			Cost json.RawMessage `json:"cost"`
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Cost, &x.Cost)
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = UsageUpdate{}
-	var v struct {
-		*plain
-		Cost json.RawMessage `json:"cost"`
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Cost, &x.Cost)
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "UsageUpdate", []string{"used", "size"}, nil)
 }
 
@@ -10531,19 +10167,17 @@ type WaitForTerminalExitRequest struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *WaitForTerminalExitRequest) UnmarshalJSON(b []byte) error {
 	type plain WaitForTerminalExitRequest
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "WaitForTerminalExitRequest", []string{"sessionId", "terminalId"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = WaitForTerminalExitRequest{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = WaitForTerminalExitRequest{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "WaitForTerminalExitRequest", []string{"sessionId", "terminalId"}, nil)
 }
 
@@ -10564,23 +10198,21 @@ type WaitForTerminalExitResponse struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *WaitForTerminalExitResponse) UnmarshalJSON(b []byte) error {
 	type plain WaitForTerminalExitResponse
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = WaitForTerminalExitResponse{}
+		v := struct {
+			*plain
+			ExitCode json.RawMessage `json:"exitCode"`
+			Signal   json.RawMessage `json:"signal"`
+			Meta     json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.ExitCode, &x.ExitCode)
+		lenient(v.Signal, &x.Signal)
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = WaitForTerminalExitResponse{}
-	var v struct {
-		*plain
-		ExitCode json.RawMessage `json:"exitCode"`
-		Signal   json.RawMessage `json:"signal"`
-		Meta     json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.ExitCode, &x.ExitCode)
-	lenient(v.Signal, &x.Signal)
-	lenient(v.Meta, &x.Meta)
 	return nil
 }
 
@@ -10605,19 +10237,17 @@ type WriteTextFileRequest struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *WriteTextFileRequest) UnmarshalJSON(b []byte) error {
 	type plain WriteTextFileRequest
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return requireKeys(b, "WriteTextFileRequest", []string{"sessionId", "path", "content"}, nil)
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = WriteTextFileRequest{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = WriteTextFileRequest{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return requireKeys(b, "WriteTextFileRequest", []string{"sessionId", "path", "content"}, nil)
 }
 
@@ -10634,18 +10264,16 @@ type WriteTextFileResponse struct {
 // array's bad items) where the schema says to, rather than failing.
 func (x *WriteTextFileResponse) UnmarshalJSON(b []byte) error {
 	type plain WriteTextFileResponse
-	if err := json.Unmarshal(b, (*plain)(x)); err == nil {
-		return nil
+	if err := json.Unmarshal(b, (*plain)(x)); err != nil {
+		*x = WriteTextFileResponse{}
+		v := struct {
+			*plain
+			Meta json.RawMessage `json:"_meta"`
+		}{plain: (*plain)(x)}
+		if err := json.Unmarshal(b, &v); err != nil {
+			return err
+		}
+		lenient(v.Meta, &x.Meta)
 	}
-	*x = WriteTextFileResponse{}
-	var v struct {
-		*plain
-		Meta json.RawMessage `json:"_meta"`
-	}
-	v.plain = (*plain)(x)
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	lenient(v.Meta, &x.Meta)
 	return nil
 }

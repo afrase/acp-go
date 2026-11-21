@@ -85,7 +85,7 @@ func genStruct(b *bytes.Buffer, m *model, d *def) {
 	case lenientFields(d.fields) != nil:
 		fmt.Fprintf(b, "// UnmarshalJSON decodes %s, dropping an optional field's bad value (or an\n// array's bad items) where the schema says to, rather than failing.\n", d.name)
 		fmt.Fprintf(b, "func (x *%s) UnmarshalJSON(b []byte) error {\n\ttype plain %s\n", d.name, d.name)
-		writeLenientDecode(b, d, "x", lenientFields(d.fields), done)
+		writeLenientDecode(b, d, "x", lenientFields(d.fields))
 		fmt.Fprintf(b, "\treturn %s\n}\n\n", done)
 	case done != "nil":
 		fmt.Fprintf(b, "// UnmarshalJSON decodes %s, which must have the properties it requires.\n", d.name)
@@ -156,25 +156,26 @@ func lenientFields(fields []*field) []*field {
 }
 
 // writeLenientDecode decodes b into recv (of type plain's), the quick way
-// first and, if that fails, again field by field for the lenient ones;
-// done is what a decode that worked returns.
-func writeLenientDecode(b *bytes.Buffer, d *def, recv string, lenient []*field, done string) {
-	fmt.Fprintf(b, "\tif err := json.Unmarshal(b, (*plain)(%s)); err == nil {\n\t\treturn %s\n\t}\n", recv, done)
-	fmt.Fprintf(b, "\t*%s = %s{}\n\tvar v struct {\n\t\t*plain\n", recv, d.name)
+// first and, if that fails, again field by field for the lenient ones. The
+// caller writes what a decode that worked returns, after it.
+func writeLenientDecode(b *bytes.Buffer, d *def, recv string, lenient []*field) {
+	fmt.Fprintf(b, "\tif err := json.Unmarshal(b, (*plain)(%s)); err != nil {\n", recv)
+	fmt.Fprintf(b, "\t\t*%s = %s{}\n\t\tv := struct {\n\t\t\t*plain\n", recv, d.name)
 	for _, f := range lenient {
-		fmt.Fprintf(b, "\t\t%s json.RawMessage `json:%q`\n", f.name, f.json)
+		fmt.Fprintf(b, "\t\t\t%s json.RawMessage `json:%q`\n", f.name, f.json)
 	}
-	fmt.Fprintf(b, "\t}\n\tv.plain = (*plain)(%s)\n\tif err := json.Unmarshal(b, &v); err != nil {\n\t\treturn err\n\t}\n", recv)
+	fmt.Fprintf(b, "\t\t}{plain: (*plain)(%s)}\n\t\tif err := json.Unmarshal(b, &v); err != nil {\n\t\t\treturn err\n\t\t}\n", recv)
 	for _, f := range lenient {
 		switch {
 		case f.skipInvalid && strings.HasPrefix(f.typ, "[]"):
-			fmt.Fprintf(b, "\tskipInvalid(v.%s, &%s.%s)\n", f.name, recv, f.name)
+			fmt.Fprintf(b, "\t\tskipInvalid(v.%s, &%s.%s)\n", f.name, recv, f.name)
 		case f.skipInvalid && strings.HasPrefix(f.typ, "Nullable[[]"):
-			fmt.Fprintf(b, "\tskipInvalidNullable(v.%s, &%s.%s)\n", f.name, recv, f.name)
+			fmt.Fprintf(b, "\t\tskipInvalidNullable(v.%s, &%s.%s)\n", f.name, recv, f.name)
 		default:
-			fmt.Fprintf(b, "\tlenient(v.%s, &%s.%s)\n", f.name, recv, f.name)
+			fmt.Fprintf(b, "\t\tlenient(v.%s, &%s.%s)\n", f.name, recv, f.name)
 		}
 	}
+	b.WriteString("\t}\n")
 }
 
 func genTagged(b *bytes.Buffer, m *model, d *def) {
@@ -296,7 +297,7 @@ func genTaggedUnmarshal(b *bytes.Buffer, m *model, d *def) {
 	switch {
 	case lenient != nil:
 		fmt.Fprintf(b, "\t*x = %s{}\n", d.name)
-		writeLenientDecode(b, d, "x", lenient, done)
+		writeLenientDecode(b, d, "x", lenient)
 		fmt.Fprintf(b, "\treturn %s\n}\n\n", done)
 	case done != "nil":
 		fmt.Fprintf(b, "\t*x = %s{}\n\tif err := json.Unmarshal(b, (*plain)(x)); err != nil {\n\t\treturn err\n\t}\n\treturn %s\n}\n\n", d.name, done)
