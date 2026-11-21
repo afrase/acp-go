@@ -43,6 +43,8 @@ ACP schema 1.31.0 (protocol version 1). Fixes from a review.
 - The error of a call from a notification handler says the call needs a
   context not derived from the handler's: another goroutine alone isn't
   enough.
+- The README's comparison table has its delimiter row: it showed as a
+  paragraph of pipes.
 
 ## v0.4.0 (2026-11-14)
 
