@@ -37,6 +37,11 @@ It needs Go 1.25 or later and uses only the standard library.
 - **Contexts everywhere.** `$/cancel_request` works in both directions. A
   handler panic becomes an error. A connection that ends leaves no
   goroutines behind.
+- **Agents run with what they start.** `Start` runs an agent in a process
+  group of its own (Unix) or a job object (Windows), so closing the
+  connection ends what the agent left running. The
+  [`process`](https://pkg.go.dev/github.com/afrase/acp-go/process) package
+  is that code on its own, for an agent that runs a CLI the same way.
 - **Tested against other implementations:** the official TypeScript SDK,
   ACP's conformance kit, and real agents.
 

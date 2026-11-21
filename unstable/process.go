@@ -4,11 +4,11 @@ package unstable
 
 import (
 	"errors"
-	"os"
 	"os/exec"
 	"sync"
-	"sync/atomic"
 	"time"
+
+	"github.com/afrase/acp-go/process"
 )
 
 // Start runs an agent's command and speaks ACP to it over its stdin and
@@ -39,42 +39,26 @@ func Start(cmd *exec.Cmd, newClient func(*AgentConn) Client, opts ...Option) (*A
 	if cmd.Stdin != nil || cmd.Stdout != nil {
 		return nil, errors.New("acp: Start sets the command's stdin and stdout itself")
 	}
-	inR, inW, err := os.Pipe()
-	if err != nil {
-		return nil, err
-	}
-	outR, outW, err := os.Pipe()
-	if err != nil {
-		_ = inR.Close()
-		_ = inW.Close()
-		return nil, err
-	}
-	cmd.Stdin, cmd.Stdout = inR, outW
-	ownGroup(cmd)
+	process.OwnGroup(cmd)
 	if cmd.WaitDelay == 0 {
 		cmd.WaitDelay = time.Second
 	}
-	if err := cmd.Start(); err != nil {
-		for _, f := range []*os.File{inR, inW, outR, outW} {
-			_ = f.Close()
-		}
-		cmd.Stdin, cmd.Stdout = nil, nil
+	pipes, err := process.Start(cmd, false)
+	if err != nil {
 		return nil, err
 	}
-	_ = inR.Close() // the agent's ends
-	_ = outW.Close()
-	g := newGroup(cmd)
+	g := process.NewGroup(cmd)
 
 	var once sync.Once
 	closeFn := func(cause error) error {
-		once.Do(func() { _ = inW.Close() })
+		once.Do(func() { _ = pipes.Stdin.Close() })
 		if cause == nil {
-			_ = g.kill() // Close: now
+			_ = g.Kill() // Close: now
 		}
-		return outR.Close()
+		return pipes.Stdout.Close()
 	}
-	out := &watched{File: outR}
-	a := &AgentConn{c: newConn(out, inW, closeFn, newOptions(opts))}
+	out := &process.Watched{ReadCloser: pipes.Stdout}
+	a := &AgentConn{c: newConn(out, pipes.Stdin, closeFn, newOptions(opts))}
 	exited := make(chan struct{})
 	go func() {
 		_ = cmd.Wait() // its result is in cmd.ProcessState
@@ -84,8 +68,8 @@ func Start(cmd *exec.Cmd, newClient func(*AgentConn) Client, opts ...Option) (*A
 	go func() {
 		select {
 		case <-exited: // what it wrote last is still read, unless a process it left holds its stdout
-			_ = g.sweep() // what it left running in its group, which may hold its stdout
-			out.drain(a.c.ctx.Done())
+			_ = g.Sweep() // what it left running in its group, which may hold its stdout
+			out.Drain(a.c.ctx.Done(), drainTime, nil)
 		case <-a.c.ctx.Done(): // it closed its stdout, or a write failed: it gets drainTime, or Shutdown's time, to exit
 			var patience <-chan time.Time
 			var shutdown <-chan struct{}
@@ -100,9 +84,9 @@ func Start(cmd *exec.Cmd, newClient func(*AgentConn) Client, opts ...Option) (*A
 			case <-shutdown:
 			}
 		}
-		_ = g.kill() // what it left running, or itself
+		_ = g.Kill() // what it left running, or itself
 		<-exited
-		g.release()
+		g.Release()
 		close(waited)
 	}()
 	a.c.wait = func() { <-waited }
@@ -115,36 +99,3 @@ func Start(cmd *exec.Cmd, newClient func(*AgentConn) Client, opts ...Option) (*A
 // closed its stdout has to exit before it is killed (unless Shutdown gave
 // it longer).
 var drainTime = time.Second
-
-// watched is the agent's stdout, which tells whether its reader is waiting
-// on it: edges counts each Read's start and its end, so an odd count is a
-// Read under way.
-type watched struct {
-	*os.File
-	edges atomic.Int64
-}
-
-func (w *watched) Read(p []byte) (int, error) {
-	w.edges.Add(1)
-	defer w.edges.Add(1)
-	return w.File.Read(p)
-}
-
-// drain waits for the reading to end (ended), or closes the pipe once a
-// Read has waited drainTime with nothing to read. A reader that is behind,
-// still handling what it read, isn't cut off: what the agent wrote before
-// it exited is still in the pipe, a result maybe among it.
-func (w *watched) drain(ended <-chan struct{}) {
-	for {
-		armed := w.edges.Load()
-		select {
-		case <-ended:
-			return
-		case <-time.After(drainTime):
-		}
-		if armed%2 == 1 && w.edges.Load() == armed {
-			_ = w.Close()
-			return
-		}
-	}
-}

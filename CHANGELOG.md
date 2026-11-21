@@ -14,6 +14,17 @@ ACP schema 1.31.0 (protocol version 1). Additions only.
   session's first updates (its available commands) after the answer that
   names the session, without watching what the connection writes. A
   request's handler costs three allocations fewer.
+- New package `process`: what `Start` runs an agent with, on its own.
+  `Start` puts a program on pipes of its own; `OwnGroup` and `NewGroup`
+  give it a process group (Unix) or a console process group and a
+  kill-on-close job object (Windows), whose `Kill`, `Signal` and `Sweep`
+  reach what it started; `Watched` gives up on a pipe a process the
+  program left running holds open; `ExitSignal` says which signal ended
+  it. `acp.Start` uses it and behaves as before.
+- On Windows the agent's job object lets a process the agent starts with
+  `CREATE_BREAKAWAY_FROM_JOB` leave it, so a browser an agent opens for a
+  sign-in outlives the agent. Other processes the agent starts are still
+  ended with it.
 
 ## v0.4.2 (2026-11-21)
 
