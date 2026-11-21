@@ -41,7 +41,7 @@ func (e *closedError) Unwrap() error        { return e.cause }
 // errInNotification is returned by a call made from a notification
 // handler, which would wait forever: the answer can't be read until the
 // handler returns.
-var errInNotification = errors.New("acp: a call from a notification handler can't be answered until the handler returns; make it from another goroutine")
+var errInNotification = errors.New("acp: a call from a notification handler can't be answered until the handler returns; make it from another goroutine, with a context not derived from the handler's, and don't wait for it in the handler")
 
 // errUnknownNotification is what the dispatch returns for a notification
 // no method takes.

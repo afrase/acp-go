@@ -40,6 +40,9 @@ ACP schema 1.31.0 (protocol version 1). Fixes from a review.
   sent before it (the docs, the README, `StartPrompt` and the v0.4.0
   entry said it ran only once Prompt was called), and `examples/echo`
   orders the two with `SequenceFromContext`.
+- The error of a call from a notification handler says the call needs a
+  context not derived from the handler's: another goroutine alone isn't
+  enough.
 
 ## v0.4.0 (2026-11-14)
 
