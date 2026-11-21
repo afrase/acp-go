@@ -261,7 +261,7 @@ type Agent interface {
 }
 
 // UnimplementedAgent answers every request with ACP's "Method not found"
-// error and ignores every notification. Embed it in a Agent: the methods
+// error and ignores every notification. Embed it in an Agent: the methods
 // you write replace its, and a method a later release of this package
 // adds is answered for you.
 type UnimplementedAgent struct{}
@@ -392,7 +392,7 @@ func (UnimplementedAgent) ExtNotification(context.Context, string, json.RawMessa
 
 func (UnimplementedAgent) mustEmbedUnimplementedAgent() {}
 
-// agentHandler routes the messages for a Agent to its methods.
+// agentHandler routes the messages for an Agent to its methods.
 func agentHandler(x Agent) handler {
 	return handler{
 		request: func(ctx context.Context, method string, params json.RawMessage) (any, error) {

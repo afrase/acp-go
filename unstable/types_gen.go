@@ -25,7 +25,7 @@ type AgentAuthCapabilities struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -84,7 +84,7 @@ type AgentCapabilities struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -131,7 +131,7 @@ type Annotations struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -179,7 +179,7 @@ type ArchiveSessionRequest struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -212,7 +212,7 @@ type ArchiveSessionResponse struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -247,7 +247,7 @@ type AudioContent struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -313,7 +313,7 @@ type AuthAccount struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -362,7 +362,7 @@ type AuthCapabilities struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -488,7 +488,7 @@ type AuthMethodAgent struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -539,7 +539,7 @@ type AuthMethodTerminal struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -596,7 +596,7 @@ type AuthStatusCapabilities struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -634,7 +634,7 @@ type AuthStatusRequest struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -678,7 +678,7 @@ type AuthStatusResponse struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -728,7 +728,7 @@ type AuthStatusUpdateNotification struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -764,7 +764,7 @@ type AuthenticateRequest struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -793,7 +793,7 @@ type AuthenticateResponse struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -828,7 +828,7 @@ type AvailableCommand struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -901,7 +901,7 @@ type AvailableCommandsUpdate struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -948,7 +948,7 @@ type BlobResourceContents struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -981,7 +981,7 @@ type BooleanConfigOptionCapabilities struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -1022,7 +1022,7 @@ type BooleanPropertySchema struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -1063,7 +1063,7 @@ type CancelNotification struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -1098,7 +1098,7 @@ type CancelRequestNotification struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -1174,7 +1174,7 @@ type ClientCapabilities struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -1230,7 +1230,7 @@ type ClientSessionCapabilities struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -1273,7 +1273,7 @@ type CloseSessionRequest struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -1302,7 +1302,7 @@ type CloseSessionResponse struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -1433,7 +1433,7 @@ type CompleteElicitationNotification struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -1464,7 +1464,7 @@ type ConfigOptionUpdate struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -1507,7 +1507,7 @@ type Content struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -1689,7 +1689,7 @@ type ContentChunk struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -1725,7 +1725,7 @@ type Cost struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -1760,7 +1760,7 @@ type CreateElicitationRequest struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 	// Mode is the "mode" tag, which says which variant this is. MarshalJSON
 	// fills it in from the variant set when it is empty.
@@ -1860,7 +1860,7 @@ type CreateElicitationResponse struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 	// Action is the "action" tag, which says which variant this is. MarshalJSON
 	// fills it in from the variant set when it is empty.
@@ -1986,7 +1986,7 @@ type CreateTerminalRequest struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -2017,7 +2017,7 @@ type CreateTerminalResponse struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -2052,7 +2052,7 @@ type CurrentModeUpdate struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -2085,7 +2085,7 @@ type DeleteSessionRequest struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -2114,7 +2114,7 @@ type DeleteSessionResponse struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -2155,7 +2155,7 @@ type Diff struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -2192,7 +2192,7 @@ type DisableProviderRequest struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -2225,7 +2225,7 @@ type DisableProviderResponse struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -2270,7 +2270,7 @@ type ElicitationCapabilities struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -2363,7 +2363,7 @@ type ElicitationFormCapabilities struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -2590,7 +2590,7 @@ type ElicitationSchema struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -2671,7 +2671,7 @@ type ElicitationURLCapabilities struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -2741,7 +2741,7 @@ type EmbeddedResource struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -2827,7 +2827,7 @@ type EnumOption struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -2862,7 +2862,7 @@ type EnvVariable struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -3028,7 +3028,7 @@ type FileSystemCapabilities struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -3090,7 +3090,7 @@ type ForkSessionRequest struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -3133,7 +3133,7 @@ type ForkSessionResponse struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -3170,7 +3170,7 @@ type HTTPHeader struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -3205,7 +3205,7 @@ type IdleStateUpdate struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 	// StopReason is the "stopReason" tag, which says which variant this is. MarshalJSON
 	// fills it in from the variant set when it is empty.
@@ -3367,7 +3367,7 @@ type ImageContent struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -3413,7 +3413,7 @@ type Implementation struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -3457,7 +3457,7 @@ type InitialSessionConfigOption struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 	// Type is the "type" tag, which says which variant this is. MarshalJSON
 	// fills it in from the variant set when it is empty.
@@ -3637,7 +3637,7 @@ type InitializeRequest struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -3689,7 +3689,7 @@ type InitializeResponse struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -3744,7 +3744,7 @@ type IntegerPropertySchema struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -3783,7 +3783,7 @@ type KillTerminalRequest struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -3812,7 +3812,7 @@ type KillTerminalResponse struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -3871,7 +3871,7 @@ type ListProvidersRequest struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -3906,7 +3906,7 @@ type ListProvidersResponse struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -3961,7 +3961,7 @@ type ListSessionsRequest struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -3995,7 +3995,7 @@ type ListSessionsResponse struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -4081,7 +4081,7 @@ type LoadSessionRequest struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -4128,7 +4128,7 @@ type LoadSessionResponse struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -4163,7 +4163,7 @@ type LogoutCapabilities struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -4194,7 +4194,7 @@ type LogoutRequest struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -4223,7 +4223,7 @@ type LogoutResponse struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -4262,7 +4262,7 @@ type MCPCapabilities struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -4472,7 +4472,7 @@ type MCPServerACP struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -4517,7 +4517,7 @@ type MCPServerHTTP struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -4562,7 +4562,7 @@ type MCPServerSSE struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -4609,7 +4609,7 @@ type MCPServerStdio struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -4671,7 +4671,7 @@ type MessageMCPNotification struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -4714,7 +4714,7 @@ type MessageMCPRequest struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -4960,7 +4960,7 @@ type MultiSelectPropertySchema struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -5031,7 +5031,7 @@ type NewSessionRequest struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -5086,7 +5086,7 @@ type NewSessionResponse struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -5204,7 +5204,7 @@ type NumberPropertySchema struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -5245,7 +5245,7 @@ type PermissionOption struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -5307,7 +5307,7 @@ type Plan struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -5352,7 +5352,7 @@ type PlanCapabilities struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -5394,7 +5394,7 @@ type PlanEntry struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -5468,7 +5468,7 @@ type PlanFile struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -5515,7 +5515,7 @@ type PlanItems struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -5564,7 +5564,7 @@ type PlanMarkdown struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -5599,7 +5599,7 @@ type PlanRemoved struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -5634,7 +5634,7 @@ type PlanUpdate struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -5784,7 +5784,7 @@ type PromptCapabilities struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -5841,7 +5841,7 @@ type PromptRequest struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -5892,7 +5892,7 @@ type PromptResponse struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -5937,7 +5937,7 @@ type ProviderCurrentConfig struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -5987,7 +5987,7 @@ type ProviderInfo struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -6034,7 +6034,7 @@ type ProvidersCapabilities struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -6199,7 +6199,7 @@ type ReadTextFileRequest struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -6230,7 +6230,7 @@ type ReadTextFileResponse struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -6263,7 +6263,7 @@ type ReleaseTerminalRequest struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -6292,7 +6292,7 @@ type ReleaseTerminalResponse struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -6431,7 +6431,7 @@ type RequestPermissionRequest struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -6472,7 +6472,7 @@ type RequestPermissionResponse struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -6501,7 +6501,7 @@ type RequiresActionStateUpdate struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -6544,7 +6544,7 @@ type ResourceLink struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -6625,7 +6625,7 @@ type ResumeSessionRequest struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -6662,7 +6662,7 @@ type ResumeSessionResponse struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -6706,7 +6706,7 @@ type RunningStateUpdate struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -6737,7 +6737,7 @@ type SelectedPermissionOutcome struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -6771,7 +6771,7 @@ type SessionAdditionalDirectoriesCapabilities struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -6807,7 +6807,7 @@ type SessionArchiveCapabilities struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -6862,7 +6862,7 @@ type SessionCancelCapabilities struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -6986,7 +6986,7 @@ type SessionCapabilities struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -7039,7 +7039,7 @@ type SessionCloseCapabilities struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -7097,7 +7097,7 @@ type SessionConfigOption struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 	// Type is the "type" tag, which says which variant this is. MarshalJSON
 	// fills it in from the variant set when it is empty.
@@ -7231,7 +7231,7 @@ type SessionConfigOptionsCapabilities struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -7285,7 +7285,7 @@ type SessionConfigSelectGroup struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -7332,7 +7332,7 @@ type SessionConfigSelectOption struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -7403,7 +7403,7 @@ type SessionDeleteCapabilities struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -7438,7 +7438,7 @@ type SessionForkCapabilities struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -7500,7 +7500,7 @@ type SessionInfo struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -7544,7 +7544,7 @@ type SessionInfoUpdate struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -7579,7 +7579,7 @@ type SessionListCapabilities struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -7724,7 +7724,7 @@ type SessionMode struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -7762,7 +7762,7 @@ type SessionModeState struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -7813,7 +7813,7 @@ type SessionNotification struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -7849,7 +7849,7 @@ type SessionOptionsCapabilities struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -7904,7 +7904,7 @@ type SessionOptionsRequest struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -7954,7 +7954,7 @@ type SessionOptionsResponse struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -7999,7 +7999,7 @@ type SessionReference struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -8030,7 +8030,7 @@ type SessionResumeCapabilities struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -8087,7 +8087,7 @@ type SessionStatusCapabilities struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -8128,7 +8128,7 @@ type SessionStatusRequest struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -8168,7 +8168,7 @@ type SessionStatusResponse struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -8204,7 +8204,7 @@ type SessionSystemPromptCapabilities struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -8244,7 +8244,7 @@ type SessionSystemPromptModeCapabilities struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -8278,7 +8278,7 @@ type SessionSystemPromptOverrideCapabilities struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -8314,7 +8314,7 @@ type SessionTitleCapabilities struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -8705,7 +8705,7 @@ type SetProviderRequest struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -8738,7 +8738,7 @@ type SetProviderResponse struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -8771,7 +8771,7 @@ type SetSessionConfigOptionRequest struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 	// Type is the "type" tag, which says which variant this is. MarshalJSON
 	// fills it in from the variant set when it is empty.
@@ -8909,7 +8909,7 @@ type SetSessionConfigOptionResponse struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -8954,7 +8954,7 @@ type SetSessionModeRequest struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -8983,7 +8983,7 @@ type SetSessionModeResponse struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -9033,7 +9033,7 @@ type SetSessionTitleRequest struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -9071,7 +9071,7 @@ type SetSessionTitleResponse struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -9268,7 +9268,7 @@ type StringMultiSelectItems struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -9346,7 +9346,7 @@ type StringPropertySchema struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -9390,7 +9390,7 @@ type SubagentCapabilities struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -9430,7 +9430,7 @@ type SubagentSessionCapabilities struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -9528,7 +9528,7 @@ type SubagentUpdate struct {
 	// assumed about its keys. See [Extensibility]. In this update, absent
 	// leaves it as it was, and null removes it.
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta Nullable[map[string]any] `json:"_meta,omitzero"`
 }
 
@@ -9585,7 +9585,7 @@ type SystemPrompt struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -9659,7 +9659,7 @@ type Terminal struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -9692,7 +9692,7 @@ type TerminalExitStatus struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -9732,7 +9732,7 @@ type TerminalOutputRequest struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -9767,7 +9767,7 @@ type TerminalOutputResponse struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -9802,7 +9802,7 @@ type TextContent struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -9839,7 +9839,7 @@ type TextResourceContents struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -9872,7 +9872,7 @@ type TitledMultiSelectItems struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -9941,7 +9941,7 @@ type ToolCall struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -10123,7 +10123,7 @@ type ToolCallLocation struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -10204,7 +10204,7 @@ type ToolCallUpdate struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -10297,7 +10297,7 @@ type UnarchiveSessionRequest struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -10330,7 +10330,7 @@ type UnarchiveSessionResponse struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -10371,7 +10371,7 @@ type UnknownStateUpdate struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -10402,7 +10402,7 @@ type UnstructuredCommandInput struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -10447,7 +10447,7 @@ type Usage struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -10488,7 +10488,7 @@ type UsageUpdate struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -10523,7 +10523,7 @@ type WaitForTerminalExitRequest struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -10556,7 +10556,7 @@ type WaitForTerminalExitResponse struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -10597,7 +10597,7 @@ type WriteTextFileRequest struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 
@@ -10626,7 +10626,7 @@ type WriteTextFileResponse struct {
 	// Meta is extension data: ACP reserves _meta for it, and nothing may be
 	// assumed about its keys. See [Extensibility].
 	//
-	// [Extensibility]: https://agentclientprotocol.com/protocol/extensibility
+	// [Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility
 	Meta map[string]any `json:"_meta,omitempty"`
 }
 

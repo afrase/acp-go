@@ -565,7 +565,7 @@ func tagOf(vs []*node) string {
 const (
 	metaDoc     = "Meta is extension data: ACP reserves _meta for it, and nothing may be\nassumed about its keys. See [Extensibility].\n\n" + metaLink
 	metaNullDoc = "Meta is extension data: ACP reserves _meta for it, and nothing may be\nassumed about its keys. See [Extensibility]. In this update, absent\nleaves it as it was, and null removes it.\n\n" + metaLink
-	metaLink    = "[Extensibility]: https://agentclientprotocol.com/protocol/extensibility"
+	metaLink    = "[Extensibility]: https://agentclientprotocol.com/protocol/v1/extensibility"
 )
 
 func isUpper(c byte) bool { return c >= 'A' && c <= 'Z' }

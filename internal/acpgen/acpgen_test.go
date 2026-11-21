@@ -170,6 +170,21 @@ func TestTheGeneratedCodeIsCurrent(t *testing.T) {
 	}
 }
 
+// The generated docs say "an Agent", and link to ACP's v1 docs.
+func TestTheGeneratedDocs(t *testing.T) {
+	for _, f := range []string{"../../types_gen.go", "../../methods_gen.go", "../../unstable/types_gen.go", "../../unstable/methods_gen.go"} {
+		b, err := os.ReadFile(f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, bad := range []string{" a Agent", "agentclientprotocol.com/protocol/extensibility"} {
+			if bytes.Contains(b, []byte(bad)) {
+				t.Errorf("%s has %q", f, bad)
+			}
+		}
+	}
+}
+
 // A tagged union whose variants, tag, head fields or Other would be the
 // same Go field is refused by acpgen, not left for the compiler.
 func TestTaggedClashes(t *testing.T) {

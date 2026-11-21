@@ -52,6 +52,8 @@ ACP schema 1.31.0 (protocol version 1). Fixes from a review.
 - The package docs and the README no longer say nothing is dropped: a
   notification that doesn't decode is dropped (logged), as other parts
   of them said.
+- Generated docs: "Embed it in an Agent" (it said "a Agent"), and every
+  `Meta` field's link goes to ACP's v1 docs, as the others do.
 
 ## v0.4.0 (2026-11-14)
 

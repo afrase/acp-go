@@ -147,7 +147,7 @@ func genInterface(b *bytes.Buffer, md *model, sd side, mine []method) {
 }
 
 func genUnimplemented(b *bytes.Buffer, sd side, mine []method) {
-	fmt.Fprintf(b, "// Unimplemented%s answers every request with ACP's \"Method not found\"\n// error and ignores every notification. Embed it in a %s: the methods\n// you write replace its, and a method a later release of this package\n// adds is answered for you.\ntype Unimplemented%s struct{}\n\n", sd.name, sd.name, sd.name)
+	fmt.Fprintf(b, "// Unimplemented%s answers every request with ACP's \"Method not found\"\n// error and ignores every notification. Embed it in %s: the methods\n// you write replace its, and a method a later release of this package\n// adds is answered for you.\ntype Unimplemented%s struct{}\n\n", sd.name, article(sd.name), sd.name)
 	for _, m := range mine {
 		fmt.Fprintf(b, "// %s answers %s", m.name, m.wire)
 		if m.notification() {
@@ -163,7 +163,7 @@ func genUnimplemented(b *bytes.Buffer, sd side, mine []method) {
 
 func genDispatch(b *bytes.Buffer, sd side, mine []method) {
 	lower := strings.ToLower(sd.name)
-	fmt.Fprintf(b, "// %sHandler routes the messages for a %s to its methods.\nfunc %sHandler(x %s) handler {\n\treturn handler{\n", lower, sd.name, lower, sd.name)
+	fmt.Fprintf(b, "// %sHandler routes the messages for %s to its methods.\nfunc %sHandler(x %s) handler {\n\treturn handler{\n", lower, article(sd.name), lower, sd.name)
 	b.WriteString("\t\trequest: func(ctx context.Context, method string, params json.RawMessage) (any, error) {\n\t\t\tswitch method {\n")
 	for _, m := range mine {
 		if m.notification() {
@@ -248,3 +248,11 @@ const (
 		"with \"_\": notifications outside ACP, which extensions add.\n\n" +
 		"See protocol docs: [Extensibility](/protocol/v1/extensibility)"
 )
+
+// article is name with "a" or "an" before it, by its first letter.
+func article(name string) string {
+	if name != "" && strings.ContainsRune("AEIOU", rune(name[0])) {
+		return "an " + name
+	}
+	return "a " + name
+}
