@@ -49,6 +49,9 @@ ACP schema 1.31.0 (protocol version 1). Fixes from a review.
   was closed is logged at DEBUG ("a response wasn't sent"); it wasn't
   logged. Tests that ordered events with sleeps and short deadlines
   order them with channels.
+- The package docs and the README no longer say nothing is dropped: a
+  notification that doesn't decode is dropped (logged), as other parts
+  of them said.
 
 ## v0.4.0 (2026-11-14)
 

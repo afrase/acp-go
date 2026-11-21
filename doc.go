@@ -26,9 +26,10 @@
 //
 // # How messages flow
 //
-// Nothing is queued, and nothing is dropped but a message over a read
-// limit ([WithReadLimit]). Notifications (session/update)
-// are handled one at a time, in order, on the connection's reading
+// Nothing is queued, and nothing is dropped for lack of room; a message
+// over a read limit ([WithReadLimit]), or a notification that doesn't
+// decode, is dropped (and logged, [WithLogger]). Notifications
+// (session/update) are handled one at a time, in order, on the connection's reading
 // goroutine; while one is handled nothing more is read, so a slow handler
 // slows the other side's writing down rather than piling messages up. A
 // response is delivered once every notification that came before it was

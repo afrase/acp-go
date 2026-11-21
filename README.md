@@ -29,8 +29,9 @@ It needs Go 1.25 or later and uses only the standard library.
   that uses only the root package cannot depend on them by accident.
 - **Back-pressure, no queues.** Notifications are handled in order, as they
   are read. A slow client slows the agent down, and so does one that
-  doesn't read the answers to its requests. Nothing is dropped, and a
-  busy connection never closes.
+  doesn't read the answers to its requests. Nothing is dropped for lack
+  of room, and a busy connection never closes. (A message over the read
+  limit, or a notification that doesn't decode, is dropped and logged.)
 - **No message size limit**, unless you set one. A message over it is
   skipped and answered with an error, and the connection goes on.
 - **Contexts everywhere.** `$/cancel_request` works in both directions. A
