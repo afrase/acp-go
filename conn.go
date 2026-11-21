@@ -12,6 +12,7 @@ import (
 	"log/slog"
 	"runtime/debug"
 	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -485,8 +486,11 @@ func (n *notifyCtx) Value(key any) any {
 // answered delivers a response to the call waiting for it.
 func (c *conn) answered(f frame) {
 	r := response{result: f.Result}
-	if f.Error != nil {
+	switch {
+	case f.Error != nil:
 		r.err = f.Error
+	case f.Result == nil:
+		r.err = &Error{Code: ErrorCodeInternalError, Message: "Internal error: the response has neither a result nor an error"}
 	}
 	c.settle(f.ID, r)
 }
@@ -585,8 +589,13 @@ func (c *conn) await(ctx context.Context, method string, id int64, ch chan respo
 			return fmt.Errorf("%s: %w", method, c.Err())
 		case r.err != nil:
 			return fmt.Errorf("%s: %w", method, r.err)
-		case result == nil || len(r.result) == 0 || bytes.Equal(r.result, []byte("null")):
+		case result == nil:
 			return nil
+		case bytes.Equal(r.result, []byte("null")):
+			if strings.HasPrefix(method, "_") { // an extension's: result is left as it is
+				return nil
+			}
+			r.result = []byte("{}") // ACP's results are objects: null has none of the properties its type requires
 		}
 		if err := json.Unmarshal(r.result, result); err != nil {
 			return fmt.Errorf("%s: decoding the result: %w", method, err)

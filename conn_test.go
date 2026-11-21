@@ -980,6 +980,45 @@ func TestAnUndecodableMessageIsTakenByItsID(t *testing.T) {
 	}
 }
 
+// A response with neither a result nor an error fails its call, and a
+// null result has none of the properties an ACP result requires; an
+// extension's null result is no error.
+func TestAResponseWithoutAResult(t *testing.T) {
+	agent := &testAgent{}
+	r := rawClient(t, agent)
+	ask := func(answer string) error {
+		t.Helper()
+		done := make(chan error, 1)
+		go func() {
+			_, err := agent.client.RequestPermission(ctxFor(t), &acp.RequestPermissionRequest{SessionID: "s1", ToolCall: acp.ToolCallUpdate{ToolCallID: "t"},
+				Options: []acp.PermissionOption{{OptionID: "ok", Name: "OK", Kind: acp.PermissionOptionKindAllowOnce}}})
+			done <- err
+		}()
+		m := r.read()
+		id, _ := json.Marshal(m["id"])
+		r.send(strings.Replace(answer, "ID", string(id), 1))
+		return <-done
+	}
+	if err := ask(`{"jsonrpc":"2.0","id":ID}`); err == nil {
+		t.Error("a response without a result or an error was taken for a result")
+	}
+	if err := ask(`{"jsonrpc":"2.0","id":ID,"result":null}`); err == nil || !strings.Contains(err.Error(), "outcome") {
+		t.Errorf("a null result: %v", err)
+	}
+	if err := ask(`{"jsonrpc":"2.0","id":ID,"result":{"outcome":{"outcome":"cancelled"}}}`); err != nil {
+		t.Errorf("a good result: %v", err)
+	}
+	done := make(chan error, 1)
+	var out json.RawMessage
+	go func() { done <- agent.client.Call(ctxFor(t), "_ask", nil, &out) }()
+	m := r.read()
+	id, _ := json.Marshal(m["id"])
+	r.send(`{"jsonrpc":"2.0","id":` + string(id) + `,"result":null}`)
+	if err := <-done; err != nil || out != nil {
+		t.Errorf("an extension's null result: %s, %v", out, err)
+	}
+}
+
 // stuckWriter is an other side that doesn't read: a Write waits until
 // Close.
 type stuckWriter struct {

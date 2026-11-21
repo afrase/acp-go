@@ -16,6 +16,12 @@ ACP schema 1.31.0 (protocol version 1). Fixes from a review.
   answered.
 - A call or a notification whose context has already ended isn't sent.
   About half of them were.
+- **Behaviour change:** a response with neither a result nor an error
+  fails its call with an internal error; it was taken for an empty
+  result. A null result of an ACP method counts as an object without its
+  properties, so one its type requires is missing (an error): a
+  `session/prompt` answered with null returned a `PromptResponse` with no
+  stop reason. An extension's null result (`Call`) is as before.
 
 ## v0.4.0 (2026-11-14)
 
