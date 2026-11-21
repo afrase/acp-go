@@ -253,161 +253,29 @@ func agentHandler(x Agent) handler {
 		request: func(ctx context.Context, method string, params json.RawMessage) (any, error) {
 			switch method {
 			case "initialize":
-				var req InitializeRequest
-				if err := decodeParams(params, &req, "protocolVersion"); err != nil {
-					return nil, err
-				}
-				resp, err := x.Initialize(ctx, &req)
-				if err != nil {
-					return nil, err
-				}
-				if resp == nil {
-					resp = new(InitializeResponse)
-				}
-				return resp, nil
+				return handle(ctx, params, x.Initialize, "protocolVersion")
 			case "authenticate":
-				var req AuthenticateRequest
-				if err := decodeParams(params, &req, "methodId"); err != nil {
-					return nil, err
-				}
-				resp, err := x.Authenticate(ctx, &req)
-				if err != nil {
-					return nil, err
-				}
-				if resp == nil {
-					resp = new(AuthenticateResponse)
-				}
-				return resp, nil
+				return handle(ctx, params, x.Authenticate, "methodId")
 			case "session/new":
-				var req NewSessionRequest
-				if err := decodeParams(params, &req, "cwd", "mcpServers"); err != nil {
-					return nil, err
-				}
-				resp, err := x.NewSession(ctx, &req)
-				if err != nil {
-					return nil, err
-				}
-				if resp == nil {
-					resp = new(NewSessionResponse)
-				}
-				return resp, nil
+				return handle(ctx, params, x.NewSession, "cwd", "mcpServers")
 			case "session/load":
-				var req LoadSessionRequest
-				if err := decodeParams(params, &req, "mcpServers", "cwd", "sessionId"); err != nil {
-					return nil, err
-				}
-				resp, err := x.LoadSession(ctx, &req)
-				if err != nil {
-					return nil, err
-				}
-				if resp == nil {
-					resp = new(LoadSessionResponse)
-				}
-				return resp, nil
+				return handle(ctx, params, x.LoadSession, "mcpServers", "cwd", "sessionId")
 			case "session/set_mode":
-				var req SetSessionModeRequest
-				if err := decodeParams(params, &req, "sessionId", "modeId"); err != nil {
-					return nil, err
-				}
-				resp, err := x.SetSessionMode(ctx, &req)
-				if err != nil {
-					return nil, err
-				}
-				if resp == nil {
-					resp = new(SetSessionModeResponse)
-				}
-				return resp, nil
+				return handle(ctx, params, x.SetSessionMode, "sessionId", "modeId")
 			case "session/set_config_option":
-				var req SetSessionConfigOptionRequest
-				if err := decodeParams(params, &req, "sessionId", "configId"); err != nil {
-					return nil, err
-				}
-				resp, err := x.SetSessionConfigOption(ctx, &req)
-				if err != nil {
-					return nil, err
-				}
-				if resp == nil {
-					resp = new(SetSessionConfigOptionResponse)
-				}
-				return resp, nil
+				return handle(ctx, params, x.SetSessionConfigOption, "sessionId", "configId")
 			case "session/prompt":
-				var req PromptRequest
-				if err := decodeParams(params, &req, "sessionId", "prompt"); err != nil {
-					return nil, err
-				}
-				resp, err := x.Prompt(ctx, &req)
-				if err != nil {
-					return nil, err
-				}
-				if resp == nil {
-					resp = new(PromptResponse)
-				}
-				return resp, nil
+				return handle(ctx, params, x.Prompt, "sessionId", "prompt")
 			case "session/list":
-				var req ListSessionsRequest
-				if err := decodeParams(params, &req); err != nil {
-					return nil, err
-				}
-				resp, err := x.ListSessions(ctx, &req)
-				if err != nil {
-					return nil, err
-				}
-				if resp == nil {
-					resp = new(ListSessionsResponse)
-				}
-				return resp, nil
+				return handle(ctx, params, x.ListSessions)
 			case "session/delete":
-				var req DeleteSessionRequest
-				if err := decodeParams(params, &req, "sessionId"); err != nil {
-					return nil, err
-				}
-				resp, err := x.DeleteSession(ctx, &req)
-				if err != nil {
-					return nil, err
-				}
-				if resp == nil {
-					resp = new(DeleteSessionResponse)
-				}
-				return resp, nil
+				return handle(ctx, params, x.DeleteSession, "sessionId")
 			case "session/resume":
-				var req ResumeSessionRequest
-				if err := decodeParams(params, &req, "sessionId", "cwd"); err != nil {
-					return nil, err
-				}
-				resp, err := x.ResumeSession(ctx, &req)
-				if err != nil {
-					return nil, err
-				}
-				if resp == nil {
-					resp = new(ResumeSessionResponse)
-				}
-				return resp, nil
+				return handle(ctx, params, x.ResumeSession, "sessionId", "cwd")
 			case "session/close":
-				var req CloseSessionRequest
-				if err := decodeParams(params, &req, "sessionId"); err != nil {
-					return nil, err
-				}
-				resp, err := x.CloseSession(ctx, &req)
-				if err != nil {
-					return nil, err
-				}
-				if resp == nil {
-					resp = new(CloseSessionResponse)
-				}
-				return resp, nil
+				return handle(ctx, params, x.CloseSession, "sessionId")
 			case "logout":
-				var req LogoutRequest
-				if err := decodeParams(params, &req); err != nil {
-					return nil, err
-				}
-				resp, err := x.Logout(ctx, &req)
-				if err != nil {
-					return nil, err
-				}
-				if resp == nil {
-					resp = new(LogoutResponse)
-				}
-				return resp, nil
+				return handle(ctx, params, x.Logout)
 			}
 			if isExtension(method) {
 				return x.ExtMethod(ctx, method, params)
@@ -433,65 +301,37 @@ func agentHandler(x Agent) handler {
 
 // Initialize calls the agent's initialize: see [Agent.Initialize].
 func (c *AgentConn) Initialize(ctx context.Context, req *InitializeRequest) (*InitializeResponse, error) {
-	resp := new(InitializeResponse)
-	if err := c.c.call(ctx, "initialize", req, resp); err != nil {
-		return nil, err
-	}
-	return resp, nil
+	return callFor[InitializeResponse](ctx, c.c, "initialize", req)
 }
 
 // Authenticate calls the agent's authenticate: see [Agent.Authenticate].
 func (c *AgentConn) Authenticate(ctx context.Context, req *AuthenticateRequest) (*AuthenticateResponse, error) {
-	resp := new(AuthenticateResponse)
-	if err := c.c.call(ctx, "authenticate", req, resp); err != nil {
-		return nil, err
-	}
-	return resp, nil
+	return callFor[AuthenticateResponse](ctx, c.c, "authenticate", req)
 }
 
 // NewSession calls the agent's session/new: see [Agent.NewSession].
 func (c *AgentConn) NewSession(ctx context.Context, req *NewSessionRequest) (*NewSessionResponse, error) {
-	resp := new(NewSessionResponse)
-	if err := c.c.call(ctx, "session/new", req, resp); err != nil {
-		return nil, err
-	}
-	return resp, nil
+	return callFor[NewSessionResponse](ctx, c.c, "session/new", req)
 }
 
 // LoadSession calls the agent's session/load: see [Agent.LoadSession].
 func (c *AgentConn) LoadSession(ctx context.Context, req *LoadSessionRequest) (*LoadSessionResponse, error) {
-	resp := new(LoadSessionResponse)
-	if err := c.c.call(ctx, "session/load", req, resp); err != nil {
-		return nil, err
-	}
-	return resp, nil
+	return callFor[LoadSessionResponse](ctx, c.c, "session/load", req)
 }
 
 // SetSessionMode calls the agent's session/set_mode: see [Agent.SetSessionMode].
 func (c *AgentConn) SetSessionMode(ctx context.Context, req *SetSessionModeRequest) (*SetSessionModeResponse, error) {
-	resp := new(SetSessionModeResponse)
-	if err := c.c.call(ctx, "session/set_mode", req, resp); err != nil {
-		return nil, err
-	}
-	return resp, nil
+	return callFor[SetSessionModeResponse](ctx, c.c, "session/set_mode", req)
 }
 
 // SetSessionConfigOption calls the agent's session/set_config_option: see [Agent.SetSessionConfigOption].
 func (c *AgentConn) SetSessionConfigOption(ctx context.Context, req *SetSessionConfigOptionRequest) (*SetSessionConfigOptionResponse, error) {
-	resp := new(SetSessionConfigOptionResponse)
-	if err := c.c.call(ctx, "session/set_config_option", req, resp); err != nil {
-		return nil, err
-	}
-	return resp, nil
+	return callFor[SetSessionConfigOptionResponse](ctx, c.c, "session/set_config_option", req)
 }
 
 // Prompt calls the agent's session/prompt: see [Agent.Prompt].
 func (c *AgentConn) Prompt(ctx context.Context, req *PromptRequest) (*PromptResponse, error) {
-	resp := new(PromptResponse)
-	if err := c.c.call(ctx, "session/prompt", req, resp); err != nil {
-		return nil, err
-	}
-	return resp, nil
+	return callFor[PromptResponse](ctx, c.c, "session/prompt", req)
 }
 
 // Cancel sends the session/cancel notification: see [Agent.Cancel].
@@ -501,47 +341,27 @@ func (c *AgentConn) Cancel(ctx context.Context, n *CancelNotification) error {
 
 // ListSessions calls the agent's session/list: see [Agent.ListSessions].
 func (c *AgentConn) ListSessions(ctx context.Context, req *ListSessionsRequest) (*ListSessionsResponse, error) {
-	resp := new(ListSessionsResponse)
-	if err := c.c.call(ctx, "session/list", req, resp); err != nil {
-		return nil, err
-	}
-	return resp, nil
+	return callFor[ListSessionsResponse](ctx, c.c, "session/list", req)
 }
 
 // DeleteSession calls the agent's session/delete: see [Agent.DeleteSession].
 func (c *AgentConn) DeleteSession(ctx context.Context, req *DeleteSessionRequest) (*DeleteSessionResponse, error) {
-	resp := new(DeleteSessionResponse)
-	if err := c.c.call(ctx, "session/delete", req, resp); err != nil {
-		return nil, err
-	}
-	return resp, nil
+	return callFor[DeleteSessionResponse](ctx, c.c, "session/delete", req)
 }
 
 // ResumeSession calls the agent's session/resume: see [Agent.ResumeSession].
 func (c *AgentConn) ResumeSession(ctx context.Context, req *ResumeSessionRequest) (*ResumeSessionResponse, error) {
-	resp := new(ResumeSessionResponse)
-	if err := c.c.call(ctx, "session/resume", req, resp); err != nil {
-		return nil, err
-	}
-	return resp, nil
+	return callFor[ResumeSessionResponse](ctx, c.c, "session/resume", req)
 }
 
 // CloseSession calls the agent's session/close: see [Agent.CloseSession].
 func (c *AgentConn) CloseSession(ctx context.Context, req *CloseSessionRequest) (*CloseSessionResponse, error) {
-	resp := new(CloseSessionResponse)
-	if err := c.c.call(ctx, "session/close", req, resp); err != nil {
-		return nil, err
-	}
-	return resp, nil
+	return callFor[CloseSessionResponse](ctx, c.c, "session/close", req)
 }
 
 // Logout calls the agent's logout: see [Agent.Logout].
 func (c *AgentConn) Logout(ctx context.Context, req *LogoutRequest) (*LogoutResponse, error) {
-	resp := new(LogoutResponse)
-	if err := c.c.call(ctx, "logout", req, resp); err != nil {
-		return nil, err
-	}
-	return resp, nil
+	return callFor[LogoutResponse](ctx, c.c, "logout", req)
 }
 
 // Client is what a client does: the methods an agent calls and the
@@ -769,122 +589,23 @@ func clientHandler(x Client) handler {
 		request: func(ctx context.Context, method string, params json.RawMessage) (any, error) {
 			switch method {
 			case "session/request_permission":
-				var req RequestPermissionRequest
-				if err := decodeParams(params, &req, "sessionId", "toolCall", "options"); err != nil {
-					return nil, err
-				}
-				resp, err := x.RequestPermission(ctx, &req)
-				if err != nil {
-					return nil, err
-				}
-				if resp == nil {
-					resp = new(RequestPermissionResponse)
-				}
-				return resp, nil
+				return handle(ctx, params, x.RequestPermission, "sessionId", "toolCall", "options")
 			case "fs/write_text_file":
-				var req WriteTextFileRequest
-				if err := decodeParams(params, &req, "sessionId", "path", "content"); err != nil {
-					return nil, err
-				}
-				resp, err := x.WriteTextFile(ctx, &req)
-				if err != nil {
-					return nil, err
-				}
-				if resp == nil {
-					resp = new(WriteTextFileResponse)
-				}
-				return resp, nil
+				return handle(ctx, params, x.WriteTextFile, "sessionId", "path", "content")
 			case "fs/read_text_file":
-				var req ReadTextFileRequest
-				if err := decodeParams(params, &req, "sessionId", "path"); err != nil {
-					return nil, err
-				}
-				resp, err := x.ReadTextFile(ctx, &req)
-				if err != nil {
-					return nil, err
-				}
-				if resp == nil {
-					resp = new(ReadTextFileResponse)
-				}
-				return resp, nil
+				return handle(ctx, params, x.ReadTextFile, "sessionId", "path")
 			case "terminal/create":
-				var req CreateTerminalRequest
-				if err := decodeParams(params, &req, "sessionId", "command"); err != nil {
-					return nil, err
-				}
-				resp, err := x.CreateTerminal(ctx, &req)
-				if err != nil {
-					return nil, err
-				}
-				if resp == nil {
-					resp = new(CreateTerminalResponse)
-				}
-				return resp, nil
+				return handle(ctx, params, x.CreateTerminal, "sessionId", "command")
 			case "terminal/output":
-				var req TerminalOutputRequest
-				if err := decodeParams(params, &req, "sessionId", "terminalId"); err != nil {
-					return nil, err
-				}
-				resp, err := x.TerminalOutput(ctx, &req)
-				if err != nil {
-					return nil, err
-				}
-				if resp == nil {
-					resp = new(TerminalOutputResponse)
-				}
-				return resp, nil
+				return handle(ctx, params, x.TerminalOutput, "sessionId", "terminalId")
 			case "terminal/release":
-				var req ReleaseTerminalRequest
-				if err := decodeParams(params, &req, "sessionId", "terminalId"); err != nil {
-					return nil, err
-				}
-				resp, err := x.ReleaseTerminal(ctx, &req)
-				if err != nil {
-					return nil, err
-				}
-				if resp == nil {
-					resp = new(ReleaseTerminalResponse)
-				}
-				return resp, nil
+				return handle(ctx, params, x.ReleaseTerminal, "sessionId", "terminalId")
 			case "terminal/wait_for_exit":
-				var req WaitForTerminalExitRequest
-				if err := decodeParams(params, &req, "sessionId", "terminalId"); err != nil {
-					return nil, err
-				}
-				resp, err := x.WaitForTerminalExit(ctx, &req)
-				if err != nil {
-					return nil, err
-				}
-				if resp == nil {
-					resp = new(WaitForTerminalExitResponse)
-				}
-				return resp, nil
+				return handle(ctx, params, x.WaitForTerminalExit, "sessionId", "terminalId")
 			case "terminal/kill":
-				var req KillTerminalRequest
-				if err := decodeParams(params, &req, "sessionId", "terminalId"); err != nil {
-					return nil, err
-				}
-				resp, err := x.KillTerminal(ctx, &req)
-				if err != nil {
-					return nil, err
-				}
-				if resp == nil {
-					resp = new(KillTerminalResponse)
-				}
-				return resp, nil
+				return handle(ctx, params, x.KillTerminal, "sessionId", "terminalId")
 			case "elicitation/create":
-				var req CreateElicitationRequest
-				if err := decodeParams(params, &req, "message"); err != nil {
-					return nil, err
-				}
-				resp, err := x.CreateElicitation(ctx, &req)
-				if err != nil {
-					return nil, err
-				}
-				if resp == nil {
-					resp = new(CreateElicitationResponse)
-				}
-				return resp, nil
+				return handle(ctx, params, x.CreateElicitation, "message")
 			}
 			if isExtension(method) {
 				return x.ExtMethod(ctx, method, params)
@@ -916,11 +637,7 @@ func clientHandler(x Client) handler {
 
 // RequestPermission calls the client's session/request_permission: see [Client.RequestPermission].
 func (c *ClientConn) RequestPermission(ctx context.Context, req *RequestPermissionRequest) (*RequestPermissionResponse, error) {
-	resp := new(RequestPermissionResponse)
-	if err := c.c.call(ctx, "session/request_permission", req, resp); err != nil {
-		return nil, err
-	}
-	return resp, nil
+	return callFor[RequestPermissionResponse](ctx, c.c, "session/request_permission", req)
 }
 
 // SessionUpdate sends the session/update notification: see [Client.SessionUpdate].
@@ -930,74 +647,42 @@ func (c *ClientConn) SessionUpdate(ctx context.Context, n *SessionNotification) 
 
 // WriteTextFile calls the client's fs/write_text_file: see [Client.WriteTextFile].
 func (c *ClientConn) WriteTextFile(ctx context.Context, req *WriteTextFileRequest) (*WriteTextFileResponse, error) {
-	resp := new(WriteTextFileResponse)
-	if err := c.c.call(ctx, "fs/write_text_file", req, resp); err != nil {
-		return nil, err
-	}
-	return resp, nil
+	return callFor[WriteTextFileResponse](ctx, c.c, "fs/write_text_file", req)
 }
 
 // ReadTextFile calls the client's fs/read_text_file: see [Client.ReadTextFile].
 func (c *ClientConn) ReadTextFile(ctx context.Context, req *ReadTextFileRequest) (*ReadTextFileResponse, error) {
-	resp := new(ReadTextFileResponse)
-	if err := c.c.call(ctx, "fs/read_text_file", req, resp); err != nil {
-		return nil, err
-	}
-	return resp, nil
+	return callFor[ReadTextFileResponse](ctx, c.c, "fs/read_text_file", req)
 }
 
 // CreateTerminal calls the client's terminal/create: see [Client.CreateTerminal].
 func (c *ClientConn) CreateTerminal(ctx context.Context, req *CreateTerminalRequest) (*CreateTerminalResponse, error) {
-	resp := new(CreateTerminalResponse)
-	if err := c.c.call(ctx, "terminal/create", req, resp); err != nil {
-		return nil, err
-	}
-	return resp, nil
+	return callFor[CreateTerminalResponse](ctx, c.c, "terminal/create", req)
 }
 
 // TerminalOutput calls the client's terminal/output: see [Client.TerminalOutput].
 func (c *ClientConn) TerminalOutput(ctx context.Context, req *TerminalOutputRequest) (*TerminalOutputResponse, error) {
-	resp := new(TerminalOutputResponse)
-	if err := c.c.call(ctx, "terminal/output", req, resp); err != nil {
-		return nil, err
-	}
-	return resp, nil
+	return callFor[TerminalOutputResponse](ctx, c.c, "terminal/output", req)
 }
 
 // ReleaseTerminal calls the client's terminal/release: see [Client.ReleaseTerminal].
 func (c *ClientConn) ReleaseTerminal(ctx context.Context, req *ReleaseTerminalRequest) (*ReleaseTerminalResponse, error) {
-	resp := new(ReleaseTerminalResponse)
-	if err := c.c.call(ctx, "terminal/release", req, resp); err != nil {
-		return nil, err
-	}
-	return resp, nil
+	return callFor[ReleaseTerminalResponse](ctx, c.c, "terminal/release", req)
 }
 
 // WaitForTerminalExit calls the client's terminal/wait_for_exit: see [Client.WaitForTerminalExit].
 func (c *ClientConn) WaitForTerminalExit(ctx context.Context, req *WaitForTerminalExitRequest) (*WaitForTerminalExitResponse, error) {
-	resp := new(WaitForTerminalExitResponse)
-	if err := c.c.call(ctx, "terminal/wait_for_exit", req, resp); err != nil {
-		return nil, err
-	}
-	return resp, nil
+	return callFor[WaitForTerminalExitResponse](ctx, c.c, "terminal/wait_for_exit", req)
 }
 
 // KillTerminal calls the client's terminal/kill: see [Client.KillTerminal].
 func (c *ClientConn) KillTerminal(ctx context.Context, req *KillTerminalRequest) (*KillTerminalResponse, error) {
-	resp := new(KillTerminalResponse)
-	if err := c.c.call(ctx, "terminal/kill", req, resp); err != nil {
-		return nil, err
-	}
-	return resp, nil
+	return callFor[KillTerminalResponse](ctx, c.c, "terminal/kill", req)
 }
 
 // CreateElicitation calls the client's elicitation/create: see [Client.CreateElicitation].
 func (c *ClientConn) CreateElicitation(ctx context.Context, req *CreateElicitationRequest) (*CreateElicitationResponse, error) {
-	resp := new(CreateElicitationResponse)
-	if err := c.c.call(ctx, "elicitation/create", req, resp); err != nil {
-		return nil, err
-	}
-	return resp, nil
+	return callFor[CreateElicitationResponse](ctx, c.c, "elicitation/create", req)
 }
 
 // CompleteElicitation sends the elicitation/complete notification: see [Client.CompleteElicitation].

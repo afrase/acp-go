@@ -600,6 +600,15 @@ func (c *conn) call(ctx context.Context, method string, params, result any) erro
 	return wait(ctx, result)
 }
 
+// callFor calls method and returns its result, decoded into a new Resp.
+func callFor[Resp any](ctx context.Context, c *conn, method string, params any) (*Resp, error) {
+	resp := new(Resp)
+	if err := c.call(ctx, method, params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
 // send writes a request and returns once it is written; wait waits for its
 // response. If wait's context ends first, the request is withdrawn
 // ($/cancel_request) and wait returns the context's error.

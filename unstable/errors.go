@@ -93,6 +93,23 @@ func decodeParams(params json.RawMessage, dst any, required ...string) error {
 	return nil
 }
 
+// handle answers a request: it decodes params as decodeParams does and
+// passes them to fn. A nil response is answered as an empty one.
+func handle[Req, Resp any](ctx context.Context, params json.RawMessage, fn func(context.Context, *Req) (*Resp, error), required ...string) (any, error) {
+	var req Req
+	if err := decodeParams(params, &req, required...); err != nil {
+		return nil, err
+	}
+	resp, err := fn(ctx, &req)
+	if err != nil {
+		return nil, err
+	}
+	if resp == nil {
+		resp = new(Resp)
+	}
+	return resp, nil
+}
+
 // isExtension reports whether method is an extension's: ACP reserves names
 // starting with "_" for them.
 func isExtension(method string) bool { return strings.HasPrefix(method, "_") }

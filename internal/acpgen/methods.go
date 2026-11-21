@@ -173,8 +173,7 @@ func genDispatch(b *bytes.Buffer, sd side, mine []method) {
 		for _, r := range m.required {
 			fmt.Fprintf(&args, ", %q", r)
 		}
-		fmt.Fprintf(b, "\t\t\tcase %q:\n\t\t\t\tvar req %s\n\t\t\t\tif err := decodeParams(params, &req%s); err != nil {\n\t\t\t\t\treturn nil, err\n\t\t\t\t}\n", m.wire, m.req, args.String())
-		fmt.Fprintf(b, "\t\t\t\tresp, err := x.%s(ctx, &req)\n\t\t\t\tif err != nil {\n\t\t\t\t\treturn nil, err\n\t\t\t\t}\n\t\t\t\tif resp == nil {\n\t\t\t\t\tresp = new(%s)\n\t\t\t\t}\n\t\t\t\treturn resp, nil\n", m.name, m.resp)
+		fmt.Fprintf(b, "\t\t\tcase %q:\n\t\t\t\treturn handle(ctx, params, x.%s%s)\n", m.wire, m.name, args.String())
 	}
 	b.WriteString("\t\t\t}\n\t\t\tif isExtension(method) {\n\t\t\t\treturn x.ExtMethod(ctx, method, params)\n\t\t\t}\n\t\t\treturn nil, methodNotFound(method)\n\t\t},\n")
 	b.WriteString("\t\tnotify: func(ctx context.Context, method string, params json.RawMessage) error {\n\t\t\tswitch method {\n")
@@ -196,7 +195,7 @@ func genCalls(b *bytes.Buffer, sd side, mine []method) {
 			continue
 		}
 		fmt.Fprintf(b, "// %s calls the %s %s: see [%s.%s].\n", m.name, sd.other, m.wire, sd.name, m.name)
-		fmt.Fprintf(b, "func (c *%s) %s(ctx context.Context, req *%s) (*%s, error) {\n\tresp := new(%s)\n\tif err := c.c.call(ctx, %q, req, resp); err != nil {\n\t\treturn nil, err\n\t}\n\treturn resp, nil\n}\n\n", sd.conn, m.name, m.req, m.resp, m.resp, m.wire)
+		fmt.Fprintf(b, "func (c *%s) %s(ctx context.Context, req *%s) (*%s, error) {\n\treturn callFor[%s](ctx, c.c, %q, req)\n}\n\n", sd.conn, m.name, m.req, m.resp, m.resp, m.wire)
 	}
 }
 
