@@ -60,7 +60,6 @@ linters:
         - importShadow # a local named after a package is fine where the package isn't used
         - initClause # `if n--; n == 0` keeps a counter's change beside its test
         - typeDefFirst # a helper method may sit beside its caller, above its type
-        - sprintfQuotedString # the "%s" it finds are SVG's quotes, where %q would be wrong
     gosec:
       excludes:
         - G104 # unchecked errors: errcheck reports them
@@ -72,7 +71,6 @@ linters:
     staticcheck:
       checks:
         - all
-        - -ST1005 # error strings are shown as they are and start with a name: "Ante isn't installed"
     nolintlint:
       require-explanation: true
       require-specific: true
@@ -157,7 +155,7 @@ linters:
         text: "^G(304|306|703):"
       # Tests are long scripts, one scenario each.
       - path: _test\.go$
-        linters: [gocognit, gocyclo, maintidx, dupl, funlen]
+        linters: [gocognit, gocyclo, maintidx, dupl]
       # A test that meets the wrong type panics, which fails it as a check
       # would; so does a value it can't encode.
       - path: _test\.go$
