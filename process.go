@@ -82,7 +82,7 @@ func Start(cmd *exec.Cmd, newClient func(*AgentConn) Client, opts ...Option) (*A
 	go func() {
 		select {
 		case <-exited: // what it wrote last is still read, unless a process it left holds its stdout
-			_ = g.kill() // what it left running in its group, which may hold its stdout
+			_ = g.sweep() // what it left running in its group, which may hold its stdout
 			out.drain(a.c.ctx.Done())
 		case <-a.c.ctx.Done(): // it closed its stdout, or a write failed: it gets drainTime, or Shutdown's time, to exit
 			var patience <-chan time.Time

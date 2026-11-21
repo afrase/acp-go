@@ -15,4 +15,7 @@ func newGroup(cmd *exec.Cmd) *group { return &group{cmd: cmd} }
 // kill kills the agent's process; the processes it started are left.
 func (g *group) kill() error { return g.cmd.Process.Kill() }
 
+// sweep kills the agent once it has exited, which does nothing.
+func (g *group) sweep() error { return g.kill() }
+
 func (g *group) release() {}

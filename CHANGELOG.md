@@ -26,6 +26,10 @@ ACP schema 1.31.0 (protocol version 1). Fixes from a review.
   request and not handled. It took the first one's place, so
   `$/cancel_request` no longer reached the first, and both were answered
   with that id.
+- `Start`, on Unix: once the agent has exited, its process group is
+  killed once, for what the agent left running; later kills (after the
+  output is read, or a `Close`) kill nothing. They were sent to the
+  agent's pid as a group's id, which may name another group by then.
 
 ## v0.4.0 (2026-11-14)
 

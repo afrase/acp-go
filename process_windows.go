@@ -63,6 +63,9 @@ func (g *group) kill() error {
 	return g.cmd.Process.Kill()
 }
 
+// sweep ends what is left in the agent's job once the agent has exited.
+func (g *group) sweep() error { return g.kill() }
+
 // release closes the job, once the agent has been waited for; what is
 // still in it is killed then.
 func (g *group) release() {
