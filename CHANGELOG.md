@@ -4,6 +4,19 @@ This module follows semantic versioning; see the README's Versioning
 section for what that covers. Each release names the release of ACP's
 schema it follows.
 
+## v0.4.2 (unreleased)
+
+ACP schema 1.31.0 (protocol version 1). Internal only: no API or
+behaviour change.
+
+- The generated code is about 1,400 lines smaller: each request a side
+  handles and each call a connection makes goes through one generic
+  helper, and a lenient `UnmarshalJSON` has one return.
+- The tests of the connection, the processes and the README run once, in
+  the root package; `unstable` keeps the tests of what its schema changes
+  (the types, the methods' routing and their params, the examples).
+- CI runs the tests shuffled, with a timeout per job.
+
 ## v0.4.1 (2026-11-21)
 
 ACP schema 1.31.0 (protocol version 1). Fixes from a review.
