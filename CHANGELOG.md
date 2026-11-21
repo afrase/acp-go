@@ -30,6 +30,12 @@ ACP schema 1.31.0 (protocol version 1). Fixes from a review.
   killed once, for what the agent left running; later kills (after the
   output is read, or a `Close`) kill nothing. They were sent to the
   agent's pid as a group's id, which may name another group by then.
+- Requests get back-pressure too: while 64 answers to the other side's
+  requests wait to be written (it doesn't read them), its next request
+  waits, and nothing after it is read. A side that sent requests and
+  didn't read piled up a goroutine a request. A handler still running
+  doesn't count, so handlers that call the other side and wait can't
+  stall the reading.
 
 ## v0.4.0 (2026-11-14)
 

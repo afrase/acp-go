@@ -34,7 +34,9 @@
 // response is delivered once every notification that came before it was
 // handled: when Prompt returns, every update of the turn has been seen.
 // Requests from the other side are each handled on a goroutine of their
-// own, so they may wait (for a user's answer) and may call back. That
+// own, so they may wait (for a user's answer) and may call back; while 64
+// answers to them wait to be written (the other side doesn't read), its
+// next request waits too. That
 // goroutine has started before anything read after the request is
 // handled: a session/cancel that follows a session/prompt reaches the
 // agent's Cancel only once its Prompt has been called. The two then run

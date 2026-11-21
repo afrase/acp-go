@@ -31,7 +31,8 @@ type handler struct {
 // the reading, and the other side's writes, down (back-pressure); its
 // requests are each handled on a goroutine of their own, after every
 // notification that came before them, and that goroutine has started
-// before anything after the request is handled; a response is delivered
+// before anything after the request is handled (while maxOwed answers
+// wait to be written, the next request waits); a response is delivered
 // once every notification before it was handled. Messages are written one
 // at a time by the writing goroutine; a caller waits while the other side
 // doesn't read, until its context ends.
@@ -48,6 +49,7 @@ type conn struct {
 	writes     chan writeReq // to the writing goroutine
 	writerDone chan struct{}
 	handedOff  chan struct{} // a request's goroutine has started (serve waits for it)
+	owed       chan struct{} // answers to the other side's requests waiting to be written (owe)
 
 	mu       sync.Mutex
 	nextID   int64
@@ -73,7 +75,7 @@ type response struct {
 func newConn(r io.Reader, w io.Writer, closeFn func(cause error) error, opts options) *conn {
 	c := &conn{
 		r: r, w: w, close: closeFn, opts: opts, log: opts.logger(),
-		writes: make(chan writeReq), writerDone: make(chan struct{}), handedOff: make(chan struct{}),
+		writes: make(chan writeReq), writerDone: make(chan struct{}), handedOff: make(chan struct{}), owed: make(chan struct{}, maxOwed),
 		pending: map[int64]chan response{}, incoming: map[string]context.CancelFunc{}, done: make(chan struct{}),
 	}
 	c.ctx, c.cancel = context.WithCancel(context.Background())
@@ -174,10 +176,7 @@ func (c *conn) tooLarge(head, tail []byte) {
 			c.settle(id, response{err: fmt.Errorf("%w: a response over the read limit of %d bytes", ErrTooLarge, limit)})
 		}
 	case method != "" && id != nil && idKey(id) != "":
-		msg := encodeError(id, e)
-		c.handlers.Go(func() { // the other side's call waits for it
-			_, _ = c.write(c.ctx, msg) // the connection may be ending
-		})
+		c.answer(encodeError(id, e))
 	case method != "" && id == nil: // a notification: no one waits for it
 	default:
 		c.reply(e)
@@ -314,10 +313,7 @@ func (c *conn) undecodable(line []byte, err error) {
 		c.reply(&Error{Code: ErrorCodeInvalidRequest, Message: "Invalid request: a bad id"})
 		return
 	}
-	msg := encodeError(head.ID, &Error{Code: ErrorCodeInvalidRequest, Message: "Invalid request: " + err.Error()})
-	c.handlers.Go(func() { // the other side's call waits for it: not one reply may skip
-		_, _ = c.write(c.ctx, msg) // the connection may be ending
-	})
+	c.answer(encodeError(head.ID, &Error{Code: ErrorCodeInvalidRequest, Message: "Invalid request: " + err.Error()}))
 }
 
 // junkLine answers a line that isn't a JSON-RPC message as JSON-RPC says
@@ -361,6 +357,48 @@ func (c *conn) reply(e *Error) {
 	})
 }
 
+// maxOwed is how many answers to the other side's requests may wait to
+// be written at once. Past that, while the other side doesn't read, its
+// next request isn't handled until one is written (back-pressure, as a
+// notification's handler gives): one that sends requests and doesn't read
+// would otherwise pile up a goroutine a request. Only answers that are
+// ready count, never a handler still running, which may wait for the other
+// side (a call, a session/cancel) that only the reading brings.
+const maxOwed = 64
+
+// owe takes one of the maxOwed places of an answer waiting to be written,
+// once one is free; false once the connection has ended.
+func (c *conn) owe() bool {
+	select {
+	case c.owed <- struct{}{}:
+		return true
+	default:
+	}
+	c.log.Debug("acp: answers wait for the other side to read", "answers", maxOwed)
+	select {
+	case c.owed <- struct{}{}:
+		return true
+	case <-c.ctx.Done():
+		return false
+	}
+}
+
+// paid frees the place owe took.
+func (c *conn) paid() { <-c.owed }
+
+// answer writes msg, the answer to one of the other side's requests that
+// no handler takes, on a goroutine of its own once one of maxOwed places
+// is free: the other side's call waits for it.
+func (c *conn) answer(msg []byte) {
+	if !c.owe() {
+		return // the connection ended
+	}
+	c.handlers.Go(func() {
+		defer c.paid()
+		_, _ = c.write(c.ctx, msg) // the connection may be ending
+	})
+}
+
 // idKey is a request id as a map key: its string, or its number's
 // canonical form ("" for an id that is neither).
 func idKey(id json.RawMessage) string {
@@ -401,11 +439,11 @@ func (c *conn) serve(f frame) {
 	_, dup := c.incoming[key]
 	c.mu.Unlock()
 	if dup { // JSON-RPC's ids are unique: the first request keeps its id, to be withdrawn and answered by it
-		msg := encodeError(f.ID, &Error{Code: ErrorCodeInvalidRequest, Message: "Invalid request: the id of a request still being handled"})
-		c.handlers.Go(func() { // the other side's call waits for it
-			_, _ = c.write(c.ctx, msg) // the connection may be ending
-		})
+		c.answer(encodeError(f.ID, &Error{Code: ErrorCodeInvalidRequest, Message: "Invalid request: the id of a request still being handled"}))
 		return
+	}
+	if c.owe() { // not while maxOwed answers wait to be written
+		c.paid()
 	}
 	ctx, cancel := context.WithCancel(context.WithValue(context.WithValue(c.ctx, requestIDKey{}, f.ID), seqKey{}, c.seq))
 	c.mu.Lock()
@@ -427,6 +465,9 @@ func (c *conn) serve(f frame) {
 		}
 		if err != nil {
 			msg = encodeError(f.ID, errorFor(ctx, err))
+		}
+		if c.owe() {
+			defer c.paid()
 		}
 		c.logDone(ctx, "acp: request handled", f.Method, start, err)
 		_, werr := c.write(c.ctx, msg)
