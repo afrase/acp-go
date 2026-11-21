@@ -477,7 +477,10 @@ func (c *conn) serve(f frame) {
 			_, werr = c.write(c.ctx, encodeError(f.ID, &Error{Code: ErrorCodeInternalError,
 				Message: fmt.Sprintf("Internal error: the response is over the write limit of %d bytes", c.opts.writeLimit)}))
 		}
-		if werr != nil && !errors.Is(werr, ErrClosed) {
+		switch {
+		case errors.Is(werr, ErrClosed): // the connection, or the other side's input, was closed
+			c.log.Debug("acp: a response wasn't sent", "rpc", f.Method, "err", werr)
+		case werr != nil:
 			c.log.Warn("acp: a response wasn't sent", "rpc", f.Method, "err", werr)
 		}
 	})

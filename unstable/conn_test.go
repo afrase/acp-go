@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"log/slog"
 	"net"
 	"runtime"
 	"strings"
@@ -379,16 +380,21 @@ func TestRequestsRunAtOnce(t *testing.T) {
 // A call whose context ends withdraws its request: the handler's context
 // on the other side ends too.
 func TestAWithdrawnCallEndsItsHandler(t *testing.T) {
-	ended := make(chan error, 1)
+	started, ended := make(chan struct{}), make(chan error, 1)
 	agent := &testAgent{prompt: func(ctx context.Context, _ *testAgent, _ *acp.PromptRequest) (*acp.PromptResponse, error) {
+		close(started)
 		<-ctx.Done()
 		ended <- ctx.Err()
 		return nil, ctx.Err()
 	}}
 	agentConn, _ := connect(t, &testClient{}, agent)
-	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	if _, err := agentConn.Prompt(ctx, &acp.PromptRequest{SessionID: "s1"}); !errors.Is(err, context.DeadlineExceeded) {
+	go func() {
+		<-started
+		cancel()
+	}()
+	if _, err := agentConn.Prompt(ctx, &acp.PromptRequest{SessionID: "s1"}); !errors.Is(err, context.Canceled) {
 		t.Fatalf("err = %v", err)
 	}
 	select {
@@ -774,15 +780,19 @@ func TestShutdownLetsTheAgentEnd(t *testing.T) {
 }
 
 // byeAgent is an agent that, once its input ends, sends one last update
-// and closes its output, as an agent ends its turns at Shutdown. It may
-// first ask a question.
-func byeAgent(t *testing.T, in io.Reader, out io.WriteCloser, ask bool) {
+// and closes its output, as an agent ends its turns at Shutdown. With ask,
+// it first asks a question, and says when its input ended (ended), and
+// waits for goOn before its last update.
+func byeAgent(t *testing.T, in io.Reader, out io.WriteCloser, ask bool, ended chan<- struct{}, goOn <-chan struct{}) {
 	t.Helper()
 	if ask {
 		_, _ = io.WriteString(out, `{"jsonrpc":"2.0","id":1,"method":"session/request_permission","params":{"sessionId":"s1","toolCall":{"toolCallId":"t"},"options":[]}}`+"\n")
 	}
-	_, _ = io.Copy(io.Discard, in)     // until its input ends
-	time.Sleep(100 * time.Millisecond) // its turns ending; the question is answered meanwhile
+	_, _ = io.Copy(io.Discard, in) // until its input ends
+	if ask {
+		close(ended)
+		<-goOn // its turns ending; the question is answered meanwhile
+	}
 	_, _ = io.WriteString(out, `{"jsonrpc":"2.0","method":"session/update","params":{"sessionId":"s1","update":{"sessionUpdate":"agent_message_chunk","content":{"type":"text","text":"bye"}}}}`+"\n")
 	_ = out.Close()
 }
@@ -799,13 +809,18 @@ func TestShutdownWithAQuestionOpen(t *testing.T) {
 		<-release
 		return &acp.RequestPermissionResponse{Outcome: acp.RequestPermissionOutcome{Cancelled: true}}, nil
 	}}
-	conn := acp.NewAgentConn(toClientR, toAgentW, func(*acp.AgentConn) acp.Client { return client })
-	go byeAgent(t, toAgentR, toClientW, true)
+	notSent := make(chan struct{}, 1)
+	log := slog.New(signals{"acp: a response wasn't sent": notSent})
+	conn := acp.NewAgentConn(toClientR, toAgentW, func(*acp.AgentConn) acp.Client { return client }, acp.WithLogger(log))
+	ended, goOn := make(chan struct{}), make(chan struct{})
+	go byeAgent(t, toAgentR, toClientW, true, ended, goOn)
 	<-asked
 	shut := make(chan error, 1)
 	go func() { shut <- conn.Shutdown(ctxFor(t)) }()
-	time.Sleep(20 * time.Millisecond) // Shutdown closes the input
-	close(release)                    // the answer is written after it
+	<-ended        // Shutdown closed the agent's input
+	close(release) // the answer is written after it
+	<-notSent      // and fails
+	close(goOn)
 	if err := <-shut; err != nil {
 		t.Fatal(err)
 	}
@@ -831,7 +846,7 @@ func TestShutdownOverASocket(t *testing.T) {
 		if err != nil {
 			return
 		}
-		byeAgent(t, c, c, false)
+		byeAgent(t, c, c, false, nil, nil)
 	}()
 	sock, err := net.Dial("tcp", l.Addr().String())
 	if err != nil {

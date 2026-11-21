@@ -45,6 +45,10 @@ ACP schema 1.31.0 (protocol version 1). Fixes from a review.
   enough.
 - The README's comparison table has its delimiter row: it showed as a
   paragraph of pipes.
+- An answer not sent because the connection, or the other side's input,
+  was closed is logged at DEBUG ("a response wasn't sent"); it wasn't
+  logged. Tests that ordered events with sleeps and short deadlines
+  order them with channels.
 
 ## v0.4.0 (2026-11-14)
 
