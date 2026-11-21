@@ -183,7 +183,10 @@ both. Its unstable parts can change in any minor release (see
   the `Prompt` of a prompt sent before it, or while that `Prompt` sets up.
   `acp.SequenceFromContext` tells which message came first: keep the
   sequence of each session's last `Cancel`, and a `Prompt` with a smaller
-  one is cancelled already (`examples/echo` does this).
+  one is cancelled already (`examples/echo` does this). A request handler
+  can have something run once its result has been written, with
+  `acp.AfterResponse`: an agent sends a new session's first updates after
+  the answer that names the session.
 - **Errors.** An error from the other side is an `*acp.Error` with ACP's
   code (use `errors.As`). A call after the connection ends returns
   `acp.ErrClosed`.

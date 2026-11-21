@@ -731,6 +731,115 @@ func TestAHandlerKnowsItsRequestID(t *testing.T) {
 	}
 }
 
+// What AfterResponse queues runs once the handler's result is written:
+// the agent's notification comes after the response.
+func TestAfterResponseRunsOnceTheResultIsWritten(t *testing.T) {
+	agent := &testAgent{}
+	agent.ext = func(ctx context.Context, _ string, _ json.RawMessage) (any, error) {
+		ok := acp.AfterResponse(ctx, func() {
+			if acp.AfterResponse(ctx, func() { t.Error("queued after the response, and ran") }) {
+				t.Error("queued after the response")
+			}
+			_ = agent.client.Notify(context.WithoutCancel(ctx), "_after", nil) // ctx ends with the handler
+		})
+		if !ok {
+			t.Error("not queued")
+		}
+		return map[string]int{"n": 1}, nil
+	}
+	r := rawClient(t, agent)
+	r.send(`{"jsonrpc":"2.0","id":1,"method":"_x"}`)
+	if m := r.read(); m["id"] != float64(1) || m["result"] == nil {
+		t.Fatalf("first %v", m)
+	}
+	if m := r.read(); m["method"] != "_after" {
+		t.Fatalf("then %v", m)
+	}
+}
+
+// What AfterResponse queues doesn't run when no result is written: the
+// handler failed, the result was over the write limit (an error was
+// written in its place), or the write failed.
+func TestAfterResponseWithoutAResult(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		result any
+		err    error
+		w      io.Writer // the client's side; nil: a pipe it reads
+		opts   []acp.Option
+	}{
+		{name: "an error", err: errors.New("no")},
+		{name: "over the write limit", result: strings.Repeat("b", 1000), opts: []acp.Option{acp.WithWriteLimit(200)}},
+		{name: "a failed write", result: "ok", w: failingWriter{}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			ran := make(chan struct{}, 1)
+			t.Cleanup(func() { // after the connection's end, and its goroutines'
+				select {
+				case <-ran:
+					t.Error("it ran")
+				default:
+				}
+			})
+			leaktest.Check(t)
+			agent := &testAgent{ext: func(ctx context.Context, _ string, _ json.RawMessage) (any, error) {
+				if !acp.AfterResponse(ctx, func() { ran <- struct{}{} }) {
+					t.Error("not queued")
+				}
+				return tc.result, tc.err
+			}}
+			toAgentR, toAgentW := io.Pipe()
+			toClientR, toClientW := io.Pipe()
+			w := tc.w
+			if w == nil {
+				w = toClientW
+			}
+			c := acp.NewClientConn(toAgentR, w, func(*acp.ClientConn) acp.Agent { return agent }, tc.opts...)
+			go func() { _, _ = io.Copy(io.Discard, toClientR) }()
+			if _, err := io.WriteString(toAgentW, `{"jsonrpc":"2.0","id":1,"method":"_x"}`+"\n"); err != nil {
+				t.Fatal(err)
+			}
+			_ = toAgentW.Close() // the request is handled, and answered, before the connection ends
+			<-c.Done()
+			_ = toClientW.Close()
+		})
+	}
+}
+
+// failingWriter is an other side whose input is closed.
+type failingWriter struct{}
+
+func (failingWriter) Write([]byte) (int, error) { return 0, io.ErrClosedPipe }
+
+// AfterResponse outside a request's handler queues nothing.
+func TestAfterResponseOutsideAHandler(t *testing.T) {
+	if acp.AfterResponse(context.Background(), func() { t.Error("it ran") }) {
+		t.Error("queued")
+	}
+	notified := make(chan bool, 1)
+	agent := &testAgent{}
+	_, agentSide := connect(t, &notifyClient{fn: func(ctx context.Context) {
+		notified <- acp.AfterResponse(ctx, func() { t.Error("it ran") })
+	}}, agent)
+	if err := agentSide.Notify(ctxFor(t), "_n", nil); err != nil {
+		t.Fatal(err)
+	}
+	if <-notified {
+		t.Error("queued by a notification's handler")
+	}
+}
+
+// notifyClient runs fn with each extension notification's context.
+type notifyClient struct {
+	acp.UnimplementedClient
+	fn func(ctx context.Context)
+}
+
+func (c *notifyClient) ExtNotification(ctx context.Context, _ string, _ json.RawMessage) error {
+	c.fn(ctx)
+	return nil
+}
+
 func TestBadInputIsAnsweredAsJSONRPCSays(t *testing.T) {
 	r := rawClient(t, &testAgent{})
 	for _, tc := range []struct {

@@ -447,7 +447,8 @@ func (c *conn) serve(f frame) {
 	if c.owe() { // not while maxOwed answers wait to be written
 		c.paid()
 	}
-	ctx, cancel := context.WithCancel(context.WithValue(context.WithValue(c.ctx, requestIDKey{}, f.ID), seqKey{}, c.seq))
+	req := &requestCtx{Context: c.ctx, id: f.ID, seq: c.seq}
+	ctx, cancel := context.WithCancel(req)
 	c.mu.Lock()
 	c.incoming[key] = cancel
 	c.mu.Unlock()
@@ -473,6 +474,7 @@ func (c *conn) serve(f frame) {
 		}
 		c.logDone(ctx, "acp: request handled", f.Method, start, err)
 		_, werr := c.write(c.ctx, msg)
+		req.answered(err == nil && werr == nil)
 		if errors.Is(werr, ErrTooLarge) { // the other side still gets an answer
 			_, werr = c.write(c.ctx, encodeError(f.ID, &Error{Code: ErrorCodeInternalError,
 				Message: fmt.Sprintf("Internal error: the response is over the write limit of %d bytes", c.opts.writeLimit)}))
@@ -537,6 +539,68 @@ func (n *notifyCtx) Value(key any) any {
 		return n.seq
 	}
 	return n.Context.Value(key)
+}
+
+// requestCtx is a request handler's context: the connection's, with the
+// request's id and sequence, and what runs once its response is written
+// ([AfterResponse]). It is one allocation, not two context.WithValues.
+type requestCtx struct {
+	context.Context //nolint:containedctx // the connection's
+	id              RequestID
+	seq             uint64
+
+	mu    sync.Mutex
+	after []func() // nil until AfterResponse
+	done  bool     // the response was written, or failed
+}
+
+func (r *requestCtx) Value(key any) any {
+	switch key.(type) {
+	case requestIDKey:
+		return r.id
+	case seqKey:
+		return r.seq
+	case afterKey:
+		return r
+	}
+	return r.Context.Value(key)
+}
+
+// answered runs what AfterResponse queued, each on a goroutine of its
+// own, if the response written was a result (ok); what is queued later
+// doesn't run.
+func (r *requestCtx) answered(ok bool) {
+	r.mu.Lock()
+	after := r.after
+	r.after, r.done = nil, true
+	r.mu.Unlock()
+	if ok {
+		for _, fn := range after {
+			go fn()
+		}
+	}
+}
+
+// AfterResponse has fn run, on a goroutine of its own, once the response
+// to the request whose handler got ctx has been written: an agent's
+// session/new handler can send the session's first updates (its available
+// commands) after the answer that names the session. fn runs only if
+// the handler returned a result and it was written: not after an error
+// answer, a result over the write limit (answered with an error instead),
+// or a failed write. AfterResponse returns false, and fn never runs, when
+// ctx isn't a request handler's or its response has been written already.
+func AfterResponse(ctx context.Context, fn func()) bool {
+	r, ok := ctx.Value(afterKey{}).(*requestCtx)
+	if !ok {
+		return false
+	}
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if r.done {
+		return false
+	}
+	r.after = append(r.after, fn)
+	return true
 }
 
 // answered delivers a response to the call waiting for it.
@@ -850,6 +914,7 @@ type (
 	requestIDKey    struct{}
 	notificationKey struct{}
 	seqKey          struct{}
+	afterKey        struct{}
 )
 
 // RequestIDFromContext returns the JSON-RPC id of the request whose handler

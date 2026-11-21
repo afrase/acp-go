@@ -4,6 +4,17 @@ This module follows semantic versioning; see the README's Versioning
 section for what that covers. Each release names the release of ACP's
 schema it follows.
 
+## v0.5.0 (unreleased)
+
+ACP schema 1.31.0 (protocol version 1). Additions only.
+
+- `AfterResponse(ctx, fn)` has fn run once the result of the request
+  whose handler got ctx has been written; not after an error answer, a
+  result over the write limit, or a failed write. An agent can send a new
+  session's first updates (its available commands) after the answer that
+  names the session, without watching what the connection writes. A
+  request's handler costs three allocations fewer.
+
 ## v0.4.2 (2026-11-21)
 
 ACP schema 1.31.0 (protocol version 1). Internal only: no API or
