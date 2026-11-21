@@ -4,7 +4,7 @@ This module follows semantic versioning; see the README's Versioning
 section for what that covers. Each release names the release of ACP's
 schema it follows.
 
-## v0.4.2 (unreleased)
+## v0.4.2 (2026-11-21)
 
 ACP schema 1.31.0 (protocol version 1). Internal only: no API or
 behaviour change.
